@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Src/Fonts/Inter-Regular.ttf</file>
+        <file>Src/Fonts/Inter-Medium.ttf</file>
+        <file>Src/Fonts/Inter-SemiBold.ttf</file>
+        <file>Src/Fonts/Inter-Bold.ttf</file>
+        <file>Src/Fonts/JetBrainsMono-Regular.ttf</file>
+        <file>Src/Fonts/JetBrainsMono-SemiBold.ttf</file>
+        <file>Src/Fonts/JetBrainsMono-Bold.ttf</file>
+    </qresource>
+</RCC>

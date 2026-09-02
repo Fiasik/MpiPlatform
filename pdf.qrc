@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/pdf">
+        <file alias="Reports/Act.xml">Src/Report/Pdf/Reports/Act.xml</file>
+        <file alias="Reports/Tshr.xml">Src/Report/Pdf/Reports/Tshr.xml</file>
+        <file alias="Reports/Tchr.xml">Src/Report/Pdf/Reports/Tchr.xml</file>
+        <file alias="Reports/Trs.xml">Src/Report/Pdf/Reports/Trs.xml</file>
+        <file alias="Reports/Comments.xml">Src/Report/Pdf/Reports/Comments.xml</file>
+    </qresource>
+</RCC>

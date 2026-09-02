@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Src/Img/arrowDown.png</file>
+        <file>Src/Img/arrowDownHover.png</file>
+        <file>Src/Img/arrowUp.png</file>
+        <file>Src/Img/arrowUpHover.png</file>
+        <file>Src/Img/ChevronDown.svg</file>
+        <file>Src/Img/ChevronDownActive.svg</file>
+        <file>Src/Img/ChevronUp.svg</file>
+        <file>Src/Img/ChevronUpActive.svg</file>
+        <file>Src/Img/ChevronDownDark.svg</file>
+        <file>Src/Img/ChevronDownActiveDark.svg</file>
+        <file>Src/Img/ChevronUpDark.svg</file>
+        <file>Src/Img/ChevronUpActiveDark.svg</file>
+        <file>Src/Img/ChevronLeft.svg</file>
+        <file>Src/Img/ChevronLeftDark.svg</file>
+        <file>Src/Img/ChevronRight.svg</file>
+        <file>Src/Img/ChevronRightDark.svg</file>
+        <file>Src/Img/ThemeSun.svg</file>
+        <file>Src/Img/ThemeMoon.svg</file>
+        <file>Src/Img/Posicioner.svg</file>
+        <file>Src/Img/ReciprocatingStroke.svg</file>
+        <file>Src/Img/SensorLiner.svg</file>
+        <file>Src/Img/TurningStroke.svg</file>
+    </qresource>
+</RCC>

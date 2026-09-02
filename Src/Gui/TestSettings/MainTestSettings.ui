@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainTestSettings</class>
+ <widget class="QDialog" name="MainTestSettings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>442</width>
+    <height>354</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+    <pointsize>12</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Параметры тестирования</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background: #EDF1F4;
+border-radius: 10px;
+
+</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="spacing">
+    <number>12</number>
+   </property>
+   <property name="leftMargin">
+    <number>16</number>
+   </property>
+   <property name="topMargin">
+    <number>16</number>
+   </property>
+   <property name="rightMargin">
+    <number>16</number>
+   </property>
+   <property name="bottomMargin">
+    <number>16</number>
+   </property>
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QTabWidget::pane {
+    border: none;
+    border-top: 1px solid #E2E6EC;
+}
+QTabBar::tab {
+    background: transparent;
+    padding: 6px 10px;
+    margin-right: 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #5B6472;
+    font-size: 9pt;
+    font-weight: 500;
+}
+QTabBar::tab:hover {
+    color: #161A20;
+}
+QTabBar::tab:selected {
+    color: #2563EB;
+    border-bottom: 2px solid #2563EB;
+    font-size: 9pt;
+    font-weight: 500;
+}
+QTabBar::tab:disabled {
+    color: #B9C0CB;
+}</string>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Непрерывный тест</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>2</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QFrame" name="frame_Section">
+         <property name="styleSheet">
+          <string notr="true">QFrame#frame_Section {
+	background: #FFFFFF;
+	border-radius: 8px;
+	border: 1px solid #E2E6EC;
+}</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Shape::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Raised</enum>
+         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <property name="leftMargin">
+           <number>16</number>
+          </property>
+          <property name="topMargin">
+           <number>16</number>
+          </property>
+          <property name="rightMargin">
+           <number>16</number>
+          </property>
+          <property name="bottomMargin">
+           <number>16</number>
+          </property>
+          <property name="spacing">
+           <number>14</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #333333;
+background: none;</string>
+            </property>
+            <property name="text">
+             <string>Время прохода (в одну сторону)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QTimeEdit" name="timeEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::FocusPolicy::StrongFocus</enum>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QTimeEdit {
+    color: #333333;
+    background: #FFFFFF;
+    border: 1px solid #B9C0CB;
+    border-radius: 6px;
+    padding: 4px 8px;
+    selection-background-color: #2563EB;
+    selection-color: #FFFFFF;
+}
+QTimeEdit:hover {
+    border-color: #94A0B1;
+}
+QTimeEdit:focus {
+    border-color: #2563EB;
+}
+QTimeEdit:disabled {
+    color: #94A0B1;
+    background: #F7F8FA;
+    border-color: #E2E6EC;
+}
+QTimeEdit::up-button, QTimeEdit::down-button {
+    subcontrol-origin: border;
+    width: 18px;
+    border: none;
+    border-left: 1px solid #E2E6EC;
+    background: #FFFFFF;
+}
+QTimeEdit::up-button {
+    subcontrol-position: top right;
+    border-top-right-radius: 6px;
+}
+QTimeEdit::down-button {
+    subcontrol-position: bottom right;
+    border-bottom-right-radius: 6px;
+}
+QTimeEdit::up-button:hover, QTimeEdit::down-button:hover {
+    background: #F0F2F5;
+}
+QTimeEdit::up-button:pressed, QTimeEdit::down-button:pressed {
+    background: #E2E6EC;
+}
+QTimeEdit::up-arrow {
+    image: url(:/Src/Img/ChevronUp.svg);
+    width: 10px;
+    height: 7px;
+}
+QTimeEdit::down-arrow {
+    image: url(:/Src/Img/ChevronDown.svg);
+    width: 10px;
+    height: 7px;
+}
+QTimeEdit::up-arrow:pressed {
+    image: url(:/Src/Img/ChevronUpActive.svg);
+}
+QTimeEdit::down-arrow:pressed {
+    image: url(:/Src/Img/ChevronDownActive.svg);
+}</string>
+            </property>
+            <property name="minimumDateTime">
+             <datetime>
+              <hour>0</hour>
+              <minute>1</minute>
+              <second>0</second>
+              <year>2000</year>
+              <month>1</month>
+              <day>1</day>
+             </datetime>
+            </property>
+            <property name="maximumTime">
+             <time>
+              <hour>0</hour>
+              <minute>15</minute>
+              <second>0</second>
+             </time>
+            </property>
+            <property name="minimumTime">
+             <time>
+              <hour>0</hour>
+              <minute>1</minute>
+              <second>0</second>
+             </time>
+            </property>
+            <property name="displayFormat">
+             <string>mm:ss</string>
+            </property>
+            <property name="time">
+             <time>
+              <hour>0</hour>
+              <minute>10</minute>
+              <second>0</second>
+             </time>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_2">
+     <property name="styleSheet">
+      <string notr="true">QFrame#frame_2 {
+background: #FFFFFF;
+border-radius: 8px;
+border: 1px solid #E2E6EC;
+}
+QFrame {
+background: none;
+border: none;
+}</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>150</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_cancel">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    color: #161A20;
+    background: #FFFFFF;
+    border: 1px solid #B9C0CB;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background: #F0F2F5;
+    border-color: #2563EB;
+}
+QPushButton:pressed {
+    background: #E2E6EC;
+    padding: 7px 12px 5px 12px;
+}
+QPushButton:disabled {
+    color: #94A0B1;
+    background: #F7F8FA;
+    border-color: #E2E6EC;
+}
+QPushButton:checked {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+QPushButton:checked:hover {
+    background: #1D4ED8;
+}
+QPushButton:checked:pressed {
+    background: #1E40AF;
+}</string>
+        </property>
+        <property name="text">
+         <string>Отмена</string>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_start">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    color: #161A20;
+    background: #FFFFFF;
+    border: 1px solid #B9C0CB;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background: #F0F2F5;
+    border-color: #2563EB;
+}
+QPushButton:pressed {
+    background: #E2E6EC;
+    padding: 7px 12px 5px 12px;
+}
+QPushButton:disabled {
+    color: #94A0B1;
+    background: #F7F8FA;
+    border-color: #E2E6EC;
+}
+QPushButton:checked {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+}
+QPushButton:checked:hover {
+    background: #1D4ED8;
+}
+QPushButton:checked:pressed {
+    background: #1E40AF;
+}</string>
+        </property>
+        <property name="text">
+         <string>Начать тест</string>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>pushButton_start</sender>
+   <signal>clicked()</signal>
+   <receiver>MainTestSettings</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>374</x>
+     <y>289</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>194</x>
+     <y>266</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_cancel</sender>
+   <signal>clicked()</signal>
+   <receiver>MainTestSettings</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>267</x>
+     <y>281</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>90</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

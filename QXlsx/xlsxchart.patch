@@ -1,0 +1,213 @@
+diff --git a/QXlsx/header/xlsxchart.h b/QXlsx/header/xlsxchart.h
+index b724e79..95b1816 100644
+--- a/QXlsx/header/xlsxchart.h
++++ b/QXlsx/header/xlsxchart.h
+@@ -48,6 +48,15 @@ public:
+     void setChartTitle(QString strchartTitle);
+     void setChartLegend(Chart::ChartAxisPos legendPos, bool overlap = false);
+     void setGridlinesEnable(bool majorGridlinesEnable = false, bool minorGridlinesEnable = false);
++    // Применяется ко всем сериям, уже добавленным через addSeries() к этому
++    // моменту — вызывать после них. Без этого Excel рисует scatter-серию
++    // своим дефолтом (маркер на каждой точке, что при сотнях точек даёт
++    // сплошное "жирное" пятно вместо тонкой линии).
++    void setSeriesLineStyle(bool showMarker, qreal lineWidthPt = 1.0);
++    // Жёсткие границы оси вместо авто-масштаба Excel (он по умолчанию всегда
++    // выбирает "круглый" диапазон с запасом — например, для данных 3..21
++    // покажет 0..25, съедая четверть площади графика пустым местом).
++    void setAxisRange(Chart::ChartAxisPos pos, double min, double max);
+ public:
+     bool loadFromXmlFile(QIODevice *device) override;
+     void saveToXmlFile(QIODevice *device) const override;
+diff --git a/QXlsx/header/xlsxchart_p.h b/QXlsx/header/xlsxchart_p.h
+index 1d5de8c..b7792f2 100644
+--- a/QXlsx/header/xlsxchart_p.h
++++ b/QXlsx/header/xlsxchart_p.h
+@@ -7,6 +7,7 @@
+ #include <QString>
+ #include <QVector>
+ #include <QMap>
++#include <QPair>
+ #include <QList>
+ #include <QXmlStreamReader>
+ #include <QXmlStreamWriter>
+@@ -27,6 +28,8 @@ public:
+     QString headerH_numRef;
+     QString headerV_numRef;
+     bool    swapHeader = false;
++    bool    showMarker = true;
++    qreal   lineWidthPt = -1; // <0 — не задано явно, оставить дефолт Excel
+ };
+ 
+ class XlsxAxis
+@@ -60,6 +63,11 @@ public:
+     int axisId;
+     int crossAx;
+     QMap< XlsxAxis::AxisPos, QString > axisNames;
++
++    bool hasMin = false;
++    double axMin = 0;
++    bool hasMax = false;
++    double axMax = 0;
+ };
+ 
+ class ChartPrivate : public AbstractOOXmlFilePrivate
+@@ -140,6 +148,12 @@ public:
+     bool majorGridlinesEnabled;
+     bool minorGridlinesEnabled;
+ 
++    // Явные границы оси (min/max), заданные Chart::setAxisRange() до
++    // сохранения — применяются к осям в момент их создания (см.
++    // saveXmlScatterChart), потому что сами XlsxAxis обычно лениво
++    // создаются только при сохранении, а не сразу после addSeries().
++    QMap< Chart::ChartAxisPos, QPair<double, double> > axisRangeOverrides;
++
+     QString layout;             // only for storing a readed file
+ };
+ 
+diff --git a/QXlsx/source/xlsxchart.cpp b/QXlsx/source/xlsxchart.cpp
+index c0a0015..ac90578 100644
+--- a/QXlsx/source/xlsxchart.cpp
++++ b/QXlsx/source/xlsxchart.cpp
+@@ -80,14 +80,10 @@ void Chart::addSeries(const CellRange &range, AbstractSheet *sheet, bool headerH
+         int firstDataRow = range.firstRow();
+         int firstDataColumn = range.firstColumn();
+ 
+-        QString axDataSouruce_numRef;
+-        if (d->chartType == CT_ScatterChart || d->chartType == CT_BubbleChart)
+-        {
+-            firstDataColumn += 1;
+-            CellRange subRange(range.firstRow(), range.firstColumn(), range.lastRow(), range.firstColumn());
+-            axDataSouruce_numRef = sheetName + QLatin1String("!") + subRange.toString(true, true);
+-        }
+-
++        // headerH/headerV сдвигают начало данных ДО того, как строится
++        // диапазон X (иначе он захватывал бы строку заголовков — числовая
++        // ссылка на текстовую ячейку "съезжала" бы X относительно Y на одну
++        // позицию).
+         if( headerH )
+         {
+             firstDataRow += 1;
+@@ -97,6 +93,14 @@ void Chart::addSeries(const CellRange &range, AbstractSheet *sheet, bool headerH
+             firstDataColumn += 1;
+         }
+ 
++        QString axDataSouruce_numRef;
++        if (d->chartType == CT_ScatterChart || d->chartType == CT_BubbleChart)
++        {
++            firstDataColumn += 1;
++            CellRange subRange(firstDataRow, range.firstColumn(), range.lastRow(), range.firstColumn());
++            axDataSouruce_numRef = sheetName + QLatin1String("!") + subRange.toString(true, true);
++        }
++
+         for (int col=firstDataColumn; col<=range.lastColumn(); ++col)
+         {
+             CellRange subRange(firstDataRow, col, range.lastRow(), col);
+@@ -194,6 +198,24 @@ void Chart::setChartType(ChartType type)
+     d->chartType = type;
+ }
+ 
++void Chart::setSeriesLineStyle(bool showMarker, qreal lineWidthPt)
++{
++    Q_D(Chart);
++
++    for (auto& ser : d->seriesList)
++    {
++        ser->showMarker = showMarker;
++        ser->lineWidthPt = lineWidthPt;
++    }
++}
++
++void Chart::setAxisRange(Chart::ChartAxisPos pos, double min, double max)
++{
++    Q_D(Chart);
++
++    d->axisRangeOverrides[pos] = qMakePair(min, max);
++}
++
+ /*!
+  * \internal
+  *
+@@ -1204,6 +1226,21 @@ void ChartPrivate::saveXmlScatterChart(QXmlStreamWriter &writer) const
+                     std::make_shared<XlsxAxis>(XlsxAxis::T_Val, XlsxAxis::Left, 1, 0, axisNames[XlsxAxis::Left] ));
+     }
+ 
++    // Chart::ChartAxisPos и XlsxAxis::AxisPos совпадают по значениям
++    // (None=-1, Left=0, Right, Top, Bottom), поэтому пробрасываем как есть.
++    for (const auto& ax : axisList)
++    {
++        const auto pos = static_cast<Chart::ChartAxisPos>(ax->axisPos);
++        if (axisRangeOverrides.contains(pos))
++        {
++            const auto range = axisRangeOverrides.value(pos);
++            ax->hasMin = true;
++            ax->axMin = range.first;
++            ax->hasMax = true;
++            ax->axMax = range.second;
++        }
++    }
++
+     int axisListSize = axisList.size();
+     Q_ASSERT(axisListSize == 2);
+ 
+@@ -1293,6 +1330,27 @@ void ChartPrivate::saveXmlSer(QXmlStreamWriter &writer, XlsxSeries *ser, int id)
+         writer.writeEndElement();
+         writer.writeEndElement();
+     }
++    // Порядок по схеме CT_ScatterSer: idx, order, tx, spPr, marker, ...,
++    // xVal/cat, yVal/val — spPr и marker обязаны идти именно здесь, до
++    // диапазонов данных, иначе Excel вправе просто проигнорировать блок.
++    if (ser->lineWidthPt > 0)
++    {
++        const int emu = static_cast<int>(ser->lineWidthPt * 12700);
++        writer.writeStartElement(QStringLiteral("c:spPr"));
++        writer.writeStartElement(QStringLiteral("a:ln"));
++        writer.writeAttribute(QStringLiteral("w"), QString::number(emu));
++        writer.writeEndElement(); // a:ln
++        writer.writeEndElement(); // c:spPr
++    }
++
++    if (!ser->showMarker)
++    {
++        writer.writeStartElement(QStringLiteral("c:marker"));
++        writer.writeEmptyElement(QStringLiteral("c:symbol"));
++        writer.writeAttribute(QStringLiteral("val"), QStringLiteral("none"));
++        writer.writeEndElement(); // c:marker
++    }
++
+     if( !header2.isEmpty() )
+     {
+         writer.writeStartElement(QStringLiteral("c:cat"));
+@@ -1302,7 +1360,6 @@ void ChartPrivate::saveXmlSer(QXmlStreamWriter &writer, XlsxSeries *ser, int id)
+         writer.writeEndElement();
+     }
+ 
+-#if 0
+     if (!ser->axDataSource_numRef.isEmpty())
+     {
+         if (chartType == Chart::CT_ScatterChart || chartType == Chart::CT_BubbleChart)
+@@ -1319,7 +1376,6 @@ void ChartPrivate::saveXmlSer(QXmlStreamWriter &writer, XlsxSeries *ser, int id)
+         writer.writeEndElement();//c:numRef
+         writer.writeEndElement();//c:cat or c:xVal
+     }
+-#endif
+ 
+     if (!ser->numberDataSource_numRef.isEmpty())
+     {
+@@ -2085,6 +2141,17 @@ void ChartPrivate::saveXmlAxisEG_AxShared(QXmlStreamWriter &writer, XlsxAxis* ax
+     writer.writeStartElement(QStringLiteral("c:scaling")); // CT_Scaling (mandatory value)
+         writer.writeEmptyElement(QStringLiteral("c:orientation")); // CT_Orientation
+             writer.writeAttribute(QStringLiteral("val"), QStringLiteral("minMax")); // ST_Orientation
++        // Порядок по схеме CT_Scaling: logBase?, orientation, max?, min?
++        if (axis->hasMax)
++        {
++            writer.writeEmptyElement(QStringLiteral("c:max"));
++            writer.writeAttribute(QStringLiteral("val"), QString::number(axis->axMax));
++        }
++        if (axis->hasMin)
++        {
++            writer.writeEmptyElement(QStringLiteral("c:min"));
++            writer.writeAttribute(QStringLiteral("val"), QString::number(axis->axMin));
++        }
+     writer.writeEndElement(); // c:scaling
+ 
+     writer.writeEmptyElement(QStringLiteral("c:axPos")); // axPos CT_AxPos (mandatory value)

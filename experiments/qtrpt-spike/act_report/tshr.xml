@@ -1,0 +1,1382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Reports email="" lib="QtRPT" programmer="MpiSdk">
+  <Report border="0" borderColor="rgba(0,0,0,255)" borderStyle="solid" borderWidth="1" marginsBottom="40" marginsLeft="40" marginsRight="40" marginsTop="40" orientation="0" pageHeight="1188" pageNo="1" pageWidth="840" watermark="0">
+    <ReportBand bandNo="1" height="264" name="TshrHeaderBand" type="PageHeader" width="760" >
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="11" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="24" highlighting="" left="0" name="f1" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value="Акт шагового испытания клапана, поз. [valvePosition]" width="520"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="11" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="24" highlighting="" left="520" name="f2" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value="установки [objectTag]" width="240"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f3" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="32" type="label" value="Данные по объекту" width="372"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="0" name="f4" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="54" type="label" value="Объект" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="140" name="f5" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="54" type="label" value="[objectName]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="0" name="f6" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="74" type="label" value="Цех" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="140" name="f7" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="74" type="label" value="[objectShop]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="0" name="f8" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="94" type="label" value="Установка" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="20" highlighting="" left="140" name="f9" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="94" type="label" value="[objectInstall]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="388" name="f10" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="32" type="label" value="Краткая спецификация на клапан" width="372"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f11" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="54" type="label" value="Позиция" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f12" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="54" type="label" value="[specPosition]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f13" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="72" type="label" value="Серийный номер" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f14" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="72" type="label" value="[specSerial]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f15" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="90" type="label" value="Модель клапана" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f16" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="90" type="label" value="[specModel]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f17" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="108" type="label" value="Производитель" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f18" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="108" type="label" value="[specVendor]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f19" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="126" type="label" value="DN/PN (ANSI)" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f20" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="126" type="label" value="[specDnPn]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f21" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="144" type="label" value="Позиционер" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f22" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="144" type="label" value="[specPositioner]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f23" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="162" type="label" value="Давление питания, бар" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f24" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="162" type="label" value="[specSupplyPressure]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f25" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="180" type="label" value="Приход, ПВ" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f26" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="180" type="label" value="[specInputSignal]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f27" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="198" type="label" value="Модель привода" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f28" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="198" type="label" value="[specActuator]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f29" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="216" type="label" value="Движение хода клапана" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f30" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="216" type="label" value="[specMotion]" width="232"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="388" name="f31" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="234" type="label" value="Материал сальника" width="140"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="528" name="f32" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="234" type="label" value="[specPacking]" width="232"/>
+</ReportBand>
+    <ReportBand bandNo="1" height="598" name="TshrContentBand" type="ReportTitle" width="760" >
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="0" name="f33" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value="ГРАФИК ТЕСТА ШАГОВОЙ РЕАКЦИИ" width="760"/>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" caption="" chartType="SeriesTypeLine" colorBackground="rgba(255,255,255,255)" colorLegend="rgba(64,64,68,255)" colorTitle="rgba(0,0,0,255)" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="28" fontStrikeout="0" fontUnderline="0" groupName="" height="280" left="0" legendAligment="1" legendFont="Arial,7,-1,5,50,0,0,0,0,0" name="chart_step" printing="1" rotate="0" showLegend="1" staticChart="1" titleFont="Arial,20,-1,5,75,0,0,0,0,0" top="26" type="diagram" value="diagram" width="760" xAxisUnit="s" yAxisUnit="%">
+<graph caption="Задание" color="rgba(1,1,1,255)" graphDS="ds1">
+<value x="0.0" y="10.0"/>
+<value x="10.0" y="10.0"/>
+<value x="10.0" y="20.0"/>
+<value x="20.0" y="20.0"/>
+<value x="20.0" y="30.0"/>
+<value x="30.0" y="30.0"/>
+<value x="30.0" y="40.0"/>
+<value x="40.0" y="40.0"/>
+<value x="40.0" y="50.0"/>
+<value x="50.0" y="50.0"/>
+<value x="50.0" y="60.0"/>
+<value x="60.0" y="60.0"/>
+<value x="60.0" y="70.0"/>
+<value x="70.0" y="70.0"/>
+<value x="70.0" y="80.0"/>
+<value x="80.0" y="80.0"/>
+<value x="80.0" y="90.0"/>
+<value x="90.0" y="90.0"/>
+<value x="90.0" y="100.0"/>
+<value x="100.0" y="100.0"/>
+<value x="100.0" y="90.0"/>
+<value x="110.0" y="90.0"/>
+<value x="110.0" y="80.0"/>
+<value x="120.0" y="80.0"/>
+<value x="120.0" y="70.0"/>
+<value x="130.0" y="70.0"/>
+<value x="130.0" y="60.0"/>
+<value x="140.0" y="60.0"/>
+<value x="140.0" y="50.0"/>
+<value x="150.0" y="50.0"/>
+<value x="150.0" y="40.0"/>
+<value x="160.0" y="40.0"/>
+<value x="160.0" y="30.0"/>
+<value x="170.0" y="30.0"/>
+<value x="170.0" y="20.0"/>
+<value x="180.0" y="20.0"/>
+<value x="180.0" y="10.0"/>
+<value x="190.0" y="10.0"/>
+<value x="190.0" y="0.0"/>
+<value x="200.0" y="0.0"/>
+</graph>
+<graph caption="Датчик линейных перемещений" color="rgba(214,40,40,255)" graphDS="ds2">
+<value x="0.0" y="0.06"/>
+<value x="0.169" y="1.11"/>
+<value x="0.339" y="2.49"/>
+<value x="0.508" y="3.68"/>
+<value x="0.678" y="5.01"/>
+<value x="0.847" y="6.01"/>
+<value x="1.017" y="7.02"/>
+<value x="1.186" y="7.5"/>
+<value x="1.356" y="8.32"/>
+<value x="1.525" y="8.75"/>
+<value x="1.695" y="9.31"/>
+<value x="1.864" y="9.81"/>
+<value x="2.034" y="9.93"/>
+<value x="2.203" y="10.23"/>
+<value x="2.373" y="10.58"/>
+<value x="2.542" y="10.65"/>
+<value x="2.712" y="10.59"/>
+<value x="2.881" y="10.77"/>
+<value x="3.051" y="10.85"/>
+<value x="3.22" y="10.51"/>
+<value x="3.39" y="10.79"/>
+<value x="3.559" y="10.7"/>
+<value x="3.729" y="10.5"/>
+<value x="3.898" y="10.36"/>
+<value x="4.068" y="10.62"/>
+<value x="4.237" y="10.31"/>
+<value x="4.407" y="10.15"/>
+<value x="4.576" y="10.1"/>
+<value x="4.746" y="10.34"/>
+<value x="4.915" y="10.2"/>
+<value x="5.085" y="10.24"/>
+<value x="5.254" y="10.18"/>
+<value x="5.424" y="10.07"/>
+<value x="5.593" y="10.22"/>
+<value x="5.763" y="9.96"/>
+<value x="5.932" y="10.02"/>
+<value x="6.102" y="10.12"/>
+<value x="6.271" y="10.02"/>
+<value x="6.441" y="10.11"/>
+<value x="6.61" y="10.0"/>
+<value x="6.78" y="10.05"/>
+<value x="6.949" y="9.78"/>
+<value x="7.119" y="9.86"/>
+<value x="7.288" y="9.88"/>
+<value x="7.458" y="9.8"/>
+<value x="7.627" y="9.87"/>
+<value x="7.797" y="9.82"/>
+<value x="7.966" y="9.89"/>
+<value x="8.136" y="10.04"/>
+<value x="8.305" y="9.93"/>
+<value x="8.475" y="9.94"/>
+<value x="8.644" y="9.87"/>
+<value x="8.814" y="9.9"/>
+<value x="8.983" y="10.17"/>
+<value x="9.153" y="10.05"/>
+<value x="9.322" y="10.04"/>
+<value x="9.492" y="9.87"/>
+<value x="9.661" y="10.09"/>
+<value x="9.831" y="9.87"/>
+<value x="10.0" y="9.95"/>
+<value x="10.0" y="10.2"/>
+<value x="10.169" y="11.36"/>
+<value x="10.339" y="12.6"/>
+<value x="10.508" y="13.86"/>
+<value x="10.678" y="15.05"/>
+<value x="10.847" y="16.05"/>
+<value x="11.017" y="16.75"/>
+<value x="11.186" y="17.47"/>
+<value x="11.356" y="18.28"/>
+<value x="11.525" y="18.85"/>
+<value x="11.695" y="19.31"/>
+<value x="11.864" y="19.99"/>
+<value x="12.034" y="20.27"/>
+<value x="12.203" y="20.28"/>
+<value x="12.373" y="20.58"/>
+<value x="12.542" y="20.59"/>
+<value x="12.712" y="20.87"/>
+<value x="12.881" y="20.71"/>
+<value x="13.051" y="20.64"/>
+<value x="13.22" y="20.61"/>
+<value x="13.39" y="20.69"/>
+<value x="13.559" y="20.52"/>
+<value x="13.729" y="20.59"/>
+<value x="13.898" y="20.66"/>
+<value x="14.068" y="20.39"/>
+<value x="14.237" y="20.26"/>
+<value x="14.407" y="20.51"/>
+<value x="14.576" y="20.26"/>
+<value x="14.746" y="20.04"/>
+<value x="14.915" y="19.98"/>
+<value x="15.085" y="19.96"/>
+<value x="15.254" y="20.14"/>
+<value x="15.424" y="20.17"/>
+<value x="15.593" y="20.0"/>
+<value x="15.763" y="19.84"/>
+<value x="15.932" y="19.95"/>
+<value x="16.102" y="20.18"/>
+<value x="16.271" y="19.99"/>
+<value x="16.441" y="20.16"/>
+<value x="16.61" y="20.11"/>
+<value x="16.78" y="19.77"/>
+<value x="16.949" y="20.05"/>
+<value x="17.119" y="20.04"/>
+<value x="17.288" y="19.98"/>
+<value x="17.458" y="19.88"/>
+<value x="17.627" y="20.03"/>
+<value x="17.797" y="19.82"/>
+<value x="17.966" y="19.95"/>
+<value x="18.136" y="19.96"/>
+<value x="18.305" y="20.17"/>
+<value x="18.475" y="20.14"/>
+<value x="18.644" y="19.89"/>
+<value x="18.814" y="19.99"/>
+<value x="18.983" y="19.87"/>
+<value x="19.153" y="20.16"/>
+<value x="19.322" y="20.15"/>
+<value x="19.492" y="19.92"/>
+<value x="19.661" y="20.05"/>
+<value x="19.831" y="20.04"/>
+<value x="20.0" y="19.86"/>
+<value x="20.0" y="20.11"/>
+<value x="20.169" y="21.32"/>
+<value x="20.339" y="22.69"/>
+<value x="20.508" y="23.8"/>
+<value x="20.678" y="24.72"/>
+<value x="20.847" y="25.87"/>
+<value x="21.017" y="26.67"/>
+<value x="21.186" y="27.83"/>
+<value x="21.356" y="28.51"/>
+<value x="21.525" y="29.07"/>
+<value x="21.695" y="29.34"/>
+<value x="21.864" y="29.63"/>
+<value x="22.034" y="30.27"/>
+<value x="22.203" y="30.53"/>
+<value x="22.373" y="30.35"/>
+<value x="22.542" y="30.63"/>
+<value x="22.712" y="30.53"/>
+<value x="22.881" y="30.83"/>
+<value x="23.051" y="30.84"/>
+<value x="23.22" y="30.56"/>
+<value x="23.39" y="30.66"/>
+<value x="23.559" y="30.64"/>
+<value x="23.729" y="30.47"/>
+<value x="23.898" y="30.65"/>
+<value x="24.068" y="30.4"/>
+<value x="24.237" y="30.26"/>
+<value x="24.407" y="30.33"/>
+<value x="24.576" y="30.35"/>
+<value x="24.746" y="30.09"/>
+<value x="24.915" y="30.09"/>
+<value x="25.085" y="30.32"/>
+<value x="25.254" y="30.15"/>
+<value x="25.424" y="30.03"/>
+<value x="25.593" y="30.04"/>
+<value x="25.763" y="29.86"/>
+<value x="25.932" y="29.89"/>
+<value x="26.102" y="29.92"/>
+<value x="26.271" y="30.01"/>
+<value x="26.441" y="29.86"/>
+<value x="26.61" y="29.85"/>
+<value x="26.78" y="29.79"/>
+<value x="26.949" y="30.02"/>
+<value x="27.119" y="29.86"/>
+<value x="27.288" y="30.13"/>
+<value x="27.458" y="30.11"/>
+<value x="27.627" y="29.8"/>
+<value x="27.797" y="29.87"/>
+<value x="27.966" y="30.05"/>
+<value x="28.136" y="29.87"/>
+<value x="28.305" y="29.84"/>
+<value x="28.475" y="30.16"/>
+<value x="28.644" y="30.02"/>
+<value x="28.814" y="29.98"/>
+<value x="28.983" y="30.11"/>
+<value x="29.153" y="30.12"/>
+<value x="29.322" y="29.87"/>
+<value x="29.492" y="29.84"/>
+<value x="29.661" y="29.97"/>
+<value x="29.831" y="29.97"/>
+<value x="30.0" y="29.99"/>
+<value x="30.0" y="30.09"/>
+<value x="30.169" y="31.37"/>
+<value x="30.339" y="32.77"/>
+<value x="30.508" y="33.63"/>
+<value x="30.678" y="34.88"/>
+<value x="30.847" y="35.88"/>
+<value x="31.017" y="37.0"/>
+<value x="31.186" y="37.56"/>
+<value x="31.356" y="38.23"/>
+<value x="31.525" y="38.92"/>
+<value x="31.695" y="39.39"/>
+<value x="31.864" y="39.72"/>
+<value x="32.034" y="40.02"/>
+<value x="32.203" y="40.52"/>
+<value x="32.373" y="40.5"/>
+<value x="32.542" y="40.78"/>
+<value x="32.712" y="40.72"/>
+<value x="32.881" y="40.55"/>
+<value x="33.051" y="40.93"/>
+<value x="33.22" y="40.84"/>
+<value x="33.39" y="40.86"/>
+<value x="33.559" y="40.79"/>
+<value x="33.729" y="40.7"/>
+<value x="33.898" y="40.36"/>
+<value x="34.068" y="40.43"/>
+<value x="34.237" y="40.26"/>
+<value x="34.407" y="40.27"/>
+<value x="34.576" y="40.08"/>
+<value x="34.746" y="40.16"/>
+<value x="34.915" y="40.35"/>
+<value x="35.085" y="40.03"/>
+<value x="35.254" y="40.2"/>
+<value x="35.424" y="40.04"/>
+<value x="35.593" y="40.0"/>
+<value x="35.763" y="40.2"/>
+<value x="35.932" y="40.19"/>
+<value x="36.102" y="40.01"/>
+<value x="36.271" y="40.06"/>
+<value x="36.441" y="39.83"/>
+<value x="36.61" y="39.88"/>
+<value x="36.78" y="40.15"/>
+<value x="36.949" y="40.0"/>
+<value x="37.119" y="39.98"/>
+<value x="37.288" y="40.07"/>
+<value x="37.458" y="39.79"/>
+<value x="37.627" y="40.01"/>
+<value x="37.797" y="39.98"/>
+<value x="37.966" y="40.12"/>
+<value x="38.136" y="39.84"/>
+<value x="38.305" y="40.17"/>
+<value x="38.475" y="39.82"/>
+<value x="38.644" y="39.86"/>
+<value x="38.814" y="40.03"/>
+<value x="38.983" y="40.06"/>
+<value x="39.153" y="39.89"/>
+<value x="39.322" y="39.84"/>
+<value x="39.492" y="40.15"/>
+<value x="39.661" y="39.9"/>
+<value x="39.831" y="40.04"/>
+<value x="40.0" y="40.05"/>
+<value x="40.0" y="39.97"/>
+<value x="40.169" y="41.34"/>
+<value x="40.339" y="42.59"/>
+<value x="40.508" y="43.96"/>
+<value x="40.678" y="44.8"/>
+<value x="40.847" y="46.03"/>
+<value x="41.017" y="46.75"/>
+<value x="41.186" y="47.62"/>
+<value x="41.356" y="48.42"/>
+<value x="41.525" y="48.86"/>
+<value x="41.695" y="49.35"/>
+<value x="41.864" y="49.91"/>
+<value x="42.034" y="49.95"/>
+<value x="42.203" y="50.33"/>
+<value x="42.373" y="50.72"/>
+<value x="42.542" y="50.83"/>
+<value x="42.712" y="50.53"/>
+<value x="42.881" y="50.62"/>
+<value x="43.051" y="50.64"/>
+<value x="43.22" y="50.88"/>
+<value x="43.39" y="50.82"/>
+<value x="43.559" y="50.77"/>
+<value x="43.729" y="50.51"/>
+<value x="43.898" y="50.36"/>
+<value x="44.068" y="50.57"/>
+<value x="44.237" y="50.45"/>
+<value x="44.407" y="50.36"/>
+<value x="44.576" y="50.45"/>
+<value x="44.746" y="50.27"/>
+<value x="44.915" y="49.96"/>
+<value x="45.085" y="50.25"/>
+<value x="45.254" y="50.01"/>
+<value x="45.424" y="50.12"/>
+<value x="45.593" y="50.21"/>
+<value x="45.763" y="49.87"/>
+<value x="45.932" y="49.84"/>
+<value x="46.102" y="49.83"/>
+<value x="46.271" y="50.0"/>
+<value x="46.441" y="49.88"/>
+<value x="46.61" y="50.01"/>
+<value x="46.78" y="50.05"/>
+<value x="46.949" y="49.85"/>
+<value x="47.119" y="50.02"/>
+<value x="47.288" y="49.87"/>
+<value x="47.458" y="49.96"/>
+<value x="47.627" y="50.13"/>
+<value x="47.797" y="50.11"/>
+<value x="47.966" y="49.82"/>
+<value x="48.136" y="49.95"/>
+<value x="48.305" y="49.89"/>
+<value x="48.475" y="49.79"/>
+<value x="48.644" y="50.1"/>
+<value x="48.814" y="50.05"/>
+<value x="48.983" y="49.9"/>
+<value x="49.153" y="50.09"/>
+<value x="49.322" y="50.02"/>
+<value x="49.492" y="49.97"/>
+<value x="49.661" y="49.8"/>
+<value x="49.831" y="49.83"/>
+<value x="50.0" y="50.15"/>
+<value x="50.0" y="50.16"/>
+<value x="50.169" y="51.32"/>
+<value x="50.339" y="52.71"/>
+<value x="50.508" y="53.82"/>
+<value x="50.678" y="54.77"/>
+<value x="50.847" y="55.79"/>
+<value x="51.017" y="56.78"/>
+<value x="51.186" y="57.82"/>
+<value x="51.356" y="58.47"/>
+<value x="51.525" y="59.08"/>
+<value x="51.695" y="59.58"/>
+<value x="51.864" y="59.7"/>
+<value x="52.034" y="60.02"/>
+<value x="52.203" y="60.19"/>
+<value x="52.373" y="60.63"/>
+<value x="52.542" y="60.79"/>
+<value x="52.712" y="60.66"/>
+<value x="52.881" y="60.78"/>
+<value x="53.051" y="60.59"/>
+<value x="53.22" y="60.88"/>
+<value x="53.39" y="60.82"/>
+<value x="53.559" y="60.81"/>
+<value x="53.729" y="60.69"/>
+<value x="53.898" y="60.65"/>
+<value x="54.068" y="60.24"/>
+<value x="54.237" y="60.47"/>
+<value x="54.407" y="60.25"/>
+<value x="54.576" y="60.43"/>
+<value x="54.746" y="60.33"/>
+<value x="54.915" y="60.31"/>
+<value x="55.085" y="60.24"/>
+<value x="55.254" y="59.99"/>
+<value x="55.424" y="60.17"/>
+<value x="55.593" y="59.88"/>
+<value x="55.763" y="60.16"/>
+<value x="55.932" y="60.14"/>
+<value x="56.102" y="59.87"/>
+<value x="56.271" y="60.1"/>
+<value x="56.441" y="59.95"/>
+<value x="56.61" y="59.89"/>
+<value x="56.78" y="60.08"/>
+<value x="56.949" y="59.86"/>
+<value x="57.119" y="59.77"/>
+<value x="57.288" y="59.84"/>
+<value x="57.458" y="59.9"/>
+<value x="57.627" y="60.12"/>
+<value x="57.797" y="60.16"/>
+<value x="57.966" y="59.89"/>
+<value x="58.136" y="60.04"/>
+<value x="58.305" y="59.94"/>
+<value x="58.475" y="60.18"/>
+<value x="58.644" y="60.0"/>
+<value x="58.814" y="60.17"/>
+<value x="58.983" y="59.84"/>
+<value x="59.153" y="60.18"/>
+<value x="59.322" y="59.87"/>
+<value x="59.492" y="60.18"/>
+<value x="59.661" y="59.91"/>
+<value x="59.831" y="59.84"/>
+<value x="60.0" y="59.97"/>
+<value x="60.0" y="60.09"/>
+<value x="60.169" y="61.23"/>
+<value x="60.339" y="62.62"/>
+<value x="60.508" y="63.79"/>
+<value x="60.678" y="64.87"/>
+<value x="60.847" y="65.97"/>
+<value x="61.017" y="66.76"/>
+<value x="61.186" y="67.75"/>
+<value x="61.356" y="68.15"/>
+<value x="61.525" y="69.11"/>
+<value x="61.695" y="69.44"/>
+<value x="61.864" y="69.9"/>
+<value x="62.034" y="70.21"/>
+<value x="62.203" y="70.42"/>
+<value x="62.373" y="70.46"/>
+<value x="62.542" y="70.46"/>
+<value x="62.712" y="70.77"/>
+<value x="62.881" y="70.66"/>
+<value x="63.051" y="70.66"/>
+<value x="63.22" y="70.85"/>
+<value x="63.39" y="70.76"/>
+<value x="63.559" y="70.54"/>
+<value x="63.729" y="70.48"/>
+<value x="63.898" y="70.46"/>
+<value x="64.068" y="70.4"/>
+<value x="64.237" y="70.29"/>
+<value x="64.407" y="70.16"/>
+<value x="64.576" y="70.23"/>
+<value x="64.746" y="70.38"/>
+<value x="64.915" y="70.23"/>
+<value x="65.085" y="70.28"/>
+<value x="65.254" y="70.13"/>
+<value x="65.424" y="69.98"/>
+<value x="65.593" y="70.05"/>
+<value x="65.763" y="69.81"/>
+<value x="65.932" y="69.91"/>
+<value x="66.102" y="69.96"/>
+<value x="66.271" y="70.01"/>
+<value x="66.441" y="70.03"/>
+<value x="66.61" y="69.95"/>
+<value x="66.78" y="69.94"/>
+<value x="66.949" y="69.85"/>
+<value x="67.119" y="69.95"/>
+<value x="67.288" y="70.13"/>
+<value x="67.458" y="70.09"/>
+<value x="67.627" y="69.84"/>
+<value x="67.797" y="69.81"/>
+<value x="67.966" y="69.98"/>
+<value x="68.136" y="70.03"/>
+<value x="68.305" y="69.92"/>
+<value x="68.475" y="70.11"/>
+<value x="68.644" y="70.09"/>
+<value x="68.814" y="70.06"/>
+<value x="68.983" y="69.88"/>
+<value x="69.153" y="69.88"/>
+<value x="69.322" y="69.81"/>
+<value x="69.492" y="69.9"/>
+<value x="69.661" y="69.99"/>
+<value x="69.831" y="70.14"/>
+<value x="70.0" y="69.83"/>
+<value x="70.0" y="69.97"/>
+<value x="70.169" y="71.35"/>
+<value x="70.339" y="72.45"/>
+<value x="70.508" y="73.87"/>
+<value x="70.678" y="74.91"/>
+<value x="70.847" y="75.84"/>
+<value x="71.017" y="76.92"/>
+<value x="71.186" y="77.46"/>
+<value x="71.356" y="78.45"/>
+<value x="71.525" y="79.05"/>
+<value x="71.695" y="79.26"/>
+<value x="71.864" y="79.78"/>
+<value x="72.034" y="79.99"/>
+<value x="72.203" y="80.53"/>
+<value x="72.373" y="80.53"/>
+<value x="72.542" y="80.45"/>
+<value x="72.712" y="80.6"/>
+<value x="72.881" y="80.87"/>
+<value x="73.051" y="80.71"/>
+<value x="73.22" y="80.83"/>
+<value x="73.39" y="80.74"/>
+<value x="73.559" y="80.81"/>
+<value x="73.729" y="80.6"/>
+<value x="73.898" y="80.68"/>
+<value x="74.068" y="80.59"/>
+<value x="74.237" y="80.42"/>
+<value x="74.407" y="80.4"/>
+<value x="74.576" y="80.26"/>
+<value x="74.746" y="80.34"/>
+<value x="74.915" y="80.18"/>
+<value x="75.085" y="80.28"/>
+<value x="75.254" y="80.18"/>
+<value x="75.424" y="80.05"/>
+<value x="75.593" y="79.94"/>
+<value x="75.763" y="79.91"/>
+<value x="75.932" y="80.05"/>
+<value x="76.102" y="80.09"/>
+<value x="76.271" y="79.98"/>
+<value x="76.441" y="80.02"/>
+<value x="76.61" y="79.88"/>
+<value x="76.78" y="79.8"/>
+<value x="76.949" y="79.88"/>
+<value x="77.119" y="79.87"/>
+<value x="77.288" y="79.89"/>
+<value x="77.458" y="79.99"/>
+<value x="77.627" y="79.83"/>
+<value x="77.797" y="79.87"/>
+<value x="77.966" y="80.06"/>
+<value x="78.136" y="80.06"/>
+<value x="78.305" y="79.81"/>
+<value x="78.475" y="79.95"/>
+<value x="78.644" y="80.01"/>
+<value x="78.814" y="79.96"/>
+<value x="78.983" y="79.88"/>
+<value x="79.153" y="79.96"/>
+<value x="79.322" y="80.16"/>
+<value x="79.492" y="80.03"/>
+<value x="79.661" y="80.08"/>
+<value x="79.831" y="80.14"/>
+<value x="80.0" y="80.11"/>
+<value x="80.0" y="79.95"/>
+<value x="80.169" y="81.11"/>
+<value x="80.339" y="82.52"/>
+<value x="80.508" y="83.89"/>
+<value x="80.678" y="85.06"/>
+<value x="80.847" y="86.12"/>
+<value x="81.017" y="86.83"/>
+<value x="81.186" y="87.76"/>
+<value x="81.356" y="88.37"/>
+<value x="81.525" y="88.98"/>
+<value x="81.695" y="89.31"/>
+<value x="81.864" y="89.7"/>
+<value x="82.034" y="90.09"/>
+<value x="82.203" y="90.16"/>
+<value x="82.373" y="90.45"/>
+<value x="82.542" y="90.7"/>
+<value x="82.712" y="90.66"/>
+<value x="82.881" y="90.6"/>
+<value x="83.051" y="90.72"/>
+<value x="83.22" y="90.56"/>
+<value x="83.39" y="90.72"/>
+<value x="83.559" y="90.43"/>
+<value x="83.729" y="90.52"/>
+<value x="83.898" y="90.52"/>
+<value x="84.068" y="90.25"/>
+<value x="84.237" y="90.43"/>
+<value x="84.407" y="90.17"/>
+<value x="84.576" y="90.24"/>
+<value x="84.746" y="90.03"/>
+<value x="84.915" y="90.11"/>
+<value x="85.085" y="90.0"/>
+<value x="85.254" y="90.02"/>
+<value x="85.424" y="90.16"/>
+<value x="85.593" y="89.98"/>
+<value x="85.763" y="90.11"/>
+<value x="85.932" y="90.13"/>
+<value x="86.102" y="89.89"/>
+<value x="86.271" y="89.81"/>
+<value x="86.441" y="89.78"/>
+<value x="86.61" y="89.98"/>
+<value x="86.78" y="90.16"/>
+<value x="86.949" y="89.9"/>
+<value x="87.119" y="90.03"/>
+<value x="87.288" y="90.08"/>
+<value x="87.458" y="90.03"/>
+<value x="87.627" y="90.07"/>
+<value x="87.797" y="90.16"/>
+<value x="87.966" y="89.86"/>
+<value x="88.136" y="89.79"/>
+<value x="88.305" y="89.85"/>
+<value x="88.475" y="89.84"/>
+<value x="88.644" y="90.06"/>
+<value x="88.814" y="90.02"/>
+<value x="88.983" y="89.88"/>
+<value x="89.153" y="90.08"/>
+<value x="89.322" y="90.1"/>
+<value x="89.492" y="89.87"/>
+<value x="89.661" y="90.04"/>
+<value x="89.831" y="90.1"/>
+<value x="90.0" y="89.85"/>
+<value x="90.0" y="90.13"/>
+<value x="90.169" y="91.49"/>
+<value x="90.339" y="92.42"/>
+<value x="90.508" y="93.6"/>
+<value x="90.678" y="94.84"/>
+<value x="90.847" y="96.01"/>
+<value x="91.017" y="97.04"/>
+<value x="91.186" y="97.62"/>
+<value x="91.356" y="98.44"/>
+<value x="91.525" y="98.77"/>
+<value x="91.695" y="99.5"/>
+<value x="91.864" y="99.86"/>
+<value x="92.034" y="99.96"/>
+<value x="92.203" y="100.46"/>
+<value x="92.373" y="100.66"/>
+<value x="92.542" y="100.67"/>
+<value x="92.712" y="100.55"/>
+<value x="92.881" y="100.92"/>
+<value x="93.051" y="100.84"/>
+<value x="93.22" y="100.65"/>
+<value x="93.39" y="100.64"/>
+<value x="93.559" y="100.57"/>
+<value x="93.729" y="100.56"/>
+<value x="93.898" y="100.43"/>
+<value x="94.068" y="100.57"/>
+<value x="94.237" y="100.5"/>
+<value x="94.407" y="100.15"/>
+<value x="94.576" y="100.44"/>
+<value x="94.746" y="100.26"/>
+<value x="94.915" y="100.29"/>
+<value x="95.085" y="100.2"/>
+<value x="95.254" y="100.06"/>
+<value x="95.424" y="100.15"/>
+<value x="95.593" y="100.22"/>
+<value x="95.763" y="99.92"/>
+<value x="95.932" y="100.12"/>
+<value x="96.102" y="100.0"/>
+<value x="96.271" y="99.97"/>
+<value x="96.441" y="99.94"/>
+<value x="96.61" y="100.06"/>
+<value x="96.78" y="99.87"/>
+<value x="96.949" y="100.1"/>
+<value x="97.119" y="100.1"/>
+<value x="97.288" y="99.8"/>
+<value x="97.458" y="100.12"/>
+<value x="97.627" y="99.87"/>
+<value x="97.797" y="99.96"/>
+<value x="97.966" y="100.02"/>
+<value x="98.136" y="99.93"/>
+<value x="98.305" y="99.8"/>
+<value x="98.475" y="100.13"/>
+<value x="98.644" y="99.86"/>
+<value x="98.814" y="99.88"/>
+<value x="98.983" y="100.11"/>
+<value x="99.153" y="99.93"/>
+<value x="99.322" y="100.15"/>
+<value x="99.492" y="100.08"/>
+<value x="99.661" y="99.91"/>
+<value x="99.831" y="99.8"/>
+<value x="100.0" y="100.18"/>
+<value x="100.0" y="99.83"/>
+<value x="100.169" y="98.79"/>
+<value x="100.339" y="97.42"/>
+<value x="100.508" y="96.31"/>
+<value x="100.678" y="95.16"/>
+<value x="100.847" y="94.12"/>
+<value x="101.017" y="93.14"/>
+<value x="101.186" y="92.46"/>
+<value x="101.356" y="91.48"/>
+<value x="101.525" y="90.95"/>
+<value x="101.695" y="90.66"/>
+<value x="101.864" y="90.11"/>
+<value x="102.034" y="89.91"/>
+<value x="102.203" y="89.64"/>
+<value x="102.373" y="89.49"/>
+<value x="102.542" y="89.34"/>
+<value x="102.712" y="89.4"/>
+<value x="102.881" y="89.2"/>
+<value x="103.051" y="89.35"/>
+<value x="103.22" y="89.2"/>
+<value x="103.39" y="89.23"/>
+<value x="103.559" y="89.23"/>
+<value x="103.729" y="89.32"/>
+<value x="103.898" y="89.35"/>
+<value x="104.068" y="89.58"/>
+<value x="104.237" y="89.73"/>
+<value x="104.407" y="89.56"/>
+<value x="104.576" y="89.63"/>
+<value x="104.746" y="89.79"/>
+<value x="104.915" y="89.93"/>
+<value x="105.085" y="90.07"/>
+<value x="105.254" y="89.92"/>
+<value x="105.424" y="89.86"/>
+<value x="105.593" y="89.81"/>
+<value x="105.763" y="89.87"/>
+<value x="105.932" y="89.89"/>
+<value x="106.102" y="89.89"/>
+<value x="106.271" y="89.83"/>
+<value x="106.441" y="90.04"/>
+<value x="106.61" y="89.94"/>
+<value x="106.78" y="90.23"/>
+<value x="106.949" y="90.06"/>
+<value x="107.119" y="90.11"/>
+<value x="107.288" y="89.88"/>
+<value x="107.458" y="90.18"/>
+<value x="107.627" y="90.02"/>
+<value x="107.797" y="90.17"/>
+<value x="107.966" y="90.05"/>
+<value x="108.136" y="90.01"/>
+<value x="108.305" y="89.99"/>
+<value x="108.475" y="89.89"/>
+<value x="108.644" y="89.83"/>
+<value x="108.814" y="90.18"/>
+<value x="108.983" y="90.0"/>
+<value x="109.153" y="90.13"/>
+<value x="109.322" y="89.96"/>
+<value x="109.492" y="89.83"/>
+<value x="109.661" y="90.05"/>
+<value x="109.831" y="89.82"/>
+<value x="110.0" y="89.86"/>
+<value x="110.0" y="90.03"/>
+<value x="110.169" y="88.62"/>
+<value x="110.339" y="87.62"/>
+<value x="110.508" y="86.06"/>
+<value x="110.678" y="85.19"/>
+<value x="110.847" y="84.1"/>
+<value x="111.017" y="83.26"/>
+<value x="111.186" y="82.23"/>
+<value x="111.356" y="81.66"/>
+<value x="111.525" y="81.04"/>
+<value x="111.695" y="80.56"/>
+<value x="111.864" y="80.33"/>
+<value x="112.034" y="80.08"/>
+<value x="112.203" y="79.57"/>
+<value x="112.373" y="79.53"/>
+<value x="112.542" y="79.41"/>
+<value x="112.712" y="79.4"/>
+<value x="112.881" y="79.45"/>
+<value x="113.051" y="79.15"/>
+<value x="113.22" y="79.18"/>
+<value x="113.39" y="79.39"/>
+<value x="113.559" y="79.24"/>
+<value x="113.729" y="79.31"/>
+<value x="113.898" y="79.33"/>
+<value x="114.068" y="79.37"/>
+<value x="114.237" y="79.61"/>
+<value x="114.407" y="79.72"/>
+<value x="114.576" y="79.66"/>
+<value x="114.746" y="79.69"/>
+<value x="114.915" y="79.92"/>
+<value x="115.085" y="79.96"/>
+<value x="115.254" y="79.9"/>
+<value x="115.424" y="80.02"/>
+<value x="115.593" y="80.14"/>
+<value x="115.763" y="80.1"/>
+<value x="115.932" y="80.05"/>
+<value x="116.102" y="80.08"/>
+<value x="116.271" y="80.2"/>
+<value x="116.441" y="80.0"/>
+<value x="116.61" y="80.05"/>
+<value x="116.78" y="80.09"/>
+<value x="116.949" y="80.2"/>
+<value x="117.119" y="80.17"/>
+<value x="117.288" y="79.86"/>
+<value x="117.458" y="79.9"/>
+<value x="117.627" y="79.95"/>
+<value x="117.797" y="80.12"/>
+<value x="117.966" y="80.05"/>
+<value x="118.136" y="79.93"/>
+<value x="118.305" y="79.87"/>
+<value x="118.475" y="80.09"/>
+<value x="118.644" y="80.09"/>
+<value x="118.814" y="80.19"/>
+<value x="118.983" y="80.01"/>
+<value x="119.153" y="80.0"/>
+<value x="119.322" y="79.84"/>
+<value x="119.492" y="79.82"/>
+<value x="119.661" y="79.97"/>
+<value x="119.831" y="79.93"/>
+<value x="120.0" y="79.9"/>
+<value x="120.0" y="79.84"/>
+<value x="120.169" y="78.88"/>
+<value x="120.339" y="77.56"/>
+<value x="120.508" y="76.24"/>
+<value x="120.678" y="75.26"/>
+<value x="120.847" y="74.26"/>
+<value x="121.017" y="73.21"/>
+<value x="121.186" y="72.25"/>
+<value x="121.356" y="71.46"/>
+<value x="121.525" y="71.16"/>
+<value x="121.695" y="70.57"/>
+<value x="121.864" y="70.25"/>
+<value x="122.034" y="70.05"/>
+<value x="122.203" y="69.52"/>
+<value x="122.373" y="69.52"/>
+<value x="122.542" y="69.42"/>
+<value x="122.712" y="69.3"/>
+<value x="122.881" y="69.11"/>
+<value x="123.051" y="69.21"/>
+<value x="123.22" y="69.22"/>
+<value x="123.39" y="69.4"/>
+<value x="123.559" y="69.52"/>
+<value x="123.729" y="69.37"/>
+<value x="123.898" y="69.58"/>
+<value x="124.068" y="69.48"/>
+<value x="124.237" y="69.81"/>
+<value x="124.407" y="69.81"/>
+<value x="124.576" y="69.76"/>
+<value x="124.746" y="69.78"/>
+<value x="124.915" y="69.77"/>
+<value x="125.085" y="69.81"/>
+<value x="125.254" y="70.1"/>
+<value x="125.424" y="69.91"/>
+<value x="125.593" y="69.97"/>
+<value x="125.763" y="70.18"/>
+<value x="125.932" y="70.07"/>
+<value x="126.102" y="70.03"/>
+<value x="126.271" y="69.99"/>
+<value x="126.441" y="69.91"/>
+<value x="126.61" y="69.98"/>
+<value x="126.78" y="70.14"/>
+<value x="126.949" y="70.09"/>
+<value x="127.119" y="70.14"/>
+<value x="127.288" y="69.91"/>
+<value x="127.458" y="70.05"/>
+<value x="127.627" y="70.2"/>
+<value x="127.797" y="70.0"/>
+<value x="127.966" y="70.1"/>
+<value x="128.136" y="69.87"/>
+<value x="128.305" y="70.2"/>
+<value x="128.475" y="70.06"/>
+<value x="128.644" y="69.91"/>
+<value x="128.814" y="69.87"/>
+<value x="128.983" y="70.03"/>
+<value x="129.153" y="70.03"/>
+<value x="129.322" y="69.84"/>
+<value x="129.492" y="70.2"/>
+<value x="129.661" y="70.17"/>
+<value x="129.831" y="69.98"/>
+<value x="130.0" y="69.85"/>
+<value x="130.0" y="70.13"/>
+<value x="130.169" y="68.7"/>
+<value x="130.339" y="67.51"/>
+<value x="130.508" y="66.21"/>
+<value x="130.678" y="64.99"/>
+<value x="130.847" y="64.19"/>
+<value x="131.017" y="63.33"/>
+<value x="131.186" y="62.24"/>
+<value x="131.356" y="61.67"/>
+<value x="131.525" y="61.02"/>
+<value x="131.695" y="60.75"/>
+<value x="131.864" y="60.19"/>
+<value x="132.034" y="60.03"/>
+<value x="132.203" y="59.8"/>
+<value x="132.373" y="59.39"/>
+<value x="132.542" y="59.48"/>
+<value x="132.712" y="59.27"/>
+<value x="132.881" y="59.44"/>
+<value x="133.051" y="59.27"/>
+<value x="133.22" y="59.42"/>
+<value x="133.39" y="59.24"/>
+<value x="133.559" y="59.3"/>
+<value x="133.729" y="59.47"/>
+<value x="133.898" y="59.7"/>
+<value x="134.068" y="59.56"/>
+<value x="134.237" y="59.49"/>
+<value x="134.407" y="59.7"/>
+<value x="134.576" y="59.68"/>
+<value x="134.746" y="59.81"/>
+<value x="134.915" y="59.86"/>
+<value x="135.085" y="59.86"/>
+<value x="135.254" y="59.84"/>
+<value x="135.424" y="59.82"/>
+<value x="135.593" y="60.05"/>
+<value x="135.763" y="60.02"/>
+<value x="135.932" y="59.9"/>
+<value x="136.102" y="60.13"/>
+<value x="136.271" y="59.84"/>
+<value x="136.441" y="60.13"/>
+<value x="136.61" y="60.12"/>
+<value x="136.78" y="60.16"/>
+<value x="136.949" y="59.99"/>
+<value x="137.119" y="60.1"/>
+<value x="137.288" y="60.16"/>
+<value x="137.458" y="60.22"/>
+<value x="137.627" y="60.03"/>
+<value x="137.797" y="59.84"/>
+<value x="137.966" y="60.02"/>
+<value x="138.136" y="60.05"/>
+<value x="138.305" y="60.16"/>
+<value x="138.475" y="60.16"/>
+<value x="138.644" y="59.99"/>
+<value x="138.814" y="60.02"/>
+<value x="138.983" y="59.99"/>
+<value x="139.153" y="60.09"/>
+<value x="139.322" y="59.97"/>
+<value x="139.492" y="60.06"/>
+<value x="139.661" y="59.86"/>
+<value x="139.831" y="59.99"/>
+<value x="140.0" y="60.19"/>
+<value x="140.0" y="59.94"/>
+<value x="140.169" y="58.77"/>
+<value x="140.339" y="57.48"/>
+<value x="140.508" y="56.35"/>
+<value x="140.678" y="55.23"/>
+<value x="140.847" y="54.2"/>
+<value x="141.017" y="53.09"/>
+<value x="141.186" y="52.26"/>
+<value x="141.356" y="51.73"/>
+<value x="141.525" y="51.17"/>
+<value x="141.695" y="50.73"/>
+<value x="141.864" y="50.0"/>
+<value x="142.034" y="49.71"/>
+<value x="142.203" y="49.7"/>
+<value x="142.373" y="49.65"/>
+<value x="142.542" y="49.57"/>
+<value x="142.712" y="49.4"/>
+<value x="142.881" y="49.24"/>
+<value x="143.051" y="49.11"/>
+<value x="143.22" y="49.34"/>
+<value x="143.39" y="49.48"/>
+<value x="143.559" y="49.36"/>
+<value x="143.729" y="49.52"/>
+<value x="143.898" y="49.66"/>
+<value x="144.068" y="49.38"/>
+<value x="144.237" y="49.75"/>
+<value x="144.407" y="49.6"/>
+<value x="144.576" y="49.69"/>
+<value x="144.746" y="49.65"/>
+<value x="144.915" y="49.85"/>
+<value x="145.085" y="49.91"/>
+<value x="145.254" y="50.03"/>
+<value x="145.424" y="49.81"/>
+<value x="145.593" y="49.8"/>
+<value x="145.763" y="50.14"/>
+<value x="145.932" y="50.05"/>
+<value x="146.102" y="49.91"/>
+<value x="146.271" y="50.19"/>
+<value x="146.441" y="49.89"/>
+<value x="146.61" y="50.02"/>
+<value x="146.78" y="49.94"/>
+<value x="146.949" y="49.94"/>
+<value x="147.119" y="49.84"/>
+<value x="147.288" y="50.15"/>
+<value x="147.458" y="50.19"/>
+<value x="147.627" y="50.1"/>
+<value x="147.797" y="49.89"/>
+<value x="147.966" y="50.0"/>
+<value x="148.136" y="49.96"/>
+<value x="148.305" y="50.05"/>
+<value x="148.475" y="50.07"/>
+<value x="148.644" y="49.98"/>
+<value x="148.814" y="49.91"/>
+<value x="148.983" y="50.14"/>
+<value x="149.153" y="49.88"/>
+<value x="149.322" y="49.96"/>
+<value x="149.492" y="50.0"/>
+<value x="149.661" y="49.9"/>
+<value x="149.831" y="50.03"/>
+<value x="150.0" y="50.03"/>
+<value x="150.0" y="50.2"/>
+<value x="150.169" y="48.62"/>
+<value x="150.339" y="47.61"/>
+<value x="150.508" y="46.27"/>
+<value x="150.678" y="44.99"/>
+<value x="150.847" y="44.08"/>
+<value x="151.017" y="43.22"/>
+<value x="151.186" y="42.44"/>
+<value x="151.356" y="41.47"/>
+<value x="151.525" y="41.1"/>
+<value x="151.695" y="40.58"/>
+<value x="151.864" y="40.35"/>
+<value x="152.034" y="39.8"/>
+<value x="152.203" y="39.77"/>
+<value x="152.373" y="39.52"/>
+<value x="152.542" y="39.31"/>
+<value x="152.712" y="39.35"/>
+<value x="152.881" y="39.32"/>
+<value x="153.051" y="39.34"/>
+<value x="153.22" y="39.38"/>
+<value x="153.39" y="39.39"/>
+<value x="153.559" y="39.52"/>
+<value x="153.729" y="39.49"/>
+<value x="153.898" y="39.66"/>
+<value x="154.068" y="39.62"/>
+<value x="154.237" y="39.55"/>
+<value x="154.407" y="39.66"/>
+<value x="154.576" y="39.77"/>
+<value x="154.746" y="39.89"/>
+<value x="154.915" y="39.68"/>
+<value x="155.085" y="39.8"/>
+<value x="155.254" y="40.01"/>
+<value x="155.424" y="39.81"/>
+<value x="155.593" y="39.82"/>
+<value x="155.763" y="40.0"/>
+<value x="155.932" y="40.19"/>
+<value x="156.102" y="40.03"/>
+<value x="156.271" y="40.19"/>
+<value x="156.441" y="40.16"/>
+<value x="156.61" y="39.94"/>
+<value x="156.78" y="40.17"/>
+<value x="156.949" y="40.03"/>
+<value x="157.119" y="40.16"/>
+<value x="157.288" y="40.13"/>
+<value x="157.458" y="39.97"/>
+<value x="157.627" y="39.87"/>
+<value x="157.797" y="40.21"/>
+<value x="157.966" y="39.88"/>
+<value x="158.136" y="40.21"/>
+<value x="158.305" y="40.16"/>
+<value x="158.475" y="40.1"/>
+<value x="158.644" y="40.2"/>
+<value x="158.814" y="40.2"/>
+<value x="158.983" y="40.13"/>
+<value x="159.153" y="39.95"/>
+<value x="159.322" y="40.12"/>
+<value x="159.492" y="39.81"/>
+<value x="159.661" y="40.02"/>
+<value x="159.831" y="39.98"/>
+<value x="160.0" y="40.07"/>
+<value x="160.0" y="40.07"/>
+<value x="160.169" y="38.73"/>
+<value x="160.339" y="37.55"/>
+<value x="160.508" y="36.39"/>
+<value x="160.678" y="34.93"/>
+<value x="160.847" y="33.95"/>
+<value x="161.017" y="32.95"/>
+<value x="161.186" y="32.49"/>
+<value x="161.356" y="31.67"/>
+<value x="161.525" y="31.23"/>
+<value x="161.695" y="30.47"/>
+<value x="161.864" y="30.01"/>
+<value x="162.034" y="30.01"/>
+<value x="162.203" y="29.81"/>
+<value x="162.373" y="29.4"/>
+<value x="162.542" y="29.33"/>
+<value x="162.712" y="29.16"/>
+<value x="162.881" y="29.45"/>
+<value x="163.051" y="29.19"/>
+<value x="163.22" y="29.29"/>
+<value x="163.39" y="29.17"/>
+<value x="163.559" y="29.54"/>
+<value x="163.729" y="29.29"/>
+<value x="163.898" y="29.48"/>
+<value x="164.068" y="29.63"/>
+<value x="164.237" y="29.72"/>
+<value x="164.407" y="29.87"/>
+<value x="164.576" y="29.71"/>
+<value x="164.746" y="29.89"/>
+<value x="164.915" y="29.7"/>
+<value x="165.085" y="29.85"/>
+<value x="165.254" y="29.75"/>
+<value x="165.424" y="29.94"/>
+<value x="165.593" y="29.93"/>
+<value x="165.763" y="30.17"/>
+<value x="165.932" y="29.82"/>
+<value x="166.102" y="29.96"/>
+<value x="166.271" y="30.0"/>
+<value x="166.441" y="30.21"/>
+<value x="166.61" y="30.18"/>
+<value x="166.78" y="29.88"/>
+<value x="166.949" y="30.11"/>
+<value x="167.119" y="30.05"/>
+<value x="167.288" y="30.22"/>
+<value x="167.458" y="29.97"/>
+<value x="167.627" y="29.99"/>
+<value x="167.797" y="29.9"/>
+<value x="167.966" y="29.87"/>
+<value x="168.136" y="30.16"/>
+<value x="168.305" y="30.0"/>
+<value x="168.475" y="30.08"/>
+<value x="168.644" y="30.07"/>
+<value x="168.814" y="30.05"/>
+<value x="168.983" y="29.81"/>
+<value x="169.153" y="30.12"/>
+<value x="169.322" y="29.9"/>
+<value x="169.492" y="29.85"/>
+<value x="169.661" y="30.03"/>
+<value x="169.831" y="29.83"/>
+<value x="170.0" y="30.11"/>
+<value x="170.0" y="29.88"/>
+<value x="170.169" y="28.58"/>
+<value x="170.339" y="27.57"/>
+<value x="170.508" y="26.14"/>
+<value x="170.678" y="24.94"/>
+<value x="170.847" y="24.22"/>
+<value x="171.017" y="22.94"/>
+<value x="171.186" y="22.48"/>
+<value x="171.356" y="21.5"/>
+<value x="171.525" y="20.91"/>
+<value x="171.695" y="20.48"/>
+<value x="171.864" y="20.06"/>
+<value x="172.034" y="19.95"/>
+<value x="172.203" y="19.46"/>
+<value x="172.373" y="19.29"/>
+<value x="172.542" y="19.48"/>
+<value x="172.712" y="19.2"/>
+<value x="172.881" y="19.2"/>
+<value x="173.051" y="19.14"/>
+<value x="173.22" y="19.11"/>
+<value x="173.39" y="19.43"/>
+<value x="173.559" y="19.39"/>
+<value x="173.729" y="19.54"/>
+<value x="173.898" y="19.49"/>
+<value x="174.068" y="19.68"/>
+<value x="174.237" y="19.63"/>
+<value x="174.407" y="19.53"/>
+<value x="174.576" y="19.74"/>
+<value x="174.746" y="19.97"/>
+<value x="174.915" y="19.66"/>
+<value x="175.085" y="19.99"/>
+<value x="175.254" y="20.06"/>
+<value x="175.424" y="19.95"/>
+<value x="175.593" y="19.95"/>
+<value x="175.763" y="20.17"/>
+<value x="175.932" y="19.83"/>
+<value x="176.102" y="20.01"/>
+<value x="176.271" y="19.98"/>
+<value x="176.441" y="20.1"/>
+<value x="176.61" y="20.03"/>
+<value x="176.78" y="20.2"/>
+<value x="176.949" y="19.87"/>
+<value x="177.119" y="19.87"/>
+<value x="177.288" y="20.08"/>
+<value x="177.458" y="19.86"/>
+<value x="177.627" y="19.94"/>
+<value x="177.797" y="20.08"/>
+<value x="177.966" y="20.04"/>
+<value x="178.136" y="19.95"/>
+<value x="178.305" y="20.21"/>
+<value x="178.475" y="20.03"/>
+<value x="178.644" y="19.99"/>
+<value x="178.814" y="20.05"/>
+<value x="178.983" y="19.85"/>
+<value x="179.153" y="20.09"/>
+<value x="179.322" y="20.14"/>
+<value x="179.492" y="20.06"/>
+<value x="179.661" y="20.11"/>
+<value x="179.831" y="20.09"/>
+<value x="180.0" y="19.89"/>
+<value x="180.0" y="19.98"/>
+<value x="180.169" y="18.59"/>
+<value x="180.339" y="17.36"/>
+<value x="180.508" y="16.19"/>
+<value x="180.678" y="15.05"/>
+<value x="180.847" y="13.9"/>
+<value x="181.017" y="13.11"/>
+<value x="181.186" y="12.4"/>
+<value x="181.356" y="11.6"/>
+<value x="181.525" y="10.92"/>
+<value x="181.695" y="10.75"/>
+<value x="181.864" y="10.02"/>
+<value x="182.034" y="10.01"/>
+<value x="182.203" y="9.49"/>
+<value x="182.373" y="9.32"/>
+<value x="182.542" y="9.46"/>
+<value x="182.712" y="9.42"/>
+<value x="182.881" y="9.29"/>
+<value x="183.051" y="9.3"/>
+<value x="183.22" y="9.32"/>
+<value x="183.39" y="9.26"/>
+<value x="183.559" y="9.23"/>
+<value x="183.729" y="9.38"/>
+<value x="183.898" y="9.57"/>
+<value x="184.068" y="9.67"/>
+<value x="184.237" y="9.77"/>
+<value x="184.407" y="9.78"/>
+<value x="184.576" y="9.93"/>
+<value x="184.746" y="9.83"/>
+<value x="184.915" y="9.78"/>
+<value x="185.085" y="9.91"/>
+<value x="185.254" y="9.8"/>
+<value x="185.424" y="10.01"/>
+<value x="185.593" y="9.86"/>
+<value x="185.763" y="9.83"/>
+<value x="185.932" y="10.14"/>
+<value x="186.102" y="9.96"/>
+<value x="186.271" y="10.13"/>
+<value x="186.441" y="10.06"/>
+<value x="186.61" y="10.16"/>
+<value x="186.78" y="10.17"/>
+<value x="186.949" y="10.23"/>
+<value x="187.119" y="10.16"/>
+<value x="187.288" y="10.08"/>
+<value x="187.458" y="10.09"/>
+<value x="187.627" y="9.84"/>
+<value x="187.797" y="10.2"/>
+<value x="187.966" y="10.15"/>
+<value x="188.136" y="9.93"/>
+<value x="188.305" y="9.89"/>
+<value x="188.475" y="10.09"/>
+<value x="188.644" y="9.93"/>
+<value x="188.814" y="9.94"/>
+<value x="188.983" y="9.81"/>
+<value x="189.153" y="10.15"/>
+<value x="189.322" y="10.03"/>
+<value x="189.492" y="9.96"/>
+<value x="189.661" y="9.86"/>
+<value x="189.831" y="10.05"/>
+<value x="190.0" y="9.81"/>
+<value x="190.0" y="10.1"/>
+<value x="190.169" y="8.58"/>
+<value x="190.339" y="7.39"/>
+<value x="190.508" y="6.15"/>
+<value x="190.678" y="5.03"/>
+<value x="190.847" y="4.15"/>
+<value x="191.017" y="3.25"/>
+<value x="191.186" y="2.37"/>
+<value x="191.356" y="1.48"/>
+<value x="191.525" y="0.88"/>
+<value x="191.695" y="0.44"/>
+<value x="191.864" y="0.24"/>
+<value x="192.034" y="0.0"/>
+<value x="192.203" y="0.0"/>
+<value x="192.373" y="0.0"/>
+<value x="192.542" y="0.0"/>
+<value x="192.712" y="0.0"/>
+<value x="192.881" y="0.0"/>
+<value x="193.051" y="0.0"/>
+<value x="193.22" y="0.0"/>
+<value x="193.39" y="0.0"/>
+<value x="193.559" y="0.0"/>
+<value x="193.729" y="0.0"/>
+<value x="193.898" y="0.0"/>
+<value x="194.068" y="0.0"/>
+<value x="194.237" y="0.0"/>
+<value x="194.407" y="0.0"/>
+<value x="194.576" y="0.0"/>
+<value x="194.746" y="0.0"/>
+<value x="194.915" y="0.0"/>
+<value x="195.085" y="0.0"/>
+<value x="195.254" y="0.0"/>
+<value x="195.424" y="0.0"/>
+<value x="195.593" y="0.0"/>
+<value x="195.763" y="0.0"/>
+<value x="195.932" y="0.1"/>
+<value x="196.102" y="0.0"/>
+<value x="196.271" y="0.0"/>
+<value x="196.441" y="0.11"/>
+<value x="196.61" y="0.03"/>
+<value x="196.78" y="0.17"/>
+<value x="196.949" y="0.16"/>
+<value x="197.119" y="0.0"/>
+<value x="197.288" y="0.18"/>
+<value x="197.458" y="0.0"/>
+<value x="197.627" y="0.0"/>
+<value x="197.797" y="0.19"/>
+<value x="197.966" y="0.17"/>
+<value x="198.136" y="0.05"/>
+<value x="198.305" y="0.05"/>
+<value x="198.475" y="0.1"/>
+<value x="198.644" y="0.0"/>
+<value x="198.814" y="0.0"/>
+<value x="198.983" y="0.0"/>
+<value x="199.153" y="0.0"/>
+<value x="199.322" y="0.12"/>
+<value x="199.492" y="0.05"/>
+<value x="199.661" y="0.13"/>
+<value x="199.831" y="0.17"/>
+<value x="200.0" y="0.0"/>
+</graph>
+</TContainerField>
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="0" name="f34" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="322" type="label" value="РЕЗУЛЬТАТЫ ТЕСТА ШАГОВОЙ РЕАКЦИИ" width="760"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f35" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="№" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f36" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Шаг" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f37" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Т86, время" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f38" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Перерегулирование" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f39" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="1" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f40" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step1Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f41" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step1T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f42" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step1Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f43" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="2" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f44" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step2Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f45" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step2T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f46" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step2Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f47" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="3" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f48" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step3Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f49" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step3T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f50" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step3Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f51" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="4" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f52" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step4Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f53" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step4T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f54" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step4Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f55" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="5" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f56" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step5Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f57" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step5T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f58" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step5Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f59" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="6" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f60" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step6Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f61" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step6T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f62" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step6Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f63" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="7" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f64" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step7Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f65" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step7T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f66" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step7Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f67" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="8" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f68" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step8Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f69" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step8T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f70" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step8Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f71" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="9" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f72" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step9Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f73" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step9T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f74" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step9Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="0" name="f75" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="10" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="40" name="f76" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step10Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="130" name="f77" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step10T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="240" name="f78" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step10Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f79" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="№" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f80" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Шаг" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f81" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Т86, время" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(224,224,224,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(0,0,0,255)" borderWidth="1px" fontBold="1" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f82" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="356" type="label" value="Перерегулирование" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f83" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="1" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f84" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step11Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f85" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step11T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f86" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="378" type="label" value="[step11Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f87" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="2" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f88" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step12Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f89" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step12T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f90" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="400" type="label" value="[step12Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f91" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="3" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f92" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step13Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f93" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step13T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f94" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="422" type="label" value="[step13Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f95" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="4" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f96" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step14Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f97" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step14T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f98" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="444" type="label" value="[step14Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f99" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="5" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f100" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step15Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f101" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step15T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f102" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="466" type="label" value="[step15Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f103" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="6" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f104" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step16Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f105" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step16T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f106" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="488" type="label" value="[step16Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f107" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="7" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f108" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step17Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f109" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step17T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f110" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="510" type="label" value="[step17Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f111" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="8" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f112" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step18Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f113" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step18T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f114" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="532" type="label" value="[step18Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f115" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="9" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f116" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step19Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f117" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step19T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f118" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="554" type="label" value="[step19Over]" width="130"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="410" name="f119" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="10" width="40"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="450" name="f120" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step20Shag]" width="90"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="540" name="f121" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step20T86]" width="110"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,255)" borderBottom="rgba(0,0,0,255)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(0,0,0,255)" borderRight="rgba(0,0,0,255)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="22" highlighting="" left="650" name="f122" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="576" type="label" value="[step20Over]" width="130"/>
+</ReportBand>
+    <ReportBand bandNo="1" height="20" name="TshrFooterBand" type="PageFooter" width="760" >
+<TContainerField ZValue="11" aligmentH="hLeft" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="0" name="f123" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value='Разработано ООО "РДК Системс"' width="300"/>
+<TContainerField ZValue="11" aligmentH="hCenter" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="260" name="f124" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value="Поз. [valvePosition], дата [testDate]" width="240"/>
+<TContainerField ZValue="11" aligmentH="hRight" aligmentV="vCenter" autoHeight="0" backgroundColor="rgba(255,255,255,0)" borderBottom="rgba(255,255,255,0)" borderColor="rgba(0,0,0,255)" borderLeft="rgba(255,255,255,0)" borderRight="rgba(255,255,255,0)" borderStyle="solid" borderTop="rgba(255,255,255,0)" borderWidth="1px" fontBold="0" fontColor="rgba(0,0,0,255)" fontFamily="Arial" fontItalic="0" fontSize="8" fontStrikeout="0" fontUnderline="0" format="" groupName="" height="18" highlighting="" left="600" name="f125" paddingX="6" paddingY="3" printing="1" rotate="0" textWrap="1" top="0" type="label" value="Стр. &lt;Page&gt; из &lt;TotalPages&gt;" width="160"/>
+</ReportBand>
+  </Report>
+</Reports>

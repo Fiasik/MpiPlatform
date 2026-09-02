@@ -1,0 +1,109 @@
+# Qt Creator specific
+*.pro.user*
+*.pro.user.*
+*.qmake.stash
+.qtc_clangd*
+.qt
+.cache
+
+
+ALL_BUILD*
+INSTALL*
+PACKAGE*
+ZERO_CHECK*
+
+#CMake
+CPackConfig*
+CPackSourceConfig*
+
+QXlsx_autogen*
+
+
+# Qt build artifacts
+*.obj
+*.o
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.la
+*.lo
+*.prl
+*.pch
+
+# Qt generated files
+Makefile*
+*.moc
+moc_*.cpp
+moc_*.h
+*.rcc
+qrc_*.cpp
+ui_*.h
+
+# Debug and Release folders
+debug/
+release/
+
+# CMake related files
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Build directories
+build-*/
+build*/
+
+# Other temporary files
+*.swp
+*.swo
+*.bak
+*~
+.DS_Store
+Thumbs.db
+
+# — Дополнительно для Qt Creator — 
+# Сессии, настройки окон
+*.creator.user
+*.creator.*
+qtcreator.lock
+
+# — Clangd / Language Server — 
+.clangd/
+
+# — Исполняемые файлы — 
+# Windows
+*.exe
+*.pdb
+# Linux / macOS
+*.app
+*.dSYM/
+
+# — Профилирование и coverage — 
+*.gcda
+*.gcno
+
+# — Логи и дампы — 
+*.log
+*.dump
+
+# — IDE / редакторы — 
+# VS Code
+.vscode/
+# CLion
+.idea/
+
+# — Бэкапы и swap — 
+*~
+*.sw?
+*.bak
+
+# — macOS — 
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# — Windows — 
+Thumbs.db
+ehthumbs.db

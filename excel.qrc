@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/excel">
+        <file>Reports/Report.xlsx</file>
+        <file>Reports/ReportIlim.xlsx</file>
+        <file>Reports/SKI_B_CVT.xlsx</file>
+        <file>Reports/SKI_B_SACVT.xlsx</file>
+        <file>Reports/SKI_C_CVT.xlsx</file>
+        <file>Reports/SKI_C_SACVT.xlsx</file>
+        <file>Reports/SKI_C_SOVT.xlsx</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,700 @@
+/* Единый QSS для всего интерфейса. Файл — ШАБЛОН: вместо литеральных
+ * hex-цветов и путей к иконкам-шевронам тут плейсхолдеры (см. например
+ * @{bgSurface} ниже в файле), которые Gui::Style::ThemeManager подставляет
+ * из Gui::Style::Palette (Src/Gui/Style/Palette.h) под текущую цветовую
+ * схему (светлая/тёмная) перед вызовом QApplication::setStyleSheet(). "@"
+ * специально выбран как маркер — в реальном QSS-синтаксисе (селекторы,
+ * свойства, псевдо-состояния, url(...)) он никогда не встречается, так что
+ * простая строковая замена безопасна и не требует regex. Файл по-прежнему
+ * грузится с диска и переприменяется на лету при сохранении —
+ * Gui::Style::ThemeManager (раньше — main.cpp::loadTheme()).
+ *
+ * Селекторы по роли, не по objectName: роль — динамическое свойство,
+ * проставляется автоматически по имени виджета (последний сегмент имени
+ * через "_", в нижнем регистре — Title->title, Value->value, Unit->unit,
+ * Card->card, Section->section), см. MainWindow::applyLabelStyleRoles()/
+ * applyFrameStyleRoles(). Имя виджета и значение role — всегда одно и то
+ * же слово, просто в разном регистре — не два разных словаря держать в
+ * голове.
+ *
+ * Базовое семейство шрифта (Inter) задаётся в main.cpp (a.setFont(...)) и
+ * тут не дублируется, а вот базовый РАЗМЕР (12px) — намеренно дублируется
+ * тут же, в правиле QWidget ниже, см. пояснение под ним: через
+ * a.setFont() он не доходит до виджетов, у которых в Designer уже стоит
+ * свой явный pointsize.
+ */
+
+/* Базовый цвет текста и размер шрифта — не чистый чёрный, 12px. QWidget —
+ * самый общий селектор, поэтому любое более специфичное правило ниже
+ * (например font-size у [role="value"]) и любой локальный styleSheet
+ * конкретного виджета в .ui (напр. #A83240 у live-значений датчиков) всё
+ * равно победит здесь. font-size сюда добавлен намеренно: во многих
+ * виджетах в Designer остался явно проставленный поштучный pointsize
+ * (10/11/12/16pt — наследие до перехода на единую тему), а обычный
+ * QApplication::setFont() в main.cpp такие явно заданные на виджете
+ * шрифты не перебивает — только правило в QSS действительно
+ * унифицирует размер везде, где нет более специфичного переопределения.
+*/
+
+
+QDialog {
+    background: @{bgDialog};
+}
+
+/* SelectTests */
+
+/* MainWindow */
+QWidget {
+    color: @{textBase};
+    font-size: 12px;
+}
+
+#tab_optionalTests,
+#tab_optionalTests_stepResults,
+#tab_reportGeneration,
+#tab_manual,
+#tab_strokeTest,
+#tab_mainTests,
+#tab_cyclicTests {
+    background-color: @{bgRecessed};
+    border-radius: 6px;
+}
+
+QStatusBar {
+    background: @{bgRecessed};
+}
+
+QLabel[role="title"] {
+    font-family: "Inter";
+    font-size: 11px;
+    font-weight: bold;
+    color: @{textMuted};
+}
+
+QLabel[role="value"] {
+    font-family: "JetBrains Mono";
+    font-size: 16px;
+    font-weight: bold;
+    color: @{textBase};
+}
+
+QLabel[role="unit"] {
+    font-family: "Inter";
+    font-size: 12px;
+    font-weight: normal;
+    color: @{textMuted};
+}
+
+#label_calcPressureBalance {
+    font-family: "JetBrains Mono";
+    font-size: 12px;
+    font-weight: bold;
+    color: @{textMuted};
+}
+
+#label_startingPosition, #label_finalPosition {
+    font-family: "JetBrains Mono";
+    font-weight: normal;
+}
+
+/* Рамки: "_Card" и "_Section" — см. MainWindow::applyFrameStyleRoles().
+ * У "_Card" своего визуального стиля больше нет: все данные карточек и
+ * так лежат внутри "_Section", отдельное оформление было избыточным —
+ * роль "card" по-прежнему проставляется по имени (обозначение сохранено),
+ * просто без CSS-правила под неё.
+ *
+ * "_Section" сейчас нигде не вложена в другую "_Section" (проверено по
+ * дереву MainWindow.ui), поэтому полноценная рамка-карточка ниже не даёт
+ * "матрёшки". Если в будущем появится вложенность — стоит вернуться к
+ * менее навязчивому варианту (например, только верхняя граница-разделитель
+ * у вложенных уровней), иначе получится растущий вложенный прямоугольник.
+*/
+QFrame[role="section"] {
+    background: @{bgSurface};
+    border-radius: 6px;
+    border: 1px solid @{borderSubtle};
+}
+
+#centralWidget {
+    background: @{bgDialog};
+}
+
+#Chart_trend,
+#Chart_friction,
+#Chart_pressure,
+#Chart_task,
+#Chart_resolution,
+#Chart_response,
+#Chart_step,
+#Chart_stroke,
+#Chart_cyclicTests {
+    background: @{bgSurface};
+    border-radius: 6px;
+}
+
+/* база = главная навигация (подчёркивание) */
+QTabWidget::pane {
+    border: none;
+    border-top: 1px solid @{borderSubtle};
+}
+QTabBar::tab {
+    background: transparent;
+    color: @{textMuted2};
+    padding: 5px 10px;
+    margin-right: 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+}
+QTabBar::tab:hover {
+    color: @{textStrong};
+    background-color: @{bgRecessed};
+}
+QTabBar::tab:selected {
+    color: @{accentPrimary};
+    border-bottom: 2px solid @{accentPrimary};
+    font-weight: 500;
+}
+QTabBar::tab:disabled {
+    color: @{textDisabledTab};
+}
+
+/* ==================== Элементы форм ====================
+ * Перенесено сюда из инлайновых styleSheet в .ui — было 28 QPushButton
+ * (5 вариантов, различались только случайными font-size, по недосмотру
+ * копипаста, не по замыслу), 36 QLineEdit и 7 QComboBox (буквально
+ * идентичные), 9 QCheckBox (4 варианта, та же история), 2 QToolButton —
+ * теперь один источник правды на весь тип виджета вместо N копий,
+ * которые могли незаметно разойтись при правке одной из них.
+ */
+
+/* QPushButton */
+QPushButton {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background: @{bgHover};
+    border-color: @{accentPrimary};
+}
+QPushButton:pressed {
+    background: @{borderSubtle};
+    padding: 7px 12px 5px 12px; /* лёгкий эффект "вдавливания" */
+}
+QPushButton:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+/* ===== Кнопки-переключатели выходов (checkable=true, напр. Выход 1-4) ===== */
+QPushButton:checked {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+    border-color: @{accentPrimary};
+}
+QPushButton:checked:hover {
+    background: @{accentHover};
+}
+QPushButton:checked:pressed {
+    background: @{accentPressed};
+}
+
+QPushButton:default {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+    border-color: @{accentPrimary};
+}
+QPushButton:default:hover {
+    background: @{accentHover};
+}
+
+/* QTableWidget */
+QTableWidget {
+    background: @{bgSurface};
+    border-radius: 6px;
+    gridline-color: @{borderSubtle};
+    color: @{textStrong};
+}
+QTableWidget::item {
+    padding: 6px 8px;
+    border: none;
+}
+QTableWidget::item:selected {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+}
+QTableWidget::item:hover {
+    background: @{bgHover};
+}
+QHeaderView::section {
+    background: @{bgDisabled};
+    color: @{textMuted2};
+    padding: 6px 8px;
+    border: none;
+    border-bottom: 1px solid @{borderSubtle};
+    font-size: 12px;
+    font-weight: 600;
+}
+QTableCornerButton::section {
+    background: @{bgDisabled};
+    border: none;
+    border-bottom: 1px solid @{borderSubtle};
+}
+
+/* QToolButton — по умолчанию "голая" (border/background: none), под
+ * icon-only кнопки вроде стрелок toolButton_arrowUp/arrowDown.
+ * Кнопки выбора программы испытаний (SelectTests.ui) — исключение: по
+ * смыслу обычные кнопки-выбор, а не иконки, поэтому им нужен явный вид
+ * кнопки по ID (ниже), а не общее правило. Раньше тут был только
+ * button_C_CVT (единственная активная вне Ski), при добавлении Ski
+ * добавились ещё 4 (button_C_SOVT/B_SACVT/C_SACVT/B_CVT) — тот же
+ * визуальный смысл, тот же список селекторов. */
+QToolButton {
+    border: none;
+    background: none;
+}
+
+QToolButton#button_C_CVT,
+QToolButton#button_C_SOVT,
+QToolButton#button_B_SACVT,
+QToolButton#button_C_SACVT,
+QToolButton#button_B_CVT {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+QToolButton#button_C_CVT:hover,
+QToolButton#button_C_SOVT:hover,
+QToolButton#button_B_SACVT:hover,
+QToolButton#button_C_SACVT:hover,
+QToolButton#button_B_CVT:hover {
+    background: @{bgHover};
+    border-color: @{accentPrimary};
+}
+QToolButton#button_C_CVT:pressed,
+QToolButton#button_C_SOVT:pressed,
+QToolButton#button_B_SACVT:pressed,
+QToolButton#button_C_SACVT:pressed,
+QToolButton#button_B_CVT:pressed {
+    background: @{borderSubtle};
+}
+
+/* QLineEdit */
+QLineEdit {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 6px 10px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+QLineEdit:hover {
+    border-color: @{borderHover};
+}
+QLineEdit:focus {
+    border-color: @{accentPrimary};
+}
+QLineEdit:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+QLineEdit:read-only {
+    background: transparent;
+    border: none;
+    padding: 4px 0px;
+}
+
+/* QCheckBox */
+QCheckBox {
+    color: @{textStrong};
+    spacing: 8px;
+}
+QCheckBox:disabled {
+    color: @{borderHover};
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid @{borderDefault};
+    border-radius: 4px;
+    background: @{bgSurface};
+}
+QCheckBox::indicator:hover {
+    border-color: @{accentPrimary};
+}
+QCheckBox::indicator:checked {
+    background: @{accentSelectedInactive};
+    border-color: @{accentPrimary};
+}
+QCheckBox::indicator:checked:hover {
+    background: @{accentSelectedInactive};
+    border-color: @{accentHover};
+}
+QCheckBox::indicator:disabled {
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+
+/* QSlider — в приложении используется только вертикальный
+ * (verticalSlider_task, задание тока ЦАП вручную). Без :disabled тут
+ * слайдер, заблокированный на время теста/до инициализации, выглядел
+ * бы точно так же, как активный — единственный элемент управления без
+ * видимой обратной связи о своей недоступности. */
+QSlider::groove:vertical {
+    background: @{borderDefault};
+    width: 4px;
+    border-radius: 2px;
+}
+QSlider::handle:vertical {
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    height: 16px;
+    margin: 0 -8px;
+    border-radius: 8px;
+}
+QSlider::handle:vertical:hover {
+    border-color: @{accentPrimary};
+}
+QSlider::groove:vertical:disabled {
+    background: @{bgDisabled};
+}
+QSlider::handle:vertical:disabled {
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+
+/* QComboBox */
+QComboBox {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 6px 10px;
+    combobox-popup: 0;
+}
+QComboBox:hover {
+    border-color: @{borderHover};
+}
+QComboBox:focus, QComboBox:on {
+    border-color: @{accentPrimary};
+}
+QComboBox:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+QComboBox::drop-down {
+    border: none;
+    width: 18px;
+}
+QComboBox::down-arrow {
+    image: url(@{iconChevronDown});
+    width: 10px;
+    height: 7px;
+    margin-right: 8px;
+}
+QComboBox::down-arrow:on {
+    image: url(@{iconChevronDownActive});
+}
+QComboBox QAbstractItemView {
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    outline: none;
+    padding: 2px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+QComboBox QAbstractItemView::item {
+    color: @{textStrong};
+    background: @{bgSurface};
+    padding: 2px 4px;
+    border-radius: 4px;
+    min-height: 22px;
+}
+QComboBox QAbstractItemView::item:hover {
+    background: @{bgHover};
+}
+QComboBox QAbstractItemView::item:selected {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+}
+
+/* QListWidget */
+QListWidget {
+    background: @{bgSurface};
+    border: 1px solid @{borderSubtle};
+    border-radius: 6px;
+    outline: none;
+    padding: 3px 3px;
+    color: @{textStrong};
+}
+QListWidget::item {
+    padding: 4px 5px;
+    margin-bottom: 2px;
+    border-radius: 5px;
+}
+QListWidget::item:hover {
+    background: @{bgHover};
+}
+QListWidget::item:selected {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+}
+QListWidget::item:selected:active {
+    background: @{accentSelectedInactive};
+    color: @{textStrong};
+}
+
+/* QTextEditor */
+QTextEdit {
+    background: @{bgSurface};
+    padding: 3px 5px;
+    border-radius: 6px;
+    border: 1px solid @{borderSubtle};
+}
+
+/* QDoubleSpinBox */
+QDoubleSpinBox {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+QDoubleSpinBox:hover {
+    border-color: @{borderHover};
+}
+QDoubleSpinBox:focus {
+    border-color: @{accentPrimary};
+}
+QDoubleSpinBox:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+    width: 16px;
+    border-left: 1px solid @{borderDefault};
+    background: @{bgSurface};
+}
+QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+    background: @{bgHover};
+}
+QDoubleSpinBox::up-arrow {
+    image: url(@{iconChevronUp});
+    width: 10px; height: 6px;
+}
+QDoubleSpinBox::down-arrow {
+    image: url(@{iconChevronDown});
+    width: 10px; height: 6px;
+}
+
+/* QTimeEdit */
+QTimeEdit {
+    color: @{textBase};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 4px 8px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+QTimeEdit:hover {
+    border-color: @{borderHover};
+}
+QTimeEdit:focus {
+    border-color: @{accentPrimary};
+}
+QTimeEdit:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+QTimeEdit::up-button, QTimeEdit::down-button {
+    subcontrol-origin: border;
+    width: 18px;
+    border: none;
+    border-left: 1px solid @{borderSubtle};
+    background: @{bgSurface};
+}
+QTimeEdit::up-button {
+    subcontrol-position: top right;
+    border-top-right-radius: 6px;
+}
+QTimeEdit::down-button {
+    subcontrol-position: bottom right;
+    border-bottom-right-radius: 6px;
+}
+QTimeEdit::up-button:hover, QTimeEdit::down-button:hover {
+    background: @{bgHover};
+}
+QTimeEdit::up-button:pressed, QTimeEdit::down-button:pressed {
+    background: @{borderSubtle};
+}
+QTimeEdit::up-arrow {
+    image: url(@{iconChevronUp});
+    width: 10px;
+    height: 7px;
+}
+QTimeEdit::down-arrow {
+    image: url(@{iconChevronDown});
+    width: 10px;
+    height: 7px;
+}
+QTimeEdit::up-arrow:pressed {
+    image: url(@{iconChevronUpActive});
+}
+QTimeEdit::down-arrow:pressed {
+    image: url(@{iconChevronDownActive});
+}
+
+/* QDateEdit */
+QDateEdit {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 4px 8px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+QDateEdit:hover {
+    border-color: @{borderHover};
+}
+QDateEdit:focus {
+    border-color: @{accentPrimary};
+}
+QDateEdit:disabled {
+    color: @{borderHover};
+    background: @{bgDisabled};
+    border-color: @{borderSubtle};
+}
+
+/* MPISDK FIX: с calendarPopup=true этот виджет считает геометрию кнопки
+ * через CC_ComboBox (SC_ComboBoxArrow), а не через CC_SpinBox — у него
+ * buttonSymbols() == NoButtons и SC_SpinBoxUp/Down пустые. Поэтому нужны
+ * именно ::drop-down/::down-arrow (как у QComboBox), а не ::up-button
+ * или ::menu-button — те целятся в несуществующие для этого виджета
+ * области и молча ничего не меняют. Проверено точечно: подкраска именно
+ * ::drop-down в контрастный цвет реально попадает в область стрелки. */
+QDateEdit::drop-down {
+    subcontrol-origin: border;
+    subcontrol-position: right;
+    width: 20px;
+    border: none;
+    background: transparent;
+}
+QDateEdit::down-arrow {
+    image: url(@{iconChevronDown});
+    width: 10px;
+    height: 7px;
+}
+QDateEdit::down-arrow:pressed {
+    image: url(@{iconChevronDownActive});
+}
+
+/* QCalendarWidget — попап у QDateEdit (calendarPopup=true). Внутренние
+ * имена объектов (qt_calendar_*) — стабильная часть реализации
+ * QCalendarWidget в Qt, не наши — так адресуются его вложенные кнопки/
+ * поля, у которых иначе нет отдельного публичного API для стилизации. */
+QCalendarWidget {
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 8px;
+    outline: none;
+}
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background: @{bgRecessed};
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+QCalendarWidget QToolButton {
+    color: @{textStrong};
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: 4px 2px;
+    font-weight: 600;
+}
+QCalendarWidget QToolButton:hover {
+    background: @{bgHover};
+}
+QCalendarWidget QToolButton::menu-indicator {
+    image: url(@{iconChevronDown});
+    width: 8px;
+    height: 6px;
+    subcontrol-origin: padding;
+    subcontrol-position: right center;
+}
+QCalendarWidget QToolButton#qt_calendar_prevmonth {
+    qproperty-icon: url(@{iconChevronLeft});
+    qproperty-iconSize: 8px 12px;
+    min-width: 24px;
+    max-width: 24px;
+}
+QCalendarWidget QToolButton#qt_calendar_nextmonth {
+    qproperty-icon: url(@{iconChevronRight});
+    qproperty-iconSize: 8px 12px;
+    min-width: 24px;
+    max-width: 24px;
+}
+QCalendarWidget QMenu {
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    padding: 2px;
+}
+QCalendarWidget QMenu::item {
+    color: @{textStrong};
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+QCalendarWidget QMenu::item:selected {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+}
+QCalendarWidget QSpinBox {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 4px;
+    padding: 2px 4px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+QCalendarWidget QSpinBox::up-button, QCalendarWidget QSpinBox::down-button {
+    width: 14px;
+    border: none;
+    background: transparent;
+}
+QCalendarWidget QSpinBox::up-arrow {
+    image: url(@{iconChevronUp});
+    width: 8px;
+    height: 6px;
+}
+QCalendarWidget QSpinBox::down-arrow {
+    image: url(@{iconChevronDown});
+    width: 8px;
+    height: 6px;
+}
+QCalendarWidget QAbstractItemView:enabled {
+    color: @{textStrong};
+    background: @{bgSurface};
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+    outline: none;
+    gridline-color: transparent;
+}
+QCalendarWidget QAbstractItemView:disabled {
+    color: @{borderDefault};
+}
