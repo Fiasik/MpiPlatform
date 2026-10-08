@@ -5,6 +5,8 @@
 
 #include "Domain/BuildVariant.h"
 
+#include "Utils/SignalUtils.h"
+
 #include <QDebug>
 
 namespace Domain::Tests::Option::Response {
@@ -20,7 +22,9 @@ void Scenario::beforeStart()
         m_analyzer = std::make_unique<Analyzer>();
 
         Analyzer::Config cfg;
-        cfg.normalOpen = m_context.config.safePosition == SafePosition::NormallyOpen;
+        cfg.normalOpen = SignalUtils::isTaskInverted(
+            m_context.config.safePosition == SafePosition::NormallyOpen,
+            m_context.config.positionerScale);
 
         m_analyzer->setConfig(cfg);
         m_analyzer->start();
@@ -31,11 +35,13 @@ std::unique_ptr<BaseRunner> Scenario::createRunner()
 {
     const bool normalOpen =
         m_context.config.safePosition == SafePosition::NormallyOpen;
+    const bool invertTask = SignalUtils::isTaskInverted(normalOpen, m_context.config.positionerScale);
 
     return std::make_unique<Runner>(
         m_context.device,
-        normalOpen,
+        invertTask,
         m_params,
+        m_context.config.positionerScale,
         this
     );
 }

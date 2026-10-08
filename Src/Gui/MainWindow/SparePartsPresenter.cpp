@@ -2,27 +2,7 @@
 #include "ui_MainWindow.h"
 #include "Utils/StyledMessageBox.h"
 
-#include <QCompleter>
-#include <QComboBox>
 #include <QListWidgetItem>
-#include <QSizePolicy>
-
-void SparePartsPresenter::setupSearch()
-{
-    auto* combo = m_ui->comboBox_spareParts_search;
-    combo->setEditable(true);
-
-    combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-    combo->setMinimumContentsLength(30);
-    QSizePolicy sp = combo->sizePolicy();
-    sp.setHorizontalPolicy(QSizePolicy::Ignored);
-    combo->setSizePolicy(sp);
-
-    auto* completer = new QCompleter(combo->model(), combo);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setFilterMode(Qt::MatchContains);
-    combo->setCompleter(completer);
-}
 
 void SparePartsPresenter::addCurrentSelection()
 {

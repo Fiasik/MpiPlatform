@@ -1,10 +1,13 @@
 #pragma once
 
+#include <optional>
+
 #include <QMap>
 #include <QString>
 
 #include "Report/Html/CommentCard.h"
 #include "Gui/Setup/SelectTests.h"
+#include "ReportGenerationWorker.h"
 
 class QWidget;
 class Registry;
@@ -48,10 +51,19 @@ public:
     // m_cyclicTestSettings->applyPattern(pattern).
     void setPatternType(SelectTests::PatternType pattern);
 
+    // Всё, что должно случиться на GUI-потоке ДО тяжёлой сборки отчёта:
+    // забирает поправленные значения из ui->lineEdit_resultsTable_*,
+    // резолвит папку сохранения (Report::Saver::ensureDirectory() —
+    // может интерактивно спросить пользователя, см. комментарий
+    // ReportGenerationWorker.h) и упаковывает всё нужное для
+    // ReportGenerationWorker::generate() в готовый к переезду на другой
+    // поток пакет данных. nullopt — не удалось (неверный паттерн или не
+    // выбрали папку) — тогда до воркера дело не доходит вообще.
+    std::optional<ReportGenerationWorker::Input> prepareReportGeneration();
+
     // Возвращают false при неудаче — MainWindow решает, как об этом
     // сообщить оператору (тост), этот класс сознательно ничего не знает
     // про ToastManager (см. комментарий класса выше).
-    bool generateReport();
     bool openReport();
     bool openResultFolder();
     void editComment(Report::Html::CommentSlot slot);

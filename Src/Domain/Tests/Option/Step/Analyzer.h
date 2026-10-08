@@ -36,6 +36,8 @@ private:
         quint32 tTime = 0; // время достижения порога
 
         double overshoot = -1e9; // максимальное найденное перерегулирование
+        quint32 overshootTime = 0; // время (от начала шага) этого максимума
+        double overshootPos = 0; // позиция (%) в этой точке
     };
 
     Config m_cfg;

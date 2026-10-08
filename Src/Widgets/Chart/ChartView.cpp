@@ -2,6 +2,9 @@
 
 #include <QDateTime>
 #include <QOpenGLWidget>
+#include <QPainterPath>
+#include <QGraphicsPathItem>
+#include <QGraphicsPolygonItem>
 #include <QXYSeries>
 
 #include <algorithm>
@@ -95,6 +98,26 @@ ChartView::ChartView(QWidget *parent)
     m_xValueItem->setFont(xValueFont);
     m_xValueItem->setBrush(QColor("#161A20"));
     m_xValueItem->setZValue(100);
+
+    // Чип-переключатель разметки — сам появляется/прячется в layoutLegend()
+    // в зависимости от того, есть ли сейчас вообще разметка (m_annotationData).
+    m_annotationsToggleDot = new QGraphicsEllipseItem(chart());
+    m_annotationsToggleDot->setZValue(100);
+
+    m_annotationsToggleLabel = new QGraphicsSimpleTextItem(tr("Разметка"), chart());
+    QFont toggleFont = m_annotationsToggleLabel->font();
+    toggleFont.setPointSize(8);
+    m_annotationsToggleLabel->setFont(toggleFont);
+    m_annotationsToggleLabel->setBrush(QColor("#6B7280"));
+    m_annotationsToggleLabel->setZValue(100);
+
+    m_labelsToggleDot = new QGraphicsEllipseItem(chart());
+    m_labelsToggleDot->setZValue(100);
+
+    m_labelsToggleLabel = new QGraphicsSimpleTextItem(tr("Значения"), chart());
+    m_labelsToggleLabel->setFont(toggleFont);
+    m_labelsToggleLabel->setBrush(QColor("#6B7280"));
+    m_labelsToggleLabel->setZValue(100);
 
     m_axisTimer.setInterval(100); // 10 Hz
     connect(&m_axisTimer, &QTimer::timeout, this, &ChartView::updateAxes);
@@ -301,6 +324,19 @@ void ChartView::layoutLegend()
     }
     totalWidth += kChipGap * (visibleIdx.size() - 1);
 
+    // Чип "Разметка" — не серия, но встаёт в тот же центрированный ряд,
+    // последним; виден только когда есть что скрывать (setAnnotations()
+    // передал непустой список).
+    const bool showAnnotationsToggle = !m_annotationData.isEmpty();
+    qreal annotationsToggleWidth = 0.0;
+    qreal labelsToggleWidth = 0.0;
+    if (showAnnotationsToggle) {
+        annotationsToggleWidth = kIconSize + kIconGap + m_annotationsToggleLabel->boundingRect().width();
+        labelsToggleWidth = kIconSize + kIconGap + m_labelsToggleLabel->boundingRect().width();
+        totalWidth += kChipGap + annotationsToggleWidth;
+        totalWidth += kChipGap + labelsToggleWidth;
+    }
+
     const QRectF plot = chart()->plotArea();
     const qreal viewWidth = (plot.width() > 4.0) ? plot.width() : qMax<qreal>(this->width(), 1.0);
     qreal x = qMax(4.0, (viewWidth - totalWidth) / 2.0);
@@ -320,6 +356,42 @@ void ChartView::layoutLegend()
         chip.hitRect = QRectF(x - 2, kTop - 2, headerWidth + 4, kLineGap * 2 + 4);
 
         x += headerWidth + kChipGap;
+    }
+
+    if (showAnnotationsToggle) {
+        m_annotationsToggleDot->setVisible(true);
+        m_annotationsToggleLabel->setVisible(true);
+
+        const QColor dotColor = m_annotationsVisible ? m_annotationColor : QColor("#9CA3AF");
+        m_annotationsToggleDot->setPen(QPen(dotColor, 1.2));
+        m_annotationsToggleDot->setBrush(m_annotationsVisible ? QBrush(dotColor) : Qt::NoBrush);
+        m_annotationsToggleDot->setRect(x, kTop + 3, kIconSize, kIconSize);
+        m_annotationsToggleLabel->setPos(x + kIconSize + kIconGap, kTop);
+
+        m_annotationsToggleHitRect = QRectF(x - 2, kTop - 2, annotationsToggleWidth + 4, kLineGap * 2 + 4);
+
+        x += annotationsToggleWidth + kChipGap;
+
+        m_labelsToggleDot->setVisible(true);
+        m_labelsToggleLabel->setVisible(true);
+
+        const QColor labelsDotColor = m_annotationLabelsAlwaysVisible ? m_annotationColor : QColor("#9CA3AF");
+        m_labelsToggleDot->setPen(QPen(labelsDotColor, 1.2));
+        m_labelsToggleDot->setBrush(m_annotationLabelsAlwaysVisible ? QBrush(labelsDotColor) : Qt::NoBrush);
+        m_labelsToggleDot->setRect(x, kTop + 3, kIconSize, kIconSize);
+        m_labelsToggleLabel->setPos(x + kIconSize + kIconGap, kTop);
+
+        m_labelsToggleHitRect = QRectF(x - 2, kTop - 2, labelsToggleWidth + 4, kLineGap * 2 + 4);
+
+        x += labelsToggleWidth + kChipGap;
+    } else {
+        m_annotationsToggleDot->setVisible(false);
+        m_annotationsToggleLabel->setVisible(false);
+        m_annotationsToggleHitRect = QRectF();
+
+        m_labelsToggleDot->setVisible(false);
+        m_labelsToggleLabel->setVisible(false);
+        m_labelsToggleHitRect = QRectF();
     }
 
     if (m_xValueItem) {
@@ -347,6 +419,262 @@ void ChartView::hideHoverMarkers()
 void ChartView::setLabelXformat(QString format)
 {
     m_xaxisValue->setLabelFormat(format);
+}
+
+void ChartView::setAnnotations(const QVector<ChartAnnotation>& annotations)
+{
+    m_annotationData = annotations;
+    // Новый результат — новая разметка видна заново, даже если её скрыли
+    // чипом-переключателем на предыдущем тесте (иначе молча остаётся
+    // выключенной без всякой подсказки почему).
+    m_annotationsVisible = true;
+    m_hoveredAnnotationIndex = -1;
+    rebuildAnnotationItems();
+    updateAnnotationPositions();
+    layoutLegend();
+}
+
+void ChartView::setAnnotationsVisible(bool visible)
+{
+    m_annotationsVisible = visible;
+    for (const AnnotationItem& item : std::as_const(m_annotationItems)) {
+        if (item.dotFrom) item.dotFrom->setVisible(visible);
+        if (item.dotTo) item.dotTo->setVisible(visible);
+        if (item.connector) item.connector->setVisible(visible);
+        // Подпись — либо снова следует за режимом "Значения" (если
+        // разметку включили обратно), либо гасится вместе со всем
+        // остальным — не оставляем её висеть в воздухе без точки/скобки.
+        if (item.text) item.text->setVisible(visible && m_annotationLabelsAlwaysVisible);
+        if (item.underline) item.underline->setVisible(visible && m_annotationLabelsAlwaysVisible);
+    }
+    hideAnnotationHover();
+    layoutLegend();
+}
+
+void ChartView::setAnnotationLabelsAlwaysVisible(bool visible)
+{
+    m_annotationLabelsAlwaysVisible = visible;
+    // При включении показываем все подписи разом, при выключении — гасим
+    // тоже все разом (а не только ту, что была бы под курсором — их тут
+    // могло быть показано много одновременно, а не одна).
+    m_hoveredAnnotationIndex = -1;
+    for (const AnnotationItem& item : std::as_const(m_annotationItems)) {
+        if (item.text) item.text->setVisible(visible);
+        if (item.underline) item.underline->setVisible(visible);
+    }
+
+    layoutLegend();
+}
+
+void ChartView::clearAnnotations()
+{
+    setAnnotations({});
+}
+
+QAbstractGraphicsShapeItem* ChartView::makeAnnotationMarker(ChartAnnotation::MarkerShape shape, qreal radius)
+{
+    if (shape == ChartAnnotation::MarkerShape::Diamond) {
+        QPolygonF diamond;
+        diamond << QPointF(0, -radius) << QPointF(radius, 0)
+                 << QPointF(0, radius) << QPointF(-radius, 0);
+        return new QGraphicsPolygonItem(diamond, this->chart());
+    }
+    return new QGraphicsEllipseItem(-radius, -radius, radius * 2, radius * 2, this->chart());
+}
+
+void ChartView::rebuildAnnotationItems()
+{
+    for (AnnotationItem& item : m_annotationItems) {
+        delete item.dotFrom;
+        delete item.dotTo;
+        delete item.connector;
+        delete item.underline;
+        delete item.text;
+    }
+    m_annotationItems.clear();
+    m_annotationItems.reserve(m_annotationData.size());
+
+    constexpr qreal kDotRadius = 4.0;
+
+    for (const ChartAnnotation& a : std::as_const(m_annotationData)) {
+        AnnotationItem item;
+
+        // Невалидный a.color — смысловой окраски нет, берём акцент темы;
+        // валидный (например ОК/не ОК на Response) — не зависит от темы.
+        const QColor color = a.color.isValid() ? a.color : m_annotationColor;
+        const QPen dotPen(color);
+        const QBrush dotBrush(color);
+
+        // Точки/скобка — постоянная "карта" разметки, видны всегда.
+        item.dotFrom = makeAnnotationMarker(a.shape, kDotRadius);
+        item.dotFrom->setPen(dotPen);
+        item.dotFrom->setBrush(dotBrush);
+        item.dotFrom->setZValue(60);
+
+        const bool isRange = (a.from != a.to);
+        if (isRange) {
+            item.dotTo = makeAnnotationMarker(a.shape, kDotRadius);
+            item.dotTo->setPen(dotPen);
+            item.dotTo->setBrush(dotBrush);
+            item.dotTo->setZValue(60);
+
+            item.connector = new QGraphicsPathItem(this->chart());
+            item.connector->setPen(QPen(color, 1.5, Qt::SolidLine));
+            item.connector->setZValue(59);
+        }
+
+        // Подпись — только по наведению (см. updateAnnotationHover()): на
+        // графике с десятком точек одновременно видимые подписи сливались
+        // в кашу, а сами точки/скобка уже показывают, СКОЛЬКО событий и ГДЕ.
+        // Подчёркивание вместо рамки-чипа — раз подпись теперь одна за раз,
+        // отделять её от соседних уже не от чего, тяжёлая подложка не нужна.
+        if (!a.label.isEmpty()) {
+            item.text = new QGraphicsSimpleTextItem(a.label, this->chart());
+            item.text->setBrush(m_annotationLabelTextColor);
+            QFont f = item.text->font();
+            f.setPointSize(9);
+            f.setBold(true);
+            item.text->setFont(f);
+            item.text->setZValue(62);
+            item.text->setVisible(m_annotationLabelsAlwaysVisible);
+
+            item.underline = new QGraphicsLineItem(this->chart());
+            item.underline->setPen(QPen(color, 2.0));
+            item.underline->setZValue(62);
+            item.underline->setVisible(m_annotationLabelsAlwaysVisible);
+        }
+
+        m_annotationItems.push_back(item);
+    }
+}
+
+void ChartView::updateAnnotationPositions()
+{
+    if (m_annotationItems.isEmpty())
+        return;
+
+    // Любая видимая серия годится — mapToPosition() использует только оси,
+    // к которым она привязана, не её собственные точки (тот же приём, что
+    // и у lastAxisSeries в drawMarkers()).
+    Series* anySeries = nullptr;
+    for (Series* s : std::as_const(m_mySeries)) {
+        if (s->isVisible()) {
+            anySeries = s;
+            break;
+        }
+    }
+    if (!anySeries)
+        return;
+
+    constexpr qreal kLabelGap = 10.0;
+    // Высота "полки" скобки над более высокой (в пикселях, т.е. с меньшим
+    // Y) из двух точек — фиксированная, поэтому горизонтальный отрезок
+    // всегда строго горизонтален независимо от того, насколько точки
+    // разъехались по значению (в отличие от прямой линии между ними самими).
+    constexpr qreal kBracketRise = 24.0;
+
+    for (int i = 0; i < m_annotationItems.size() && i < m_annotationData.size(); ++i) {
+        const ChartAnnotation& a = m_annotationData.at(i);
+        AnnotationItem& item = m_annotationItems[i];
+
+        const QPointF pFrom = chart()->mapToPosition(a.from, anySeries);
+        item.dotFrom->setPos(pFrom);
+
+        QPointF labelAnchor = pFrom;
+
+        if (item.dotTo) {
+            const QPointF pTo = chart()->mapToPosition(a.to, anySeries);
+            item.dotTo->setPos(pTo);
+
+            // Скобка-"размерная линия": от каждой точки вертикальный "ус"
+            // вверх до общей полки, дальше полка горизонтально — как на
+            // инженерном чертеже, а не прямая между точками (та шла по
+            // случайному углу, потому что менялись сразу время и позиция).
+            const qreal shelfY = qMin(pFrom.y(), pTo.y()) - kBracketRise;
+            QPainterPath bracket(pFrom);
+            bracket.lineTo(pFrom.x(), shelfY);
+            bracket.lineTo(pTo.x(), shelfY);
+            bracket.lineTo(pTo.x(), pTo.y());
+            item.connector->setPath(bracket);
+
+            labelAnchor = QPointF((pFrom.x() + pTo.x()) / 2.0, shelfY);
+        }
+
+        if (item.text) {
+            constexpr qreal kUnderlineGap = 2.0;
+
+            const QRectF textRect = item.text->boundingRect();
+            const QPointF textPos(labelAnchor.x() - textRect.width() / 2.0,
+                                   labelAnchor.y() - textRect.height() - kLabelGap);
+            item.text->setPos(textPos);
+
+            if (item.underline) {
+                const qreal underlineY = textPos.y() + textRect.height() + kUnderlineGap;
+                item.underline->setLine(
+                    textPos.x(), underlineY,
+                    textPos.x() + textRect.width(), underlineY);
+            }
+        }
+    }
+}
+
+void ChartView::updateAnnotationHover(const QPoint& pos)
+{
+    if (m_annotationItems.isEmpty() || !m_annotationsVisible || m_annotationLabelsAlwaysVisible)
+        return;
+
+    // Радиус в пикселях — подобран под размер самой точки (4px) с запасом
+    // под курсор мыши, не под точность клика.
+    constexpr qreal kHoverRadius = 10.0;
+
+    int nearest = -1;
+    qreal bestDist = kHoverRadius;
+
+    for (int i = 0; i < m_annotationItems.size(); ++i) {
+        const AnnotationItem& item = m_annotationItems.at(i);
+        if (!item.text)
+            continue;
+
+        for (const QAbstractGraphicsShapeItem* marker : {item.dotFrom, item.dotTo}) {
+            if (!marker)
+                continue;
+            const qreal dist = QLineF(marker->pos(), QPointF(pos)).length();
+            if (dist < bestDist) {
+                bestDist = dist;
+                nearest = i;
+            }
+        }
+    }
+
+    if (nearest == m_hoveredAnnotationIndex)
+        return;
+
+    if (m_hoveredAnnotationIndex >= 0 && m_hoveredAnnotationIndex < m_annotationItems.size()) {
+        const AnnotationItem& prev = m_annotationItems.at(m_hoveredAnnotationIndex);
+        if (prev.text) prev.text->setVisible(false);
+        if (prev.underline) prev.underline->setVisible(false);
+    }
+
+    m_hoveredAnnotationIndex = nearest;
+
+    if (nearest >= 0) {
+        const AnnotationItem& cur = m_annotationItems.at(nearest);
+        if (cur.text) cur.text->setVisible(true);
+        if (cur.underline) cur.underline->setVisible(true);
+    }
+}
+
+void ChartView::hideAnnotationHover()
+{
+    if (m_hoveredAnnotationIndex < 0 || m_hoveredAnnotationIndex >= m_annotationItems.size()) {
+        m_hoveredAnnotationIndex = -1;
+        return;
+    }
+
+    const AnnotationItem& item = m_annotationItems.at(m_hoveredAnnotationIndex);
+    if (item.text) item.text->setVisible(false);
+    if (item.underline) item.underline->setVisible(false);
+    m_hoveredAnnotationIndex = -1;
 }
 
 void ChartView::autoScale(qreal min, qreal max)
@@ -401,6 +729,8 @@ void ChartView::autoScale(qreal min, qreal max)
     if (m_hoverActive) {
         drawMarkers(m_markersPos);
     }
+
+    updateAnnotationPositions();
 }
 
 void ChartView::autoUpdate(bool update)
@@ -429,6 +759,20 @@ void ChartView::autoUpdate(bool update)
 void ChartView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        if (m_annotationsToggleHitRect.isValid()
+            && m_annotationsToggleHitRect.contains(event->pos())) {
+            setAnnotationsVisible(!m_annotationsVisible);
+            event->accept();
+            return;
+        }
+
+        if (m_labelsToggleHitRect.isValid()
+            && m_labelsToggleHitRect.contains(event->pos())) {
+            setAnnotationLabelsAlwaysVisible(!m_annotationLabelsAlwaysVisible);
+            event->accept();
+            return;
+        }
+
         for (int i = 0; i < m_legendChips.size(); ++i) {
             if (m_legendChips.at(i).hitRect.contains(event->pos())) {
                 visible(static_cast<quint8>(i), !m_mySeries.at(i)->isVisible());
@@ -525,6 +869,10 @@ void ChartView::mouseMoveEvent(QMouseEvent *event)
         m_marker_Y->setVisible(false);
         hideHoverMarkers();
     }
+
+    if (!freezeMarkers)
+        updateAnnotationHover(event->pos());
+
     QChartView::mouseMoveEvent(event);
 }
 
@@ -660,12 +1008,14 @@ void ChartView::leaveEvent(QEvent *)
     m_marker_X->setVisible(false);
     m_marker_Y->setVisible(false);
     hideHoverMarkers();
+    hideAnnotationHover();
 }
 
 void ChartView::resizeEvent(QResizeEvent* event)
 {
     QChartView::resizeEvent(event);
     layoutLegend();
+    updateAnnotationPositions();
 }
 
 void ChartView::useTimeaxis(bool useTime)
@@ -734,6 +1084,30 @@ void ChartView::applyPalette(const Gui::Style::Palette& palette)
     for (const LegendChip& chip : std::as_const(m_legendChips)) {
         if (chip.name)
             chip.name->setBrush(mutedText);
+    }
+
+    if (m_annotationsToggleLabel)
+        m_annotationsToggleLabel->setBrush(mutedText);
+    if (m_labelsToggleLabel)
+        m_labelsToggleLabel->setBrush(mutedText);
+
+    m_annotationColor = QColor(palette.accentPrimary);
+    m_annotationLabelTextColor = QColor(palette.textStrong);
+
+    for (int i = 0; i < m_annotationItems.size() && i < m_annotationData.size(); ++i) {
+        // a.color, когда задан (смысловая окраска вроде ОК/не ОК), от темы
+        // не зависит — переопределяем только маркер/точки по умолчанию.
+        const ChartAnnotation& a = m_annotationData.at(i);
+        const AnnotationItem& item = m_annotationItems.at(i);
+        const QColor color = a.color.isValid() ? a.color : m_annotationColor;
+        const QPen dotPen(color);
+        const QBrush dotBrush(color);
+
+        if (item.dotFrom) { item.dotFrom->setPen(dotPen); item.dotFrom->setBrush(dotBrush); }
+        if (item.dotTo) { item.dotTo->setPen(dotPen); item.dotTo->setBrush(dotBrush); }
+        if (item.connector) item.connector->setPen(QPen(color, 1.5, Qt::SolidLine));
+        if (item.text) item.text->setBrush(m_annotationLabelTextColor);
+        if (item.underline) item.underline->setPen(QPen(color, 2.0));
     }
 }
 
@@ -994,6 +1368,8 @@ void ChartView::clear()
     m_xaxisValue->setRange(0, m_minR);
     m_xaxisTime->setRange(QDateTime::fromMSecsSinceEpoch(0),
                           QDateTime::fromMSecsSinceEpoch(m_minRTime));
+
+    clearAnnotations();
 }
 
 void ChartView::visible(quint8 seriesN, bool visible)
@@ -1449,6 +1825,35 @@ void ChartView::loadFromStream(QDataStream &dataStream)
                 m_yAxisTitles[i] = yTitles.at(i);
         }
     }
+
+    // mySerial->append(points) выше идёт мимо addPoint() — единственного
+    // места, что обычно держит m_min_X/m_max_X в курсе реального диапазона
+    // данных, поэтому без пересчёта тут autoUpdate(true) ниже отмасштабировал
+    // бы оси не под загруженные точки, а под то, что осталось с прошлого
+    // clear() (пустой график 0..0.1) — именно так и проявлялось на старых
+    // .data-файлах: точки грузились, а график оставался пустым 0..1.
+    rescanRange();
+}
+
+void ChartView::rescanRange()
+{
+    m_empty = true;
+    auto trackRange = [this](const QList<Series*>& list) {
+        for (const Series* s : list) {
+            for (const QPointF& p : s->points()) {
+                if (m_empty) {
+                    m_min_X = p.x();
+                    m_max_X = p.x();
+                    m_empty = false;
+                } else {
+                    m_min_X = qMin(m_min_X, p.x());
+                    m_max_X = qMax(m_max_X, p.x());
+                }
+            }
+        }
+    };
+    trackRange(m_mySeries);
+    trackRange(m_mySeriesDubl);
 
     autoUpdate(true);
 }

@@ -12,10 +12,10 @@ target_link_libraries(VerifyTheme
 
 target_compile_definitions(VerifyTheme
     PRIVATE
-        MPISDK_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
-# ВРЕМЕННО (см. main.cpp) — то же самое, что и у MpiSdk в корневом
+# ВРЕМЕННО (см. main.cpp) — то же самое, что и у MpiPlatform в корневом
 # CMakeLists.txt: без этого бинарник тянет внешние libstdc++-6.dll/
 # libgcc_s_seh-1.dll/libwinpthread-1.dll, а под Wine это даёт отдельную
 # несовместимость (__cxa_thread_atexit unimplemented), не относящуюся к
@@ -27,7 +27,7 @@ if (CMAKE_CXX_COMPILER MATCHES "mingw")
 endif()
 
 # ВРЕМЕННО (см. main.cpp) — то же самое статическое подключение плагинов,
-# что и для основного таргета MpiSdk в корневом CMakeLists.txt, иначе
+# что и для основного таргета MpiPlatform в корневом CMakeLists.txt, иначе
 # статическая Qt не находит платформенный плагин "windows" при запуске.
 get_target_property(_qt_core_type Qt6::Core TYPE)
 if(_qt_core_type STREQUAL "STATIC_LIBRARY")
@@ -41,5 +41,5 @@ if(_qt_core_type STREQUAL "STATIC_LIBRARY")
             Qt6::QSvgIconPlugin
             Qt6::QWindowsIntegrationPlugin
     )
-    target_compile_definitions(VerifyTheme PRIVATE MPISDK_STATIC_QT_PLUGINS)
+    target_compile_definitions(VerifyTheme PRIVATE MPIPLATFORM_STATIC_QT_PLUGINS)
 endif()

@@ -164,8 +164,9 @@ Program::makeSample() const
     s.dac = m_device.dac()->value();
 
     const bool normalOpen = m_deviceConfig.safePosition == SafePosition::NormallyOpen;
+    const bool invertTask = SignalUtils::isTaskInverted(normalOpen, m_deviceConfig.positionerScale);
 
-    s.taskPercent = SignalUtils::calcPercent(s.dac, normalOpen);
+    s.taskPercent = SignalUtils::calcPercent(s.dac, invertTask);
 
     s.diMask = m_device.digitalInputs();
     s.doMask = m_device.digitalOutputs();
@@ -208,7 +209,7 @@ void Program::startScenario(std::unique_ptr<Domain::Tests::AbstractScenario> sce
 
     connectScenarioRuntime(m_currentScenario.get());
 
-    setDacRaw(0, 5000, true);
+    setDacRaw(safeParkRaw(), 5000, true);
 
     m_currentScenario->start();
 }
@@ -375,6 +376,15 @@ void Program::initialization()
         return;
     } emit telemetryUpdated(m_telemetry);
 
+    // measureStart*/measureEnd* ниже решают, какой край датчика положения
+    // считать 0%, по SafePosition: "начало хода" — это безопасное
+    // положение, то есть минимальный выход позиционера. Какому raw ЦАП оно
+    // соответствует, зависит от шкалы (Normal: 4 мА, Reverse: 20 мА), поэтому
+    // "начало" берём как safeParkRaw(), а "конец" — противоположный край.
+    // С жёстким 0 -> 65535 при Reverse проценты положения выходили зеркальными.
+    const quint16 startRaw = safeParkRaw();
+    const quint16 endRaw = SignalUtils::farRaw(m_deviceConfig.positionerScale);
+
     if (m_patternType == SelectTests::Pattern_B_SACVT ||
         m_patternType == SelectTests::Pattern_C_SACVT ||
         m_patternType == SelectTests::Pattern_C_SOVT) {
@@ -387,7 +397,7 @@ void Program::initialization()
             return;
         }
 
-        setDacRaw(65535, 10000, true);
+        setDacRaw(endRaw, 10000, true);
         waitForDacCycle();
         initializer.measureEndPositionShutoff(
             m_initialDoStates,
@@ -395,7 +405,7 @@ void Program::initialization()
 
         emit telemetryUpdated(m_telemetry);
 
-        setDacRaw(0, 10000, true);
+        setDacRaw(startRaw, 10000, true);
         waitForDacCycle();
         initializer.measureStartPositionShutoff(
             m_initialDoStates,
@@ -407,12 +417,13 @@ void Program::initialization()
     if (m_patternType == SelectTests::Pattern_B_CVT ||
         m_patternType == SelectTests::Pattern_C_CVT) {
 
-        setDacRaw(0, 10000, true);
+        setDacRaw(startRaw, 10000, true);
+
         waitForDacCycle();
         initializer.measureStartPosition();
         emit telemetryUpdated(m_telemetry);
 
-        setDacRaw(65535, 10000, true);
+        setDacRaw(endRaw, 10000, true);
         waitForDacCycle();
         initializer.measureEndPosition();
         emit telemetryUpdated(m_telemetry);
@@ -427,12 +438,17 @@ void Program::initialization()
         m_patternType == SelectTests::Pattern_C_SOVT) {
         initializer.recordStrokeRange();
 
-        setDacRaw(0, 10000, true);
+        setDacRaw(safeParkRaw(), 10000, true);
 
         emit telemetryUpdated(m_telemetry);
     }
 
     finalizeInitialization();
+}
+
+quint16 Program::safeParkRaw() const
+{
+    return SignalUtils::safeParkRaw(m_deviceConfig.positionerScale);
 }
 
 void Program::waitForDacCycle()
@@ -459,6 +475,15 @@ void Program::finalizeInitialization()
 
     emit setSensorsMask(mask);
     emit setSensorNumber(m_device.sensorCount());
+
+    // Ползунок/спинбокс "задание" на экране — то, что выставил initClicked()
+    // перед стартом (4.0, см. MainWindow), а не то, где ЦАП реально
+    // припаркован сейчас (safeParkRaw() — не всегда 4 мА, см. его
+    // комментарий). Без этого расхождение было незаметно, пока парковка
+    // всегда совпадала с 4.0; тот же приём, что уже применяется в
+    // endTest() после теста.
+    emit setTask(m_device.dac()->value());
+
     m_isInitialized = true;
     m_timerSensors->start();
 

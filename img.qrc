@@ -1,9 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>Src/Img/arrowDown.png</file>
-        <file>Src/Img/arrowDownHover.png</file>
-        <file>Src/Img/arrowUp.png</file>
-        <file>Src/Img/arrowUpHover.png</file>
+        <file>Src/Img/AppIcon.png</file>
         <file>Src/Img/ChevronDown.svg</file>
         <file>Src/Img/ChevronDownActive.svg</file>
         <file>Src/Img/ChevronUp.svg</file>

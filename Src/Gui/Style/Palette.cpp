@@ -1,5 +1,7 @@
 #include "Palette.h"
 
+#include <QObject>
+
 namespace Gui::Style {
 
 namespace {
@@ -125,5 +127,28 @@ QColor statusColor(StatusKind kind)
     }
     return QColor(120, 120, 120);
 }
+
+QColor crossingStateColor(CrossingStatus::State state)
+{
+    switch (state) {
+    case CrossingStatus::State::Ok:      return statusColor(StatusKind::Success);
+    case CrossingStatus::State::Fail:    return statusColor(StatusKind::Error);
+    case CrossingStatus::State::Unknown: return QColor(0x6B, 0x72, 0x80); // = textMuted выше
+    }
+    return QColor(0x6B, 0x72, 0x80);
+}
+
+QString crossingStateLabel(CrossingStatus::State state)
+{
+    switch (state) {
+    case CrossingStatus::State::Ok:      return QObject::tr("соответствует");
+    case CrossingStatus::State::Fail:    return QObject::tr("не соответствует");
+    case CrossingStatus::State::Unknown: return QString();
+    }
+    return QString();
+}
+
+QColor passFillColor() { return QColor(198, 239, 206); }
+QColor failFillColor() { return QColor(255, 199, 206); }
 
 }

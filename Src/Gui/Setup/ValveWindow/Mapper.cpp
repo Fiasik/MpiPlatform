@@ -65,6 +65,7 @@ ValveInfo Mapper::read(const ValveWindow& view)
     v.materialStuffingBoxSeal = ValveEnums::stuffingBoxSealFromCombo(ui->comboBox_materialStuffingBoxSeal);
     v.toolNumber = ValveEnums::toolNumberFromCombo(ui->comboBox_toolNumber);
     v.positionerType = ValveEnums::positionerTypeFromCombo(ui->comboBox_positionerType);
+    v.positionerScale = ValveEnums::positionerScaleFromCombo(ui->comboBox_scale);
 
     v.driveDiameter = NumberUtils::toDouble(ui->lineEdit_driveDiameter->text());
     v.diameterPulley = NumberUtils::toDouble(ui->lineEdit_pulleyDiameter->text());
@@ -161,6 +162,7 @@ void Mapper::write(ValveWindow& view, const ValveInfo& v)
     // явно, чтобы поле всегда было согласовано с текущим выбором инструмента.
     view.toolChanged(static_cast<quint16>(v.toolNumber));
     ui->comboBox_positionerType->setCurrentIndex(static_cast<int>(v.positionerType));
+    ui->comboBox_scale->setCurrentIndex(static_cast<int>(v.positionerScale));
 
     auto& c = v.crossingLimits;
 

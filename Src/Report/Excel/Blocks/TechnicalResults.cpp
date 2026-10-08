@@ -1,8 +1,7 @@
 #include "TechnicalResults.h"
 
 #include "Domain/ValveEnums.h"
-
-#include <QTime>
+#include "Utils/TimeUtils.h"
 
 #include "Report/Excel/Writer.h"
 #include "Report/Context.h"
@@ -94,10 +93,10 @@ namespace Report::Excel::Blocks {
 
         if (t.testStroke) {
             writer.cell(m_layout.sheet, m_layout.rowStrokeTime, 5,
-                        QTime(0, 0).addMSecs(t.testStroke->forwardTimeMs).toString("mm:ss.zzz"));
+                        TimeUtils::msToText(t.testStroke->forwardTimeMs));
 
             writer.cell(m_layout.sheet, m_layout.rowStrokeTime, 8,
-                        QTime(0, 0).addMSecs(t.testStroke->backwardTimeMs).toString("mm:ss.zzz"));
+                        TimeUtils::msToText(t.testStroke->backwardTimeMs));
         } else {
             qWarning() << "Report: missing ctx.telemetry.testStroke";
         }

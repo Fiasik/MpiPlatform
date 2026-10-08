@@ -14,11 +14,11 @@ namespace Gui::Style {
 namespace {
 QString themeQssDiskPath()
 {
-    return QStringLiteral(MPISDK_SOURCE_DIR "/Src/Style/theme.qss");
+    return QStringLiteral(MPIPLATFORM_SOURCE_DIR "/Src/Style/theme.qss");
 }
 // Встроенный в .qrc (style.qrc) — единственное, что реально доступно на
 // машине, где нет дерева исходников (например, у конечного пользователя
-// на Windows): MPISDK_SOURCE_DIR — абсолютный путь на диске сборочной
+// на Windows): MPIPLATFORM_SOURCE_DIR — абсолютный путь на диске сборочной
 // машины, зашитый на этапе компиляции, и на любой другой машине его
 // просто не существует.
 QString themeQssResourcePath()

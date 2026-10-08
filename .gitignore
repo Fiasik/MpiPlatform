@@ -6,6 +6,9 @@
 .qt
 .cache
 
+# Реальная БД (растёт данными тестов) — в git только Database/schema.sql
+Database/*.db
+
 
 ALL_BUILD*
 INSTALL*

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Storage/Telemetry.h"
-#include <QLabel>
 
 namespace Ui {
 class MainWindow;
@@ -16,6 +15,4 @@ public:
 
 private:
     Ui::MainWindow* m_ui;
-
-    static void setValueLabelColor(QLabel* label, CrossingStatus::State state);
 };

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MpiPlatform
+GenericName=Диагностика регулирующей арматуры
+Comment=РДК Системс — платформа диагностики и формирования отчётов по регулирующей арматуре
+Exec=MpiPlatform
+Icon=mpiplatform
+Terminal=false
+Categories=Utility;Engineering;
+StartupWMClass=mpiplatform

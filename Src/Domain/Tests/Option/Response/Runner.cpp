@@ -16,12 +16,15 @@ RunnerConfig Runner::buildConfig()
     Algorithm::Task task;
     task.delay = p.delay;
 
-    // 4мА — физический край диапазона тока, не зависит от НО/НЗ (см.
-    // подробный разбор в Step/Runner.cpp: отображаемый %% задания сам
-    // считается через ту же НО/НЗ-инверсию в обратную сторону, поэтому
+    // Начало и конец теста — безопасный край диапазона тока (SignalUtils::
+    // safeCurrent): 4 мА при Normal-шкале, 20 мА при Reverse. От НО/НЗ он не
+    // зависит (см. подробный разбор в Step/Runner.cpp: отображаемый %% задания
+    // сам считается через ту же НО/НЗ-инверсию в обратную сторону, поэтому
     // инвертировать значение границы здесь ещё раз — двойная инверсия,
-    // которая тихо возвращает то же самое число).
-    task.value.push_back(m_device.dac()->rawFromValue(4.0));
+    // которая тихо возвращает то же самое число), а от шкалы позиционера —
+    // зависит: жёсткие 4.0 при Reverse выводили клапан на дальний конец.
+    const qreal safeCurrent = SignalUtils::safeCurrent(m_scale);
+    task.value.push_back(m_device.dac()->rawFromValue(safeCurrent));
 
     for (auto it = p.points.begin(); it != p.points.end(); ++it)
     {
@@ -44,7 +47,7 @@ RunnerConfig Runner::buildConfig()
         }
     }
 
-    task.value.push_back(m_device.dac()->rawFromValue(4.0));
+    task.value.push_back(m_device.dac()->rawFromValue(safeCurrent));
 
     const quint64 N_values = static_cast<quint64>(task.value.size());
 

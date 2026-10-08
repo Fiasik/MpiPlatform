@@ -55,9 +55,26 @@ QWidget {
 #tab_manual,
 #tab_strokeTest,
 #tab_mainTests,
-#tab_cyclicTests {
+#tab_cyclicTests,
+#tab_history {
     background-color: @{bgRecessed};
     border-radius: 6px;
+}
+
+/* QScrollArea и её контент-виджет по умолчанию красят собственный фон
+ * (палитра Window) — поверх уже покрашенного #tab_history получался
+ * второй, чуть другой серый прямоугольник ровно по границе правой панели.
+ * Оба — и сама QScrollArea, и scrollAreaWidgetContents_history (виджет
+ * ВНУТРИ неё, см. MainWindow.ui) — красят фон независимо друг от друга,
+ * прозрачности на одной только QScrollArea недостаточно. Тот же приём для
+ * QScrollArea уже применён в ObjectWindow — см. "#frame_history_Section
+ * QScrollArea" ниже по файлу (там контент-виджет без имени, этой
+ * проблемы не было).
+ */
+#scrollArea_history_details,
+#scrollAreaWidgetContents_history {
+    background: transparent;
+    border: none;
 }
 
 QStatusBar {
@@ -83,6 +100,69 @@ QLabel[role="unit"] {
     font-size: 12px;
     font-weight: normal;
     color: @{textMuted};
+}
+
+/* Дельта тренд-карточки ("История") — знак и число отдельными лейблами
+ * (см. HistoryPresenter::fillTrendValue()), число — тем же моноширинным
+ * семейством, что и role="value", но мельче, раз это вспомогательная
+ * цифра, а не основной результат. Цвет здесь — только дефолт (приглушённый
+ * серый); state==Fail красит поверх точечно в коде, тем же приёмом, что и
+ * у role="value" на самой карточке — цвет не статичен, через QSS его не
+ * выразить.
+ */
+QLabel[role="deltasign"] {
+    font-size: 9pt;
+    color: @{textMuted};
+}
+
+QLabel[role="deltavalue"] {
+    font-family: "JetBrains Mono";
+    font-size: 9pt;
+    color: @{textMuted};
+}
+
+/* Даты в строках сравнения ("История") — тот же приглушённый цвет, что и
+ * role="title", но моноширинным не-жирным начертанием (это данные, а не
+ * заголовок поля).
+ */
+QLabel[role="datemono"] {
+    font-family: "JetBrains Mono";
+    font-size: 11px;
+    font-weight: normal;
+    color: @{textMuted};
+}
+
+/* Диапазон допуска под значением в карточках сравнения ("История") —
+ * допуски настраиваются при запуске теста и могли отличаться у двух
+ * сравниваемых сессий, см. HistoryPresenter::fillCompareValue(). Мельче
+ * role="datemono", т.к. это вспомогательная строка, не основная дата/заголовок.
+ */
+QLabel[role="norm"] {
+    font-family: "Inter";
+    font-size: 10px;
+    font-weight: normal;
+    color: @{textMuted};
+}
+
+/* Увеличенный (+2px, ≈2pt) шрифт для правой панели ручного управления
+ * (frame_control в MainWindow.ui, вкладка "Ручное управление") — просто
+ * задать font на самом frame_control через .ui/setFont() сюда не доходит:
+ * общее правило QWidget{font-size:12px} выше — тоже QSS, а любое правило
+ * QSS побеждает programmatic-установленный шрифт виджета целиком, не
+ * только частично (см. комментарий у самого этого правила). Поэтому нужен
+ * свой явный селектор по имени контейнера — он более специфичен (есть
+ * #id), чем голый QWidget, и так же более специфичен, чем QLabel[role=...]
+ * без #id, поэтому сам перебивает и то, и другое.
+ */
+#frame_control,
+#frame_control QWidget {
+    font-size: 14px;
+}
+#frame_control QLabel[role="title"] {
+    font-size: 13px;
+}
+#frame_control QLabel[role="value"] {
+    font-size: 18px;
 }
 
 #label_calcPressureBalance {
@@ -159,6 +239,67 @@ QTabBar::tab:disabled {
     color: @{textDisabledTab};
 }
 
+/* Полоса прокрутки — тонкая, без стрелок на концах (add-line/sub-line
+ * обнулены). Дорожка — @{bgDialog} (цвет самого MainWindow) литералом:
+ * тонкая 10px-полоса — это ожидаемый, узнаваемый элемент интерфейса (не
+ * путать с тем большим прямоугольником scrollArea_history_details, который
+ * чинили раньше — там мисматч был на весь видимый фон панели, тут же едва
+ * заметная кромка сбоку, ей и положено отличаться от соседнего фона, иначе
+ * дорожку не видно вовсе). "Бегунок" — та же пара цветов, что и у обычной
+ * карточки (QFrame[role="section"] чуть выше по файлу): @{bgSurface} +
+ * тонкая @{borderSubtle}, поэтому и выглядит как "обычный элемент"
+ * интерфейса, а не системный виджет.
+ */
+QScrollBar:vertical {
+    background: @{bgDialog};
+    width: 10px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background: @{bgSurface};
+    border: 1px solid @{borderSubtle};
+    border-radius: 4px;
+    min-height: 24px;
+}
+QScrollBar::handle:vertical:hover {
+    background: @{bgHover};
+    border-color: @{borderHover};
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    subcontrol-origin: margin;
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+
+QScrollBar:horizontal {
+    background: @{bgDialog};
+    height: 10px;
+    margin: 0px;
+}
+QScrollBar::handle:horizontal {
+    background: @{bgSurface};
+    border: 1px solid @{borderSubtle};
+    border-radius: 4px;
+    min-width: 24px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: @{bgHover};
+    border-color: @{borderHover};
+}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0px;
+    subcontrol-origin: margin;
+}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: transparent;
+}
+
 /* ==================== Элементы форм ====================
  * Перенесено сюда из инлайновых styleSheet в .ui — было 28 QPushButton
  * (5 вариантов, различались только случайными font-size, по недосмотру
@@ -175,6 +316,11 @@ QPushButton {
     border: 1px solid @{borderDefault};
     border-radius: 6px;
     padding: 6px 12px;
+    /* Без этого Fusion после клика рисует вокруг текста свой пунктирный
+     * PE_FrameFocusRect (клик даёт кнопке клавиатурный фокус) — выглядит
+     * как будто текст выделен. Тот же приём уже есть у QTableWidget/
+     * QListWidget/QComboBox/QLineEdit выше по файлу. */
+    outline: none;
 }
 QPushButton:hover {
     background: @{bgHover};
@@ -216,13 +362,22 @@ QTableWidget {
     background: @{bgSurface};
     border-radius: 6px;
     gridline-color: @{borderSubtle};
+    /* Без этого Qt/Fusion рисует вокруг текущей ячейки свой пунктирный
+     * PE_FrameFocusRect — QSS его не трогает никаким другим свойством,
+     * только outline. Тот же приём уже есть у QLineEdit/QListWidget. */
+    outline: none;
     color: @{textStrong};
 }
 QTableWidget::item {
     padding: 6px 8px;
     border: none;
 }
-QTableWidget::item:selected {
+/* Оба состояния — активное и неактивное окно — одним и тем же явным
+ * цветом. Без ":selected:active" отдельно Fusion на некоторых платформах
+ * подмешивает для него нестилизованный палитровый highlight (бледно-
+ * голубой фон почти вплотную к белому тексту — то, что и не видно). */
+QTableWidget::item:selected,
+QTableWidget::item:selected:active {
     background: @{accentPrimary};
     color: @{bgSurface};
 }
@@ -353,14 +508,16 @@ QSlider::groove:vertical {
     border-radius: 2px;
 }
 QSlider::handle:vertical {
-    background: @{bgSurface};
-    border: 1px solid @{borderDefault};
-    height: 16px;
-    margin: 0 -8px;
-    border-radius: 8px;
+    background: @{accentPrimary};
+    border: 1px solid @{accentPrimary};
+    height: 10px;
+    width: 14px;
+    margin: 0 -5px;
+    border-radius: 3px;
 }
 QSlider::handle:vertical:hover {
-    border-color: @{accentPrimary};
+    background: @{accentHover};
+    border-color: @{accentHover};
 }
 QSlider::groove:vertical:disabled {
     background: @{bgDisabled};
@@ -450,6 +607,101 @@ QListWidget::item:selected {
 }
 QListWidget::item:selected:active {
     background: @{accentSelectedInactive};
+    color: @{textStrong};
+}
+
+/* Список сессий на вкладке "История" (HistoryPresenter) — просторнее
+ * обычного списка (8px/6px вместо базовых 4px/5px выше): в строке дата +
+ * источник + бейдж, обычной плотности мало. */
+QListWidget#listWidget_history_sessions::item {
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* QTreeView — до Viewer/ (файловое дерево) нигде в проекте не
+ * использовался, правил под него не было вообще, дерево оставалось на
+ * голом Fusion. Те же токены/радиусы, что и у QListWidget выше — тот же
+ * смысл виджета (список с выделением), просто с ветками. */
+QTreeView {
+    background: @{bgSurface};
+    border: 1px solid @{borderSubtle};
+    border-radius: 6px;
+    outline: none;
+    color: @{textStrong};
+}
+QTreeView::item {
+    padding: 4px 4px;
+    border-radius: 5px;
+}
+QTreeView::item:hover {
+    background: @{bgHover};
+}
+QTreeView::item:selected {
+    background: @{accentPrimary};
+    color: @{bgSurface};
+}
+QTreeView::item:selected:active {
+    background: @{accentSelectedInactive};
+    color: @{textStrong};
+}
+QHeaderView::section {
+    background: @{bgRecessed};
+    color: @{textMuted};
+    border: none;
+    border-bottom: 1px solid @{borderSubtle};
+    padding: 4px 6px;
+}
+
+/* QToolBar — тоже впервые появился в Viewer/, но правило общее: подхватит
+ * любой будущий тулбар в основном приложении. Кнопки внутри тулбара — не
+ * трогаем базовый "плоский" QToolButton { border: none; background: none; }
+ * выше (тот специально для иконок вроде переключателя темы в статус-баре),
+ * а стилизуем только QToolButton, лежащий именно в QToolBar — как обычную
+ * кликабельную кнопку с рамкой при наведении. */
+QToolBar {
+    background: @{bgSurface};
+    border: none;
+    border-bottom: 1px solid @{borderSubtle};
+    spacing: 6px;
+    padding: 4px 8px;
+}
+QToolBar QToolButton {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 5px 10px;
+    background: transparent;
+}
+QToolBar QToolButton:hover {
+    background: @{bgHover};
+    border-color: @{borderDefault};
+}
+QToolBar QToolButton:pressed {
+    background: @{borderSubtle};
+}
+
+/* ObjectWindow — правая панель с данными из базы */
+#frame_history_Section QScrollArea,
+#widget_cardBody {
+    background: transparent;
+    border: none;
+}
+#line_history {
+    border: none;
+    background: @{borderSubtle};
+    max-height: 1px;
+    min-height: 1px;
+}
+#label_card_Title[muted="true"] {
+    font-weight: normal;
+}
+QLabel[cardRole="key"] {
+    font-family: "Inter";
+    font-size: 12px;
+    color: @{textMuted};
+}
+QLabel[cardRole="value"] {
+    font-family: "Inter";
+    font-size: 12px;
     color: @{textStrong};
 }
 

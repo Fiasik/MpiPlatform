@@ -47,15 +47,10 @@ void ResolutionSource::buildValues()
 
     m_values[QStringLiteral("testDate")] = params.date;
 
-    // "Комментарий к тесту" в самом акте — слот ResolutionTest (тот же
-    // список слотов, что и Report::Pdf::CommentsSource/Act.xml).
     m_values[QStringLiteral("resolutionCommentText")] =
         m_ctx.testComments.value(Report::Html::CommentSlot::ResolutionTest);
 
     if (const auto& result = t.testResolution) {
-        // Столбец 0 — база, 1..4 — шаги. У ТРС факт базы один и тот же
-        // для обоих направлений (result.baseActual) — в отличие от ТЧР,
-        // тут нет отдельного baseActualTwo (см. Resolution/Result.h).
         auto fillDirection = [this, &result](const QString& prefix,
                                     const QVector<Domain::Tests::Option::Resolution::ResultItem>& items) {
             m_values[prefix + QStringLiteral("Selected0")] =

@@ -2,6 +2,8 @@
 #include "RunnerDoubleActing.h"
 #include "Domain/Tests/Main/Analyzer.h"
 
+#include "Utils/SignalUtils.h"
+
 namespace Domain::Tests::Main::DoubleActing {
 
 ScenarioDoubleActing::ScenarioDoubleActing(Tests::Context context,
@@ -14,10 +16,11 @@ ScenarioDoubleActing::ScenarioDoubleActing(Tests::Context context,
 std::unique_ptr<BaseRunner> ScenarioDoubleActing::createRunner()
 {
     const bool normalOpen = m_context.config.safePosition == SafePosition::NormallyOpen;
+    const bool invertTask = SignalUtils::isTaskInverted(normalOpen, m_context.config.positionerScale);
 
     return std::make_unique<RunnerDoubleActing>(
         m_context.device,
-        normalOpen,
+        invertTask,
         m_params,
         this
         );

@@ -9,8 +9,6 @@ class SparePartsPresenter
 public:
     explicit SparePartsPresenter(Ui::MainWindow* ui) : m_ui(ui) { }
 
-    void setupSearch();
-
     void addCurrentSelection();
 
     void removeSelected();

@@ -23,6 +23,11 @@ class BaseRunner : public QObject
     Q_OBJECT
 
 public:
+    // normalOpen, несмотря на имя — уже готовый итоговый invert для
+    // SignalUtils::calcCurrent()/calcPercent(), а не напрямую SafePosition.
+    // Собирается в Scenario::createRunner() через SignalUtils::
+    // isTaskInverted(safePosition==NormallyOpen, positionerScale) — там же
+    // объяснение, почему это XOR двух независимых переключателей, а не один.
     BaseRunner(Domain::Mpi::Device& device, bool normalOpen, QObject* parent = nullptr)
         : QObject(parent), m_device(device), m_normalOpen(normalOpen) { }
 
@@ -57,7 +62,7 @@ protected:
     }
 
     Domain::Mpi::Device& m_device;
-    bool m_normalOpen = false;
+    bool m_normalOpen = false; // см. комментарий у конструктора выше
 
 private:
     void cleanupThread();

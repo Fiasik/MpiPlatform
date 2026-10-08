@@ -54,7 +54,6 @@ struct MaterialsOfComponentParts {
     QString CV;
 };
 
-
 struct ValveInfo
 {
     QString positionNumber;
@@ -77,6 +76,7 @@ struct ValveInfo
     SafePosition safePosition = SafePosition::NormallyClosed;
     DriveType driveType = DriveType::SpringDiaphragm;
     PositionerType positionerType = PositionerType::Intelligent;
+    PositionerScale positionerScale = PositionerScale::Normal;
 
     double driveRangeLow = 0.0;
     double driveRangeHigh = 0.0;
@@ -130,6 +130,30 @@ public:
 
     QStringList positions();
     QString lastPosition();
+    // Пишет "last_position" — раньше её читал ValveWindow::setRegistry(),
+    // но никто нигде не писал (мёртвый хинт, всегда пустая строка), из-за
+    // чего окно при повторном открытии подставляло первую позицию из
+    // списка вместо той, с которой реально работали. Вызывается при
+    // успешном сохранении карточки клапана (см. ValveWindow).
+    void setLastPosition(const QString& position);
+
+    // История ранее введённых значений (группы в дереве настроек).
+    // Для каскадного автодополнения в ObjectWindow.
+    QStringList objects();
+    QStringList manufactories(const QString& object);
+    QStringList departments(const QString& object, const QString& manufactory);
+    QStringList positions(const QString& object,
+                          const QString& manufactory,
+                          const QString& department);
+
+    // Read-only чтение по произвольной связке (предпросмотр в ObjectWindow).
+    // Не трогают m_valveInfo / m_materialsOfComponentParts / m_objectInfo.
+    bool valveInfoAt(const QString& object, const QString& manufactory,
+                     const QString& department, const QString& position,
+                     ValveInfo& out);
+    bool materialsAt(const QString& object, const QString& manufactory,
+                     const QString& department, const QString& position,
+                     MaterialsOfComponentParts& out);
 
     // Color
     SensorColors& sensorColors();

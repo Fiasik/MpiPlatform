@@ -153,6 +153,37 @@ public:
     void setWhiteSpaceVisible(bool visible);
  	bool setStartPage(int spagen); //add by liufeijin20181028
 
+    // Печать: PpaperSize/Pscale/Porientation/PMxxx (см. xlsxworksheet_p.h,
+    // "pagesetup and print settings add by liufeijin") уже читаются и
+    // пишутся в XML, но были доступны только через загрузку существующего
+    // файла — не было ни одного публичного сеттера, чтобы задать их для
+    // листа, построенного с нуля. rowBreaks (принудительный разрыв
+    // страницы) не было вообще, ни на чтение, ни на запись. См.
+    // QXlsx/LOCAL_PATCHES.md, раздел про печать/пагинацию.
+    void setPageOrientation(const QString &orientation); // "portrait" | "landscape"
+    void setPaperSize(int paperSize);                    // код ECMA-376 §18.17.3.31, 9 = A4
+    void setPageScale(int percent);                      // 100 = 100%
+    void setPageMargins(double left, double right, double top, double bottom,
+                        double header, double footer);   // дюймы
+    bool addRowPageBreak(int row);                       // принудительный разрыв ПОСЛЕ этой строки
+
+    // "Вписать по ширине/высоте" — надёжнее фиксированного setPageScale(),
+    // когда ширина содержимого заранее не известна точно (её никто не
+    // считает руками — Excel сам подбирает масштаб под реальные ширины
+    // столбцов). heightPages=0 означает "сколько страниц по высоте
+    // понадобится", без ограничения — самый частый случай (ограничивают
+    // обычно только ширину).
+    void setFitToPage(int widthPages, int heightPages = 0);
+
+    // oddHeader/oddFooter уже читаются/пишутся (см. saveToXmlFile) — опять
+    // не было публичного сеттера для листа, построенного с нуля. Текст —
+    // в родном формате Excel header/footer: &L/&C/&R переключают левую/
+    // центральную/правую секцию, &P/&N — номер страницы/страниц всего,
+    // &"Шрифт,Стиль" и &<размер> — шрифт/кегль. Без цветового кода (&K...)
+    // текст остаётся чёрным — ровно то, что нужно для футера.
+    void setHeaderText(const QString &oddHeader);
+    void setFooterText(const QString &oddFooter);
+
     QVector<CellLocation> getFullCells(int* maxRow, int* maxCol);
 
 private:

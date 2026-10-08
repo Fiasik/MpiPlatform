@@ -925,6 +925,56 @@ double Document::rowHeight(int row)
 	return 0.0;
 }
 
+void Document::setPageOrientation(const QString &orientation)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setPageOrientation(orientation);
+}
+
+void Document::setPaperSize(int paperSize)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setPaperSize(paperSize);
+}
+
+void Document::setPageScale(int percent)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setPageScale(percent);
+}
+
+void Document::setPageMargins(double left, double right, double top, double bottom,
+                              double header, double footer)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setPageMargins(left, right, top, bottom, header, footer);
+}
+
+bool Document::addRowPageBreak(int row)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        return sheet->addRowPageBreak(row);
+    return false;
+}
+
+void Document::setFitToPage(int widthPages, int heightPages)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setFitToPage(widthPages, heightPages);
+}
+
+void Document::setHeaderText(const QString &oddHeader)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setHeaderText(oddHeader);
+}
+
+void Document::setFooterText(const QString &oddFooter)
+{
+    if (Worksheet *sheet = currentWorksheet())
+        sheet->setFooterText(oddFooter);
+}
+
 /*!
  Returns format of \a row.
 */

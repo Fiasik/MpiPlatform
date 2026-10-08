@@ -50,6 +50,38 @@ public:
     void snapshotDraggableSeries();
     void restoreDraggableSeries();
     void setAxisXTitle(const QString& title);
+
+    // Постоянная разметка поверх графика (не путать с крестиком наведения
+    // m_marker_X/Y — тот временный и следует за курсором, эта же остаётся,
+    // пока не заменена/очищена). from == to — одна жирная точка с подписью
+    // рядом; from != to — две точки, соединяющая их полоска и подпись по
+    // центру полоски (см. Stroke: начало/конец прямого и обратного хода;
+    // Step: точка перерегулирования, точка T%).
+    struct ChartAnnotation {
+        // Circle — факт/измеренная точка (начало/конец хода, пик
+        // перерегулирования, шаг теста); Diamond — расчётный порог
+        // (например T% на Step) — читается на графике быстрее, чем текст.
+        enum class MarkerShape { Circle, Diamond };
+
+        QPointF from;
+        QPointF to;
+        QString label;
+        // Невалидный QColor() (по умолчанию) — берётся акцентный цвет темы
+        // (см. applyPalette()). Задавайте явно только для смысловой окраски
+        // (например ОК/не ОК на Response) — эти цвета от темы не зависят,
+        // как и Gui::Style::statusColor(), которым они обычно и заданы.
+        QColor color;
+        MarkerShape shape = MarkerShape::Circle;
+    };
+    void setAnnotations(const QVector<ChartAnnotation>& annotations);
+    void clearAnnotations();
+    // Пересчитывает диапазон данных (m_min_X/m_max_X) по уже имеющимся
+    // точкам во всех сериях и переприменяет автомасштаб. Нужен только тем,
+    // кто добавляет точки в обход addPoint() (тот сам держит диапазон в
+    // курсе на каждую точку) — например, loadFromStream() ниже, а также
+    // ViewerWindow::compareFiles() в просмотрщике, дописывающий во
+    // вторую половину сравнения серии готовыми списками точек.
+    void rescanRange();
     // QChart рисуется через QGraphicsScene, а не обычную отрисовку виджета
     // — QSS/theme.qss его не достаёт вообще (background/оси/легенда красятся
     // тут явно). Вызывается один раз при создании графика и каждый раз при
@@ -140,6 +172,56 @@ private:
     bool m_hoverActive = false;
     bool m_zoomDragActive = false;
     void layoutLegend();
+
+    // Графические примитивы одной ChartAnnotation — dotTo/connector нужны
+    // только когда from != to, underline/text — только когда label не пуст
+    // (см. ChartAnnotation). connector — не прямая линия к точкам данных
+    // (та шла по случайному углу — время и позиция сразу), а "скобка" как
+    // размерная линия на чертеже: от каждой точки вверх, дальше горизонтально
+    // на фиксированной высоте — см. updateAnnotationPositions(). Точки/
+    // скобка видны всегда — это и есть "карта" происходящего на графике;
+    // text/underline скрыты, пока курсор не рядом (см. updateAnnotationHover()),
+    // иначе на графике с десятком точек подписи сливаются в кашу.
+    struct AnnotationItem {
+        QAbstractGraphicsShapeItem* dotFrom = nullptr;
+        QAbstractGraphicsShapeItem* dotTo = nullptr;
+        QGraphicsPathItem* connector = nullptr;
+        QGraphicsLineItem* underline = nullptr;
+        QGraphicsSimpleTextItem* text = nullptr;
+    };
+    QVector<ChartAnnotation> m_annotationData;
+    QVector<AnnotationItem> m_annotationItems;
+    QColor m_annotationColor = QColor("#2563EB");
+    QColor m_annotationLabelTextColor = QColor("#161A20");
+    // -1 — ни одна подпись сейчас не показана (курсор не рядом ни с одной
+    // точкой разметки).
+    int m_hoveredAnnotationIndex = -1;
+    void rebuildAnnotationItems();
+    void updateAnnotationPositions();
+    void updateAnnotationHover(const QPoint& pos);
+    void hideAnnotationHover();
+    QAbstractGraphicsShapeItem* makeAnnotationMarker(ChartAnnotation::MarkerShape shape, qreal radius);
+
+    // Чип-переключатель "Разметка" в строке легенды — виден только когда
+    // есть что скрывать (m_annotationData не пуст); в отличие от
+    // m_legendChips не завязан на индекс серии, поэтому отдельные поля и
+    // отдельная ветка в mousePressEvent(), а не ещё один LegendChip.
+    bool m_annotationsVisible = true;
+    QGraphicsEllipseItem* m_annotationsToggleDot = nullptr;
+    QGraphicsSimpleTextItem* m_annotationsToggleLabel = nullptr;
+    QRectF m_annotationsToggleHitRect;
+    void setAnnotationsVisible(bool visible);
+
+    // Второй чип-переключатель, рядом с первым — "Значения": по умолчанию
+    // подпись видна только при наведении на конкретную точку (см.
+    // updateAnnotationHover(), решение против каши из подписей на плотной
+    // разметке); этот режим включает показ ВСЕХ подписей разом, для
+    // сверки/аудита всех точек сразу, без наведения на каждую по очереди.
+    bool m_annotationLabelsAlwaysVisible = false;
+    QGraphicsEllipseItem* m_labelsToggleDot = nullptr;
+    QGraphicsSimpleTextItem* m_labelsToggleLabel = nullptr;
+    QRectF m_labelsToggleHitRect;
+    void setAnnotationLabelsAlwaysVisible(bool visible);
 
     QList<Series*> m_mySeries;
     QList<Series*> m_mySeriesDubl;

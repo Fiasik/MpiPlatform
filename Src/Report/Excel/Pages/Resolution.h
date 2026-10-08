@@ -38,8 +38,6 @@ public:
         int downActualRow = 0;
         int downErrorRow = 0;
 
-        // Первый столбец - "база", остальные - анкеры объединённых
-        // ячеек шагов (см. шаблон ReportIlim.xlsx: F:I, J:K, L:M, N:Q).
         QVector<int> stepColumns = {5, 6, 10, 12, 14};
 
         bool positionerModel = true;

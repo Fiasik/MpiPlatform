@@ -50,6 +50,14 @@ NumberUtils::parseRange(QString s)
     return QPair<double,double>(low, high);
 }
 
+QString NumberUtils::formatRange(double lo, double hi)
+{
+    if (lo > hi) std::swap(lo, hi);
+    return QString("%1–%2")
+        .arg(lo, 0, 'f', 2)
+        .arg(hi, 0, 'f', 2);
+}
+
 void NumberUtils::readRange(QLineEdit* le, double& low, double& high) {
     QString s = le->text().trimmed();
     s.replace(QChar(0x2013), '-');

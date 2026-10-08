@@ -50,4 +50,10 @@ inline ToolNumber toolNumberFromCombo(const QComboBox* combo)
     return fromComboIndex(combo ? combo->currentIndex() : -1,
                           ToolNumber::A);
 }
+
+inline PositionerScale positionerScaleFromCombo(const QComboBox* combo)
+{
+    return fromComboIndex(combo ? combo->currentIndex() : -1,
+                          PositionerScale::Normal);
+}
 }

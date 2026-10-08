@@ -64,109 +64,70 @@ void TestController::run(const std::function<void()>& start)
     start();
 }
 
-void TestController::runStrokeTest()
+template <typename Params>
+void TestController::runWithParams(void (Domain::Program::*startFn)(const Params&), const Params& params)
 {
-    run([this] {
+    run([this, startFn, params] {
         auto* program = m_program;
 
         QMetaObject::invokeMethod(
             program,
-            [program] {
-                program->startStrokeTest();
+            [program, startFn, params] {
+                (program->*startFn)(params);
             },
             Qt::QueuedConnection
             );
     });
+}
+
+void TestController::runNoParams(void (Domain::Program::*startFn)())
+{
+    run([this, startFn] {
+        auto* program = m_program;
+
+        QMetaObject::invokeMethod(
+            program,
+            [program, startFn] {
+                (program->*startFn)();
+            },
+            Qt::QueuedConnection
+            );
+    });
+}
+
+void TestController::runStrokeTest()
+{
+    runNoParams(&Domain::Program::startStrokeTest);
 }
 
 void TestController::runMainTest(const Domain::Tests::Main::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startMainTest(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startMainTest, params);
 }
 
 void TestController::runMainTestDoubleActing(const Domain::Tests::Main::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startMainTestDoubleActing(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startMainTestDoubleActing, params);
 }
 
 void TestController::runResponseTest(const Domain::Tests::Option::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startResponseTest(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startResponseTest, params);
 }
 
 void TestController::runResolutionTest(const Domain::Tests::Option::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startResolutionTest(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startResolutionTest, params);
 }
 
 void TestController::runStepTest(const Domain::Tests::Option::Step::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startStepTest(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startStepTest, params);
 }
 
 void TestController::runCyclicTest(const Domain::Tests::Cyclic::Params& params)
 {
-    run([this, params] {
-        auto* program = m_program;
-
-        QMetaObject::invokeMethod(
-            program,
-            [program, params] {
-                program->startCyclicTest(params);
-            },
-            Qt::QueuedConnection
-            );
-    });
+    runWithParams(&Domain::Program::startCyclicTest, params);
 }
 
 void TestController::stop()

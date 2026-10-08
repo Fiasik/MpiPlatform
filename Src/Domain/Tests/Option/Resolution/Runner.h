@@ -2,6 +2,7 @@
 
 #include "Domain/Tests/BaseRunner.h"
 #include "Domain/Tests/Option/Params.h"
+#include "Domain/ValveEnums.h"
 
 namespace Domain::Tests::Option::Resolution {
     class Runner : public BaseRunner
@@ -9,8 +10,8 @@ namespace Domain::Tests::Option::Resolution {
         Q_OBJECT
     public:
         Runner(Mpi::Device& device, bool normalOpen, const Params& params,
-               QObject* parent = nullptr)
-            : BaseRunner(device, normalOpen, parent), m_params(params) {}
+               PositionerScale scale, QObject* parent = nullptr)
+            : BaseRunner(device, normalOpen, parent), m_params(params), m_scale(scale) {}
 
     protected:
         RunnerConfig buildConfig() override;
@@ -18,5 +19,6 @@ namespace Domain::Tests::Option::Resolution {
 
     private:
         Params m_params;
+        PositionerScale m_scale;
     };
 }

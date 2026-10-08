@@ -38,7 +38,6 @@ void ResolutionTable::build(Writer& writer, const Report::Context& ctx)
     } else {
         qWarning() << "[Excel::Blocks::ResolutionTable] отсутствует ctx.telemetry.testResolution";
     }
-
 }
 
 void ResolutionTable::writeDirection(

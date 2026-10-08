@@ -30,7 +30,7 @@
 // ВРЕМЕННО (диагностика краша в статической Windows-сборке, см. main.cpp
 // в корне репозитория) — без этого статическая Qt не находит платформенный
 // плагин "windows" и падает ещё до создания QApplication.
-#ifdef MPISDK_STATIC_QT_PLUGINS
+#ifdef MPIPLATFORM_STATIC_QT_PLUGINS
 Q_IMPORT_PLUGIN(QSvgPlugin)
 Q_IMPORT_PLUGIN(QSvgIconPlugin)
 Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
@@ -40,7 +40,7 @@ namespace {
 
 QString outputDir(const QString& subfolder)
 {
-    const QString dir = QStringLiteral(MPISDK_SOURCE_DIR "/experiments/verify-theme/") + subfolder;
+    const QString dir = QStringLiteral(MPIPLATFORM_SOURCE_DIR "/experiments/verify-theme/") + subfolder;
     QDir().mkpath(dir);
     return dir;
 }
@@ -73,7 +73,7 @@ void saveCompare(const QString& name)
     painter.drawPixmap(light.width(), 0, dark);
     painter.end();
 
-    const QString path = QStringLiteral(MPISDK_SOURCE_DIR "/experiments/verify-theme/") + name + QStringLiteral("_compare.png");
+    const QString path = QStringLiteral(MPIPLATFORM_SOURCE_DIR "/experiments/verify-theme/") + name + QStringLiteral("_compare.png");
     combined.save(path);
     qDebug() << "Сохранено сравнение:" << path;
 }

@@ -1,4 +1,5 @@
 #include "Reader.h"
+#include <QCoreApplication>
 #include <QSerialPortInfo>
 #include <QThread>
 
@@ -92,14 +93,30 @@ void Reader::autoConnect()
         QByteArray version = sendMessage(Message(Command::GetVersion));
         if (!version.isEmpty()) {
             m_version = version.at(0);
+            drainPendingPortErrors();
             m_isProbing = false;
             return;
         }
         emit closePort();
     }
 
+    drainPendingPortErrors();
     m_isProbing = false;
     emit errorOccured(QStringLiteral("Устройство не найдено"));
+}
+
+// Port::open() на неудаче сам может отложить обработку СВОЕЙ же ошибки на
+// следующий тик очереди событий (см. Port.cpp — лямбда на errorOccurred,
+// QMetaObject::invokeMethod(..., Qt::QueuedConnection), намеренно — защита
+// от реентрантного close() из глубины стека QSerialPort). Внутри цикла
+// выше эти отложенные вызовы НЕ успевают разрядиться (у Reader нет своего
+// вложенного цикла событий между итерациями) — без явного "слива" здесь,
+// пока m_isProbing ещё true, они бы сработали уже ПОСЛЕ сброса флага ниже,
+// и onPortError() больше не смог бы их подавить: по тосту на каждый не
+// открывшийся порт вместо одного осмысленного сообщения в конце.
+void Reader::drainPendingPortErrors()
+{
+    QCoreApplication::sendPostedEvents(m_port, QEvent::MetaCall);
 }
 
 void Reader::readVersion(quint8 &version)

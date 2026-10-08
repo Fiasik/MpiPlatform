@@ -2,6 +2,7 @@
 #include "Gui/MainWindow/ui_MainWindow.h"
 #include "ui_MainWindow.h"
 
+#include <QCloseEvent>
 #include <QDebug>
 #include <QFileDialog>
 #include <QHash>
@@ -19,52 +20,46 @@
 #include "Gui/Style/ThemeManager.h"
 #include "Gui/MainWindow/StatusBarPresenter.h"
 #include "Gui/MainWindow/ReportGenerationPresenter.h"
+#include "Gui/MainWindow/ReportGenerationWorker.h"
+#include "Gui/MainWindow/HistoryPresenter.h"
+#include "Storage/HistoryWriter.h"
 
 #include "Utils/Shortcuts/TabBinder.h"
 #include "Utils/NumberUtils.h"
 #include "Utils/StyledMessageBox.h"
+#include "Utils/UiText.h"
 #include "Widgets/Chart/ChartView.h"
+#include "Widgets/Chart/AnnotationBuilder.h"
 
 #include "Widgets/Chart/ImageService.h"
 
 using ChartType = Widgets::Chart::ChartType;
 
 namespace {
-constexpr auto kArrowButtonStyle =
-    "QToolButton {"
-    "   background-color: transparent;"
-    "   border: none;"
-    "   padding: 0px;"
-    "   margin: 0px;"
-    "}"
-    "QToolButton:hover {"
-    "   background-color: transparent;"
-    "}"
-    "QToolButton:pressed {"
-    "   background-color: transparent;"
-    "}";
-
-static QString formatRange(double lo, double hi)
+// Подписи для verticalSlider_task (3-21 мА, проценты на 4/8/12/16/20) —
+// процент считается напрямую из мА, а не хранится отдельным массивом:
+// при PositionerScale::Reverse он просто идёт в обратную сторону (20 мА
+// = 0%, 4 мА = 100%), числа остаются согласованными сами по себе.
+QMap<int, QString> taskSliderLabels(PositionerScale scale)
 {
-    if (lo > hi) std::swap(lo, hi);
-    return QString("%1–%2")
-        .arg(lo, 0, 'f', 2)
-        .arg(hi, 0, 'f', 2);
-}
+    QMap<int, QString> labels;
 
-void setNum(QLabel* le, double v)
-{
-    le->setText(QString::number(v, 'f', 2));
-}
+    for (int ma = 3; ma <= 21; ++ma) {
+        const int key = ma * 1000;
 
-void setPlusMinusPercent(QLabel* loLe, QLabel* hiLe,
-                         double base, double pct)
-{
-    const double d = std::abs(base) * (pct / 100.0);
-    setNum(loLe, base - d);
-    setNum(hiLe, base + d);
+        if (ma >= 4 && ma <= 20 && (ma - 4) % 4 == 0) {
+            const int percent = (scale == PositionerScale::Normal)
+                ? (ma - 4) * 100 / 16
+                : (20 - ma) * 100 / 16;
+            labels[key] = QStringLiteral("%1% – %2 мА").arg(percent).arg(ma);
+        } else {
+            labels[key] = QStringLiteral("%1 мА").arg(ma);
+        }
+    }
+
+    return labels;
 }
-} // namespace
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -74,25 +69,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     Gui::Style::applyRoles(this);
 
-    ui->tabWidget_optionalTestsResults->setTabVisible(
-        ui->tabWidget_optionalTestsResults->indexOf(ui->tab_responseResults),
-        Domain::kIlimVariant);
-    ui->tabWidget_optionalTestsResults->setTabVisible(
-        ui->tabWidget_optionalTestsResults->indexOf(ui->tab_resolutionResults),
-        Domain::kIlimVariant);
-
-    ui->pushButton_commentManualTest->setVisible(Domain::kIlimVariant);
-    ui->pushButton_commentResponseTest->setVisible(Domain::kIlimVariant);
-    ui->pushButton_commentResolutionTest->setVisible(Domain::kIlimVariant);
-    ui->pushButton_commentStepTest->setVisible(Domain::kIlimVariant);
-
-    ui->tabWidget_main->setTabVisible(
-        ui->tabWidget_main->indexOf(ui->tab_cyclicTests),
-        Domain::kSkiVariant);
-
-    ui->tabWidget_reportGeneration_infoMaterials->setTabVisible(
-        ui->tabWidget_reportGeneration_infoMaterials->indexOf(ui->tab_materials),
-        !Domain::kSkiVariant);
+    applyBuildVariantUi();
 
     setupUiConnections();
 
@@ -101,7 +78,28 @@ MainWindow::MainWindow(QWidget *parent)
     m_crossingIndicators = std::make_unique<CrossingIndicatorsPresenter>(ui);
     m_conclusionPresenter = std::make_unique<ConclusionPresenter>(ui);
     m_sparePartsPresenter = std::make_unique<SparePartsPresenter>(ui);
+    m_historyPresenter = std::make_unique<HistoryPresenter>(ui);
     m_toastManager = new Widgets::Toast::ToastManager(this, this);
+
+    connect(ui->pushButton_history_refresh, &QPushButton::clicked,
+            this, [this] { m_historyPresenter->refresh(); });
+    connect(ui->tabWidget_main, &QTabWidget::currentChanged, this, [this](int index) {
+        if (ui->tabWidget_main->widget(index) == ui->tab_history)
+            m_historyPresenter->refresh();
+    });
+    connect(ui->listWidget_history_sessions, &QListWidget::itemClicked,
+            this, [this](QListWidgetItem* item) {
+                m_historyPresenter->onSessionItemClicked(item);
+            });
+    connect(ui->listWidget_history_sessions, &QListWidget::itemChanged,
+            this, [this](QListWidgetItem* item) {
+                if (m_historyPresenter->onSessionCheckStateChanged(item) && m_toastManager) {
+                    m_toastManager->show(Gui::Style::StatusKind::Warning,
+                        tr("Для сравнения можно отметить не более двух сессий"));
+                }
+            });
+    connect(ui->checkBox_history_needsRepair, &QCheckBox::toggled,
+            this, [this](bool checked) { m_historyPresenter->onNeedsRepairToggled(checked); });
 
     m_statusBarPresenter = new StatusBarPresenter(ui, m_mapper.get(), m_chartManager.get(), this);
     m_statusStateValue = m_statusBarPresenter->stateValueLabel();
@@ -163,6 +161,21 @@ MainWindow::MainWindow(QWidget *parent)
     m_reportPresenter = std::make_unique<ReportGenerationPresenter>(
         ui, m_conclusionPresenter.get(), m_sparePartsPresenter.get(),
         m_reportSaver, m_telemetry, m_chartImageStorage, m_chartSnapshotStorage, this);
+
+    // generate() реально выполняется на m_reportWorkerThread (см.
+    // generateReportClicked() — invokeMethod + Qt::QueuedConnection). Сама
+    // сборка PDF (QtRPT -> QPrinter -> GDI на Windows) непотокобезопасна,
+    // поэтому ReportGenerationWorker::generate() изнутри сама отправляет
+    // только эти вызовы обратно на GUI-поток (BlockingQueuedConnection) —
+    // см. её комментарий. Без parent у worker — Qt требует этого для
+    // moveToThread().
+    m_reportWorker = new ReportGenerationWorker(m_reportSaver);
+    m_reportWorkerThread = new QThread(this);
+    m_reportWorker->moveToThread(m_reportWorkerThread);
+    m_reportWorkerThread->start();
+
+    connect(m_reportWorker, &ReportGenerationWorker::finished,
+            this, &MainWindow::onReportGenerationFinished);
 
     ui->checkBox_switch_3_0->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->checkBox_switch_0_3->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -329,14 +342,18 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_stepResults->resizeColumnsToContents();
 
     setupArrowButton(ui->toolButton_arrowUp,
-                     ":/Src/Img/arrowUp.png",
-                     ":/Src/Img/arrowUpHover.png",
-                     +0.05);
+                     ":/Src/Img/ChevronUp.svg",
+                     ":/Src/Img/ChevronUpActive.svg",
+                     +0.05,
+                     QSize(),
+                     QSize(18, 12));
 
     setupArrowButton(ui->toolButton_arrowDown,
-                     ":/Src/Img/arrowDown.png",
-                     ":/Src/Img/arrowDownHover.png",
-                     -0.05);
+                     ":/Src/Img/ChevronDown.svg",
+                     ":/Src/Img/ChevronDownActive.svg",
+                     -0.05,
+                     QSize(),
+                     QSize(18, 12));
 
     connect(m_program, &Domain::Program::telemetryUpdated,
             this, &MainWindow::onTelemetryUpdated,
@@ -363,6 +380,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget_mainTests->setCurrentIndex(0);
     ui->tabWidget_optionalTests->setCurrentIndex(0);
     ui->tabWidget_reportGeneration->setCurrentIndex(0);
+
+    updateOptionalTestParamsDisplay();
 
     connect(ui->tabWidget_main, &QTabWidget::currentChanged,
             this, [this](int) {
@@ -399,33 +418,38 @@ MainWindow::MainWindow(QWidget *parent)
                 m_reportPresenter->editComment(Report::Html::CommentSlot::MainTest);
             });
 
-    // Manual/Response/Resolution/Step — только у завода Ilim (см.
-    // Domain::kIlimVariant), кнопки скрыты для остальных сборок в
-    // setupInitialUi()/конструкторе. MainTest выше остаётся видимой всем —
-    // она была и до варианта сборки.
-    connect(ui->pushButton_commentManualTest,
-            &QPushButton::clicked,
-            this, [this] {
-                m_reportPresenter->editComment(Report::Html::CommentSlot::Manual);
-            });
+    // Комментарии к Manual/Response/Resolution/Step — только у завода Ilim,
+    // кнопки сокрыты через applyBuildVariantUi().
+    if (Domain::kIlimVariant) {
+        connect(ui->pushButton_commentManualTest,
+                &QPushButton::clicked,
+                this, [this] {
+                    m_reportPresenter->editComment(Report::Html::CommentSlot::Manual);
+                });
 
-    connect(ui->pushButton_commentResponseTest,
-            &QPushButton::clicked,
-            this, [this] {
-                m_reportPresenter->editComment(Report::Html::CommentSlot::ResponseTest);
-            });
+        // Одна кнопка на все три вкладки опциональных тестов —
+        // Response/Resolution/Step — вместо трёх, какая сейчас открыта
+        connect(ui->pushButton_optionalTests_comment,
+                &QPushButton::clicked,
+                this, [this] {
+                    using Report::Html::CommentSlot;
 
-    connect(ui->pushButton_commentResolutionTest,
-            &QPushButton::clicked,
-            this, [this] {
-                m_reportPresenter->editComment(Report::Html::CommentSlot::ResolutionTest);
-            });
+                    CommentSlot slot = CommentSlot::ResponseTest;
+                    switch (ui->tabWidget_optionalTests->currentIndex()) {
+                    case 0: slot = CommentSlot::ResponseTest; break;
+                    case 1: slot = CommentSlot::ResolutionTest; break;
+                    case 2: slot = CommentSlot::StepTest; break;
+                    default: return;
+                    }
 
-    connect(ui->pushButton_commentStepTest,
-            &QPushButton::clicked,
-            this, [this] {
-                m_reportPresenter->editComment(Report::Html::CommentSlot::StepTest);
-            });
+                    m_reportPresenter->editComment(slot);
+                });
+    }
+
+    // Параметры теста в frame_optionalTestsMenu_Section — те же данные,
+    // что уже лежат в диалогах настроек Response/Resolution/Step
+    connect(ui->tabWidget_optionalTests, &QTabWidget::currentChanged,
+            this, [this] { updateOptionalTestParamsDisplay(); });
 
     // ===== conclusion =====
     m_conclusionPresenter->setupSummaryTemplateItems();
@@ -434,15 +458,9 @@ MainWindow::MainWindow(QWidget *parent)
             &QComboBox::currentIndexChanged,
             this, [this] { m_conclusionPresenter->onSummaryTemplateChanged(); });
 
-    // currentIndexChanged() не эмитится для уже выставленного по умолчанию
-    // индекса 0 — без явного вызова textEdit_conclusion_additionalNotes
-    // (реальный источник summaryText() для отчёта) остаётся пустым, хотя
-    // комбобокс визуально показывает первый шаблон.
     m_conclusionPresenter->onSummaryTemplateChanged();
 
     // ===== spare parts =====
-    m_sparePartsPresenter->setupSearch();
-
     connect(ui->comboBox_spareParts_search->lineEdit(),
             &QLineEdit::returnPressed,
             this, [this] { m_sparePartsPresenter->addCurrentSelection(); });
@@ -469,26 +487,31 @@ MainWindow::~MainWindow()
     m_programThread->quit();
     m_programThread->wait();
 
+    m_reportWorkerThread->quit();
+    m_reportWorkerThread->wait();
+
     delete ui;
 }
 
 void MainWindow::setupArrowButton(QToolButton* button,
                                   const QString& normalIcon,
                                   const QString& hoverIcon,
-                                  double step)
+                                  double step,
+                                  QSize buttonSize,
+                                  QSize iconSize)
 {
     button->setProperty("normalIcon", normalIcon);
     button->setProperty("hoverIcon", hoverIcon);
     button->setProperty("step", step);
 
     button->setIcon(QIcon(normalIcon));
-    button->setFixedSize(60, 60);
-    button->setIconSize(QSize(60, 60));
+    if (buttonSize.isValid())
+        button->setFixedSize(buttonSize);
+    button->setIconSize(iconSize);
     button->setText(QString());
     button->setAutoRepeat(true);
     button->setAutoRepeatDelay(300);
     button->setAutoRepeatInterval(100);
-    button->setStyleSheet(QString::fromUtf8(kArrowButtonStyle));
     button->installEventFilter(this);
 
     connect(button, &QToolButton::clicked, this, [this, step]() {
@@ -499,9 +522,41 @@ void MainWindow::setupArrowButton(QToolButton* button,
     });
 }
 
+void MainWindow::applyArrowButtonIcons(const Gui::Style::Palette& palette)
+{
+    const auto apply = [](QToolButton* button, const QString& normalIcon, const QString& hoverIcon) {
+        button->setProperty("normalIcon", normalIcon);
+        button->setProperty("hoverIcon", hoverIcon);
+        button->setIcon(QIcon(normalIcon));
+    };
+    apply(ui->toolButton_arrowUp, palette.iconChevronUp, palette.iconChevronUpActive);
+    apply(ui->toolButton_arrowDown, palette.iconChevronDown, palette.iconChevronDownActive);
+}
+
+// Настройка отображений для разных версий приложения
+void MainWindow::applyBuildVariantUi()
+{
+    ui->tabWidget_optionalTestsResults->setTabVisible(
+        ui->tabWidget_optionalTestsResults->indexOf(ui->tab_responseResults),
+        Domain::kIlimVariant);
+    ui->tabWidget_optionalTestsResults->setTabVisible(
+        ui->tabWidget_optionalTestsResults->indexOf(ui->tab_resolutionResults),
+        Domain::kIlimVariant);
+
+    ui->pushButton_commentManualTest->setVisible(Domain::kIlimVariant);
+    ui->pushButton_optionalTests_comment->setVisible(Domain::kIlimVariant);
+
+    ui->tabWidget_main->setTabVisible(
+        ui->tabWidget_main->indexOf(ui->tab_cyclicTests),
+        Domain::kSkiVariant);
+
+    ui->tabWidget_reportGeneration_infoMaterials->setTabVisible(
+        ui->tabWidget_reportGeneration_infoMaterials->indexOf(ui->tab_materials),
+        !Domain::kSkiVariant);
+}
+
 void MainWindow::setupUiConnections()
 {
-    // ===== signal buttons =====
     connect(ui->pushButton_signal_4mA,
             &QPushButton::clicked,
             this, [this] { ui->doubleSpinBox_task->setValue(4.0); });
@@ -521,6 +576,13 @@ void MainWindow::setupUiConnections()
     connect(ui->pushButton_signal_20mA,
             &QPushButton::clicked,
             this, [this] { ui->doubleSpinBox_task->setValue(20.0); });
+
+    connect(ui->doubleSpinBox_task,
+            qOverload<double>(&QDoubleSpinBox::valueChanged),
+            this, [this](double value) {
+                ui->label_task_Value->setText(QString::number(value, 'f', 2));
+            });
+    ui->label_task_Value->setText(QString::number(ui->doubleSpinBox_task->value(), 'f', 2));
 
     // ===== main test =====
     connect(ui->pushButton_mainTest_start, &QPushButton::clicked,
@@ -625,6 +687,14 @@ void MainWindow::setupShortcuts()
 void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
 {
     m_statusBarPresenter->setThemeManager(themeManager);
+
+    m_historyPresenter->applyPalette(themeManager->currentPalette());
+    applyArrowButtonIcons(themeManager->currentPalette());
+    connect(themeManager, &Gui::Style::ThemeManager::schemeChanged, this,
+            [this, themeManager](Gui::Style::ColorScheme) {
+                m_historyPresenter->applyPalette(themeManager->currentPalette());
+                applyArrowButtonIcons(themeManager->currentPalette());
+            });
 }
 
 void MainWindow::setupPrimaryActions()
@@ -708,6 +778,10 @@ void MainWindow::onTotalTestTimeMs(quint64 totalMs)
     onCountdownTimeout();
 }
 
+// Предпоказ настроенных допусков ДО первого теста — самого факта и
+// вердикта ещё нет (это даёт только CrossingIndicatorsPresenter::update()
+// по результатам живого теста), поэтому тут только текст "допуск X–Y" в
+// строке статуса, без цвета/вердикта и без точки на полосе допуска.
 void MainWindow::applyCrossingLimitsFromRecommend(const ValveInfo& valveInfo)
 {
     const CrossingLimits& limits = valveInfo.crossingLimits;
@@ -716,9 +790,9 @@ void MainWindow::applyCrossingLimitsFromRecommend(const ValveInfo& valveInfo)
         bool ok = false;
         const double stroke = NumberUtils::toDouble(valveInfo.valveStroke, &ok);
         if (ok) {
-            setPlusMinusPercent(ui->label_crossingLimits_range_lowerLimit_Value,
-                                ui->label_crossingLimits_range_upperLimit_Value,
-                                stroke, limits.valveStroke);
+            const double d = std::abs(stroke) * (limits.valveStroke / 100.0);
+            ui->label_crossingLimits_range_Norm->setText(
+                tr("допуск %1").arg(NumberUtils::formatRange(stroke - d, stroke + d)));
         }
     }
 
@@ -747,13 +821,17 @@ void MainWindow::applyCrossingLimitsFromRecommend(const ValveInfo& valveInfo)
         if (lowLo > lowHi) std::swap(lowLo, lowHi);
         if (highLo > highHi) std::swap(highLo, highHi);
 
-        ui->label_crossingLimits_spring_lowerLimit_Value->setText(formatRange(lowLo, lowHi));
-        ui->label_crossingLimits_spring_upperLimit_Value->setText(formatRange(highLo, highHi));
+        ui->label_crossingLimits_spring_Norm->setText(
+            tr("низ %1 · верх %2").arg(NumberUtils::formatRange(lowLo, lowHi), NumberUtils::formatRange(highLo, highHi)));
     }
 
     if (limits.dynamicErrorEnabled) {
-        ui->label_crossingLimits_dynamicError_lowerLimit_Value->setText(QStringLiteral("0"));
-        ui->label_crossingLimits_dynamicError_upperLimit_Value->setText(valveInfo.dinamicErrorRecomend);
+        bool ok = false;
+        const double upper = valveInfo.dinamicErrorRecomend.toDouble(&ok);
+        if (ok) {
+            ui->label_crossingLimits_dynamicError_Norm->setText(
+                tr("допуск %1").arg(NumberUtils::formatRange(0.0, upper)));
+        }
     }
 }
 
@@ -780,24 +858,36 @@ void MainWindow::onStrokeResultUpdated(const Domain::Tests::Stroke::Result& resu
 {
     m_telemetry.testStroke = result;
     m_mapper->updateStrokeTest(result);
+
+    if (auto* chart = m_chartManager->chart(ChartType::Stroke))
+        chart->setAnnotations(Widgets::Chart::buildStrokeAnnotations(result));
 }
 
 void MainWindow::onStepResultUpdated(const Domain::Tests::Option::Step::Result& result)
 {
     m_telemetry.testStep = result;
     m_mapper->updateStepTest(result);
+
+    if (auto* chart = m_chartManager->chart(ChartType::Step))
+        chart->setAnnotations(Widgets::Chart::buildStepAnnotations(result));
 }
 
 void MainWindow::onResponseResultUpdated(const Domain::Tests::Option::Response::Result& result)
 {
     m_telemetry.testResponse = result;
     m_mapper->updateResponseTest(result);
+
+    if (auto* chart = m_chartManager->chart(ChartType::Response))
+        chart->setAnnotations(Widgets::Chart::buildResponseAnnotations(result));
 }
 
 void MainWindow::onResolutionResultUpdated(const Domain::Tests::Option::Resolution::Result& result)
 {
     m_telemetry.testResolution = result;
     m_mapper->updateResolutionTest(result);
+
+    if (auto* chart = m_chartManager->chart(ChartType::Resolution))
+        chart->setAnnotations(Widgets::Chart::buildResolutionAnnotations(result));
 }
 
 void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
@@ -838,6 +928,7 @@ void MainWindow::onDeviceErrorOccurred(const QString& message)
         m_toastManager->show(Gui::Style::StatusKind::Error, message);
 }
 
+// Блокировка
 void MainWindow::setTaskControlsEnabled(bool enabled)
 {
     ui->pushButton_init->setEnabled(enabled);
@@ -852,6 +943,12 @@ void MainWindow::setManualHardwareControlsEnabled(bool enabled)
     ui->frame_shutOff_Section->setEnabled(enabled);
 }
 
+void MainWindow::restoreControlsAfterTest()
+{
+    setTaskControlsEnabled(true);
+    setManualHardwareControlsEnabled(m_initState == InitState::Succeeded);
+}
+
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
     if (event->type() == QEvent::Resize &&
@@ -864,10 +961,14 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         return QMainWindow::eventFilter(watched, event);
     }
 
+    // Свойства normalIcon/hoverIcon проставляет только setupArrowButton() —
+    // их наличие само по себе и есть признак "это одна из его кнопок", не
+    // нужно перечислять виджеты по identity (раньше тут было явное сравнение
+    // с toolButton_arrowUp/arrowDown — при добавлении второй пары кнопок для
+    // редизайна frame_task_Section про них забыли, ровно это и произошло
+    // один раз).
     auto* button = qobject_cast<QToolButton*>(watched);
-    if (button &&
-        (button == ui->toolButton_arrowUp || button == ui->toolButton_arrowDown)) {
-
+    if (button && button->property("normalIcon").isValid()) {
         const QString normalIcon = button->property("normalIcon").toString();
         const QString hoverIcon  = button->property("hoverIcon").toString();
 
@@ -885,6 +986,29 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
     return QMainWindow::eventFilter(watched, event);
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // backClicked() во время Running/Starting вообще отказывает уйти со
+    // страницы теста — но закрытие самого окна (крестик/Alt+F4) этим
+    // путём не проходит и раньше никак не перехватывалось: можно было в
+    // один клик потерять телеметрию идущего теста без единого
+    // предупреждения. Само железо это переживёт — деструктор ниже всё
+    // равно дожидается terminateTest() — теряются только данные.
+    if (m_testState == TestState::Running || m_testState == TestState::Starting) {
+        if (StyledMessageBox::question(
+                this, tr("Внимание!"),
+                tr("Тест выполняется. Закрыть приложение?\n"
+                   "Результаты текущего теста будут потеряны."),
+                QMessageBox::No)
+            != QMessageBox::Yes) {
+            event->ignore();
+            return;
+        }
+    }
+
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::setPatternType(SelectTests::PatternType pattern)
 {
     m_patternType = pattern;
@@ -897,6 +1021,7 @@ void MainWindow::setRegistry(Registry* registry)
 {
     m_registry = registry;
     m_reportPresenter->setRegistry(registry);
+    m_historyPresenter->setRegistry(registry);
 
     const auto& objectInfo = m_registry->objectInfo();
     const auto& valveInfo = m_registry->valveInfo();
@@ -909,6 +1034,8 @@ void MainWindow::setRegistry(Registry* registry)
     updatePositionerIcon();
     applyPressureSensorColors();
     applyElementVisibility();
+
+    ui->verticalSlider_task->setTickLabels(taskSliderLabels(valveInfo.positionerScale));
 
     if (isRotaryStroke) {
         ui->label_sensorLinear_Unit->setAlignment(Qt::AlignTop);
@@ -929,6 +1056,7 @@ void MainWindow::setRegistry(Registry* registry)
 
     Domain::DeviceConfig cfg;
     cfg.safePosition = valveInfo.safePosition;
+    cfg.positionerScale = valveInfo.positionerScale;
     cfg.driveDiameter = valveInfo.driveDiameter;
     cfg.valveStroke = valveInfo.valveStroke;
     cfg.crossingLimits = valveInfo.crossingLimits;
@@ -940,38 +1068,43 @@ void MainWindow::setRegistry(Registry* registry)
 
     m_program->setConfig(cfg);
 
-    ui->lineEdit_date->setText(otherParameters.date);
+    UiText::setLabelOrDash(ui->lineEdit_date, otherParameters.date);
 
-    ui->lineEdit_object->setText(objectInfo.object);
-    ui->lineEdit_manufacture->setText(objectInfo.manufactory);
-    ui->lineEdit_department->setText(objectInfo.department);
-    ui->lineEdit_FIO->setText(objectInfo.FIO);
+    UiText::setLabelOrDash(ui->lineEdit_object, objectInfo.object);
+    UiText::setLabelOrDash(ui->lineEdit_manufacture, objectInfo.manufactory);
+    UiText::setLabelOrDash(ui->lineEdit_department, objectInfo.department);
+    UiText::setLabelOrDash(ui->lineEdit_FIO, objectInfo.FIO);
 
-    ui->lineEdit_positionNumber->setText(valveInfo.positionNumber);
-    ui->lineEdit_manufacturer->setText(valveInfo.manufacturer);
-    ui->lineEdit_valveModel->setText(valveInfo.valveModel);
-    ui->lineEdit_serialNumber->setText(valveInfo.serialNumber);
+    UiText::setLabelOrDash(ui->lineEdit_positionNumber, valveInfo.positionNumber);
+    UiText::setLabelOrDash(ui->lineEdit_manufacturer, valveInfo.manufacturer);
+    UiText::setLabelOrDash(ui->lineEdit_valveModel, valveInfo.valveModel);
+    UiText::setLabelOrDash(ui->lineEdit_serialNumber, valveInfo.serialNumber);
 
-    if (valveInfo.DN == "" && valveInfo.PN == "") {
-            ui->lineEdit_DNPN->setText(QString("%1 / %2").arg(valveInfo.DN, valveInfo.PN));
-    }
-    ui->lineEdit_driveModel->setText(valveInfo.driveModel);
-    ui->lineEdit_positionerModel->setText(valveInfo.positionerModel);
-    ui->lineEdit_strokeMovement->setText(otherParameters.strokeMovement);
-    ui->lineEdit_safePosition->setText(otherParameters.safePosition);
+    // И DN, и PN обязательны для осмысленной пары — раньше при отсутствии
+    // любого из них поле просто не трогалось и молча показывало DN/PN от
+    // предыдущей выбранной позиции.
+    UiText::setLabelOrDash(ui->lineEdit_DNPN,
+        (!valveInfo.DN.isEmpty() && !valveInfo.PN.isEmpty())
+            ? QString("%1 / %2").arg(valveInfo.DN, valveInfo.PN)
+            : QString());
+    UiText::setLabelOrDash(ui->lineEdit_driveModel, valveInfo.driveModel);
+    UiText::setLabelOrDash(ui->lineEdit_positionerModel, valveInfo.positionerModel);
+    UiText::setLabelOrDash(ui->lineEdit_strokeMovement, otherParameters.strokeMovement);
+    UiText::setLabelOrDash(ui->lineEdit_safePosition, otherParameters.safePosition);
     ui->lineEdit_resultsTable_dynamicErrorRecomend->setText(valveInfo.dinamicErrorRecomend);
-    ui->lineEdit_materialStuffingBoxSeal->setText(ValveEnums::StuffingBoxSealToString(valveInfo.materialStuffingBoxSeal));
+    UiText::setLabelOrDash(ui->lineEdit_materialStuffingBoxSeal,
+                   ValveEnums::StuffingBoxSealToString(valveInfo.materialStuffingBoxSeal));
 
     // ui->lineEdit_materialStuffingBoxSeal->setText(materialInfo.stuffingBoxSeal);
-    ui->lineEdit_materialCap->setText(materialInfo.cap);
-    ui->lineEdit_materialCorpus->setText(materialInfo.corpus);
-    ui->lineEdit_materialSaddle->setText(materialInfo.saddle);
-    ui->lineEdit_materialBall->setText(materialInfo.ball);
-    ui->lineEdit_materialDisk->setText(materialInfo.disk);
-    ui->lineEdit_materialPlunger->setText(materialInfo.plunger);
-    ui->lineEdit_materialShaft->setText(materialInfo.shaft);
-    ui->lineEdit_materialStock->setText(materialInfo.stock);
-    ui->lineEdit_materialGuideSleeve->setText(materialInfo.guideSleeve);
+    UiText::setLabelOrDash(ui->lineEdit_materialCap, materialInfo.cap);
+    UiText::setLabelOrDash(ui->lineEdit_materialCorpus, materialInfo.corpus);
+    UiText::setLabelOrDash(ui->lineEdit_materialSaddle, materialInfo.saddle);
+    UiText::setLabelOrDash(ui->lineEdit_materialBall, materialInfo.ball);
+    UiText::setLabelOrDash(ui->lineEdit_materialDisk, materialInfo.disk);
+    UiText::setLabelOrDash(ui->lineEdit_materialPlunger, materialInfo.plunger);
+    UiText::setLabelOrDash(ui->lineEdit_materialShaft, materialInfo.shaft);
+    UiText::setLabelOrDash(ui->lineEdit_materialStock, materialInfo.stock);
+    UiText::setLabelOrDash(ui->lineEdit_materialGuideSleeve, materialInfo.guideSleeve);
 
     const bool anyCrossingEnabled =
         limits.frictionEnabled
@@ -995,10 +1128,6 @@ void MainWindow::setRegistry(Registry* registry)
                 .arg(valveInfo.driveRangeLow, 0, 'f', 2)
                 .arg(valveInfo.driveRangeHigh, 0, 'f', 2)
             );
-        // Если до этого был выбран привод ДД — driveRangeReal остался с
-        // текстом "Привод ДД" (см. ветку выше) и без этого сброса залипал
-        // бы там до первого прогона основного теста (только TelemetryUiMapper::
-        // updateMainTest() пишет туда реальный диапазон пружины).
         ui->lineEdit_resultsTable_driveRangeReal->clear();
     }
 
@@ -1009,28 +1138,16 @@ void MainWindow::setRegistry(Registry* registry)
     ui->frame_crossingLimits_dynamicError_Card->setVisible(limits.dynamicErrorEnabled);
 
     if (limits.frictionEnabled) {
-        ui->label_crossingLimits_coefficientFriction_lowerLimit_Value->setText(
-            QString::number(limits.frictionCoefLower, 'f', 2));
-        ui->label_crossingLimits_coefficientFriction_upperLimit_Value->setText(
-            QString::number(limits.frictionCoefUpper, 'f', 2));
+        ui->label_crossingLimits_coefficientFriction_Norm->setText(
+            tr("допуск %1").arg(NumberUtils::formatRange(limits.frictionCoefLower, limits.frictionCoefUpper)));
     }
 
     if (limits.linearCharacteristicEnabled) {
-        ui->label_crossingLimits_linearCharacteristic_lowerLimit_Value->setText(
-            QStringLiteral("0"));
-        ui->label_crossingLimits_linearCharacteristic_upperLimit_Value->setText(
-            QString::number(limits.linearCharacteristic, 'f', 2));
+        ui->label_crossingLimits_linearCharacteristic_Norm->setText(
+            tr("допуск %1").arg(NumberUtils::formatRange(0.0, limits.linearCharacteristic)));
     }
 
     applyCrossingLimitsFromRecommend(valveInfo);
-
-    if (limits.dynamicErrorEnabled) {
-        ui->label_crossingLimits_dynamicError_lowerLimit_Value->setText(
-            QStringLiteral("0"));
-
-        ui->label_crossingLimits_dynamicError_upperLimit_Value->setText(
-            valveInfo.dinamicErrorRecomend);
-    }
 
     const auto& testSettings = m_testSettings;
     for (BaseSequenceSettingsDialog* s : testSettings)
@@ -1119,10 +1236,6 @@ void MainWindow::applyInitState(InitState state)
     setManualHardwareControlsEnabled(succeeded);
     ui->frame_slider_Section->setEnabled(succeeded);
 
-    // Кнопки запуска тестов сами по себе ничем не были защищены от клика
-    // при неинициализированном/отключённом устройстве — Program::
-    // isDeviceReadyForTest() и тогда отверг бы старт, но кнопка оставалась
-    // бы кликабельной, что сбивает с толку сильнее, чем просто disabled.
     ui->pushButton_mainTest_start->setEnabled(succeeded);
     ui->pushButton_strokeTest_start->setEnabled(succeeded);
     ui->pushButton_optionalTests_start->setEnabled(succeeded);
@@ -1157,6 +1270,27 @@ void MainWindow::endTest()
 
     if (finalState == TestState::Finished) {
         promptSaveChartsAfterTest();
+
+        // Пишем при завершении КАЖДОГО теста сессии (не только основного) —
+        // m_telemetry.crossingStatus меняется только после основного теста
+        // (см. CrossingStatusUpdater), остальные просто перезапишут БД тем
+        // же значением (INSERT OR REPLACE в writeCrossingResults()).
+        // m_sessionId == -1 — сессия в БД не завелась, тихо ничего не пишем.
+        HistoryWriter::writeCrossingResults(m_sessionId, m_telemetry.crossingStatus);
+
+        // endTest() не знает, какой именно из опциональных тестов только что
+        // завершился (testFinished() общий на все типы, см. Program::endTest()) —
+        // поэтому просто перезаписываем те результаты, что уже есть в
+        // m_telemetry; std::optional ещё не тронутых тестов пропускаем, чтобы
+        // не затирать БД пустым результатом раньше, чем тест реально прошёл.
+        if (m_telemetry.testStroke)
+            HistoryWriter::writeStrokeResults(m_sessionId, *m_telemetry.testStroke);
+        if (m_telemetry.testStep)
+            HistoryWriter::writeStepResults(m_sessionId, *m_telemetry.testStep);
+        if (m_telemetry.testResponse)
+            HistoryWriter::writeResponseResults(m_sessionId, *m_telemetry.testResponse);
+        if (m_telemetry.testResolution)
+            HistoryWriter::writeResolutionResults(m_sessionId, *m_telemetry.testResolution);
     }
 }
 
@@ -1175,39 +1309,42 @@ void MainWindow::applyTestStateToUi(TestState state)
 {
     switch (state) {
     case TestState::Idle:
+        // Помимо старта из конструктора (там контролы выставляет
+        // applyInitState()), сюда попадаем из Starting, если Program
+        // отверг запуск (TestController::onProgramStartRejected) — Running
+        // так и не наступил, а контролы уже задизейблены веткой Starting
+        // ниже, снимаем это так же, как после отмены/завершения теста.
+        restoreControlsAfterTest();
         ui->statusbar->showMessage(tr("Готов к работе"));
         setStatusStateChip(m_statusStateValue, tr("Готов к работе"), QStringLiteral("#5B6472"));
         break;
     case TestState::Starting:
+        // Команда старта уже ушла на устройство (Program::start...Test —
+        // QueuedConnection), но testActuallyStarted (-> TestState::Running)
+        // ещё не пришёл. Ручные DO/задание тока должны быть недоступны уже
+        // здесь, а не только с Running — иначе в этом окне ими ещё можно
+        // покликать мимо запускаемого теста.
+        setTaskControlsEnabled(false);
+        setManualHardwareControlsEnabled(false);
         ui->statusbar->showMessage(tr("Подготовка теста..."));
         setStatusStateChip(m_statusStateValue, tr("Инициализация"), QStringLiteral("#E6A028"));
         break;
     case TestState::Running:
         ui->statusbar->showMessage(tr("Тест выполняется"));
         setTaskControlsEnabled(false);
-        // frame_task_Section/frame_shutOff_Section — DO-выходы отсечной
-        // арматуры и кнопки/стрелки задания тока — реально дёргают
-        // железо в обход самого теста, если случайно нажать во время
-        // прогона. Разблокировка ниже (Canceled/Finished) — только если
-        // m_initState всё ещё Succeeded: при обрыве связи мид-теста
-        // applyInitState(Failed) уже заблокировал их первым, а следующий
-        // за этим отложенный переход сюда (Program сам переводит
-        // прерванный тест в Canceled) не должен эту блокировку снимать.
         setManualHardwareControlsEnabled(false);
         setStatusStateChip(m_statusStateValue, tr("Запущен"), QStringLiteral("#38AE60"));
         break;
     case TestState::Canceled:
         ui->pushButton_mainTest_continue->setVisible(false);
         ui->statusbar->showMessage(tr("Тест остановлен"));
-        setTaskControlsEnabled(true);
-        setManualHardwareControlsEnabled(m_initState == InitState::Succeeded);
+        restoreControlsAfterTest();
         setStatusStateChip(m_statusStateValue, tr("Остановлен"), QStringLiteral("#D64545"));
         break;
     case TestState::Finished:
         ui->pushButton_mainTest_continue->setVisible(false);
         ui->statusbar->showMessage(tr("Сохранение результатов..."));
-        setTaskControlsEnabled(true);
-        setManualHardwareControlsEnabled(m_initState == InitState::Succeeded);
+        restoreControlsAfterTest();
         setStatusStateChip(m_statusStateValue, tr("Сохранение..."), QStringLiteral("#2563EB"));
         QTimer::singleShot(1500, this, [this]{
             if (m_testState == TestState::Finished)
@@ -1241,9 +1378,6 @@ void MainWindow::onDeviceDisconnected()
 
     m_deviceDisconnected = true;
 
-    // Блокирует кнопки запуска тестов и ручного управления (frame_task/
-    // shutOff/slider_Section) до повторной инициализации — то же самое
-    // единое место, что и при обычной неудаче Program::initialization().
     applyInitState(InitState::Failed);
 
     ui->statusbar->showMessage(testWasRunning
@@ -1414,7 +1548,64 @@ void MainWindow::startOptionalTestClicked()
         m_testController->runStepTest(
             m_stepTestSettings->parameters());
     }
+
+    // Настройки могли поменяться в диалоге — обновляем то, что показано
+    // в frame_optionalTestsMenu_Section.
+    updateOptionalTestParamsDisplay();
 }
+
+void MainWindow::updateOptionalTestParamsDisplay()
+{
+    auto* label = ui->label_optionalTests_params;
+
+    // setupUiConnections() сам дёргает tabWidget_optionalTests-
+    // >setCurrentIndex(0) (сброс на вкладку Response) раньше, чем ниже в
+    // конструкторе появляются m_responseTestSettings и остальные — сигнал
+    // currentChanged, на который подписана эта функция, долетает уже
+    // тогда. Без проверки — разыменование нулевого указателя.
+    if (!m_responseTestSettings || !m_resolutionTestSettings || !m_stepTestSettings) {
+        label->clear();
+        return;
+    }
+
+    auto joinPercents = [](const QVector<qreal>& values) {
+        QStringList parts;
+        parts.reserve(values.size());
+        for (qreal v : values)
+            parts << QString::number(v, 'f', 0);
+        return parts.join('-') + "%";
+    };
+
+    auto formatDelay = [](quint32 delayMs) {
+        return QTime::fromMSecsSinceStartOfDay(delayMs).toString("mm:ss");
+    };
+
+    auto describeCommon = [&](const Domain::Tests::Option::Params& p) {
+        label->setText(tr("Задержка %1 · Точки: %2 · Шаги: %3")
+            .arg(formatDelay(p.delay), joinPercents(p.points), joinPercents(p.steps)));
+    };
+
+    switch (ui->tabWidget_optionalTests->currentIndex()) {
+    case 0:
+        describeCommon(m_responseTestSettings->parameters());
+        break;
+    case 1:
+        describeCommon(m_resolutionTestSettings->parameters());
+        break;
+    case 2: {
+        const auto p = m_stepTestSettings->parameters();
+        label->setText(tr("Задержка %1 · T: %2% · Точки: %3")
+            .arg(formatDelay(p.delay))
+            .arg(p.testValue, 0, 'f', 0)
+            .arg(joinPercents(p.points)));
+        break;
+    }
+    default:
+        label->clear();
+        break;
+    }
+}
+
 void MainWindow::saveOptionalTestChartClicked()
 {
     const auto *w = ui->tabWidget_optionalTests->currentWidget();
@@ -1966,11 +2157,54 @@ QLabel* MainWindow::previewLabelForChart(ChartType chart) const
 
 void MainWindow::generateReportClicked()
 {
-    const bool ok = m_reportPresenter->generateReport();
+    auto input = m_reportPresenter->prepareReportGeneration();
+    if (!input) {
+        if (m_toastManager)
+            m_toastManager->show(Gui::Style::StatusKind::Error,
+                tr("Не удалось сформировать отчёт полностью — подробности в логе"));
+        return;
+    }
+
+    setReportGenerationInProgress(true);
+
+    // На m_reportWorkerThread, тем же приёмом, что и TestController
+    // (invokeMethod с лямбдой-захватом по значению вместо Q_ARG — не нужно
+    // регистрировать Input в Q_DECLARE_METATYPE). Сама PDF-часть внутри
+    // generate() непотокобезопасна (QtRPT -> QPrinter/GDI) и отдельно
+    // отправляет себя обратно на GUI-поток — см. комментарий там же.
+    auto* worker = m_reportWorker;
+    QMetaObject::invokeMethod(
+        worker,
+        [worker, input = std::move(*input)]() mutable {
+            worker->generate(std::move(input));
+        },
+        Qt::QueuedConnection);
+}
+
+void MainWindow::onReportGenerationFinished(bool excelOk, bool allOk)
+{
+    setReportGenerationInProgress(false);
+
+    ui->pushButton_report_open->setEnabled(excelOk);
+
     if (m_toastManager)
         m_toastManager->show(
-            ok ? Gui::Style::StatusKind::Success : Gui::Style::StatusKind::Error,
-            ok ? tr("Отчёт сформирован") : tr("Не удалось сформировать отчёт полностью — подробности в логе"));
+            allOk ? Gui::Style::StatusKind::Success : Gui::Style::StatusKind::Error,
+            allOk ? tr("Отчёт сформирован") : tr("Не удалось сформировать отчёт полностью — подробности в логе"));
+}
+
+void MainWindow::setReportGenerationInProgress(bool inProgress)
+{
+    m_reportGenerationInProgress = inProgress;
+
+    ui->pushButton_report_generate->setEnabled(!inProgress);
+    ui->pushButton_mainTest_save->setEnabled(!inProgress);
+    ui->pushButton_strokeTest_save->setEnabled(!inProgress);
+    ui->pushButton_optionalTests_save->setEnabled(!inProgress);
+    ui->pushButton_cyclicTest_save->setEnabled(!inProgress);
+
+    ui->pushButton_report_generate->setText(
+        inProgress ? tr("Формирование…") : tr("Сформировать отчёт"));
 }
 
 void MainWindow::openReportClicked()

@@ -215,6 +215,17 @@ public:
     QString Prid;
     QString Pcopies;
 
+    // "Вписать по ширине" вместо жёсткого процента (Pscale) — не было
+    // вообще (ни <sheetPr><pageSetUpPr>, ни fitToWidth/fitToHeight у
+    // <pageSetup>). См. Worksheet::setFitToPage()/LOCAL_PATCHES.md: с
+    // фиксированным Pscale лист либо не влезает по ширине (и Excel сам
+    // добавляет непрошеный вертикальный разрыв посреди таблицы), либо
+    // подобранный процент завязан на количество столбцов/их ширину и
+    // разъезжается при первой же правке раскладки.
+    bool fitToPage = false;
+    int fitToPageWidth = 0;  // страниц по ширине; 0 у fitToPageHeight = "сколько нужно"
+    int fitToPageHeight = 0;
+
     // pageMargins, liufeijin
     QString PMheader;
     QString PMfooter;
@@ -227,6 +238,12 @@ public:
     QString MoodFooter;
     QString ModdHeader;
     QString MoodalignWithMargins;  // add align 20190619
+
+    // Принудительные разрывы страниц (rowBreaks) — номера строк, ПОСЛЕ
+    // которых начинается новая печатная страница. Новое поле — этого не
+    // было в исходной сборке QXlsx вообще, см. Worksheet::addRowPageBreak()
+    // и LOCAL_PATCHES.md.
+    QList<int> rowPageBreaks;
 
     XlsxSheetFormatProps sheetFormatProps;
 

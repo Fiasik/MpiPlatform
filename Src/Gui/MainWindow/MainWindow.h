@@ -2,6 +2,7 @@
 
 #include <QLabel>
 #include <QMainWindow>
+#include <QSize>
 #include <QThread>
 #include <QPlainTextEdit>
 #include <QElapsedTimer>
@@ -41,11 +42,14 @@ class ImageService;
 namespace Ui { class MainWindow; }
 // QT_END_NAMESPACE
 
-namespace Gui::Style { class ThemeManager; }
+namespace Gui::Style { class ThemeManager; struct Palette; }
 
 class StatusBarPresenter;
 class ReportGenerationPresenter;
+class ReportGenerationWorker;
+class HistoryPresenter;
 class QToolButton;
+class QCloseEvent;
 
 class MainWindow : public QMainWindow
 {
@@ -55,6 +59,14 @@ public:
     ~MainWindow();
     void setRegistry(Registry *registry);
     void setThemeManager(Gui::Style::ThemeManager* themeManager);
+
+    // sessionId, который HistoryWriter::beginSession() вернул в main.cpp до
+    // создания этого окна — endTest() допишет по нему итог допусков в ту же
+    // строку sessions, см. HistoryWriter::writeCrossingResults(). -1 —
+    // сессия в БД не завелась (ошибка БД на старте), endTest() тогда просто
+    // ничего не пишет.
+    void setSessionId(qint64 sessionId) { m_sessionId = sessionId; }
+
     // Тело — в .cpp: setPatternType() зовёт m_reportPresenter->..., а
     // ReportGenerationPresenter тут только forward-declared (хранится по
     // unique_ptr), для inline-тела в заголовке нужен полный тип.
@@ -105,6 +117,10 @@ private slots:
 
     void setTaskControlsEnabled(bool enabled);
     void setManualHardwareControlsEnabled(bool enabled);
+    // Пара выше с одними и теми же аргументами — после отмены/завершения
+    // теста контролы задачи разблокируются всегда, а ручное железо только
+    // если инициализация была успешной (см. applyInitState()).
+    void restoreControlsAfterTest();
 
     void onCountdownTimeout();
     void onTotalTestTimeMs(quint64 totalMs);
@@ -125,13 +141,27 @@ private slots:
     void onCyclicCycleCompleted(int completedCycles);
     void initClicked();
     void generateReportClicked();
+    void onReportGenerationFinished(bool excelOk, bool allOk);
+    void setReportGenerationInProgress(bool inProgress);
     void openReportClicked();
     void openResultFolderClicked();
     void backClicked();
+    // buttonSize — invalid (default QSize()) значит "кнопка уже имеет
+    // фиксированный размер в .ui, не трогать" (см. toolButton_arrowUp/Down —
+    // размер 40x28 задан через minimumSize/maximumSize в Designer, а не
+    // через этот метод).
     void setupArrowButton(QToolButton* button,
                           const QString& normalIcon,
                           const QString& hoverIcon,
-                          double step);
+                          double step,
+                          QSize buttonSize = QSize(60, 60),
+                          QSize iconSize = QSize(60, 60));
+    // Шевроны toolButton_arrowUp/Down (frame_task_Section) — у светлой и
+    // тёмной темы разные файлы (см. Gui::Style::Palette::iconChevronUp/
+    // Down(Active)), поэтому им нужен пересчёт при каждой смене схемы —
+    // вызывается из setThemeManager() сразу + на schemeChanged, тем же
+    // приёмом, что и m_historyPresenter->applyPalette().
+    void applyArrowButtonIcons(const Gui::Style::Palette& palette);
 
 private:
     Ui::MainWindow *ui;
@@ -148,6 +178,7 @@ private:
     Registry *m_registry = nullptr;
     Telemetry m_telemetry;
     SelectTests::BlockCTS m_blockCts{};
+    qint64 m_sessionId = -1;
 
     Domain::Program *m_program;
     QThread *m_programThread;
@@ -159,6 +190,13 @@ private:
 
     Report::Excel::ReportData m_report;
     Report::Saver* m_reportSaver = nullptr;
+
+    // Тяжёлая часть генерации отчёта (сборка .xlsx/.pdf + диск) — на
+    // отдельном потоке, тем же приёмом, что m_program/m_programThread
+    // выше. См. ReportGenerationWorker.h про то, почему это безопасно.
+    ReportGenerationWorker* m_reportWorker = nullptr;
+    QThread* m_reportWorkerThread = nullptr;
+    bool m_reportGenerationInProgress = false;
 
     QPlainTextEdit* m_logOutput = nullptr;
 
@@ -179,6 +217,9 @@ private:
 
     void setupShortcuts();
     void setupPrimaryActions();
+    // Видимость вкладок/кнопок, которые существуют только в конкретной
+    // сборке (Domain::k...Variant) — см. её собственный комментарий.
+    void applyBuildVariantUi();
 
     bool isDoubleActingIPMode() const;
     void onManualResumeRequired();
@@ -233,10 +274,17 @@ private:
     OtherTestSettings *m_responseTestSettings;
     OtherTestSettings *m_resolutionTestSettings;
 
+    // Один лейбл/кнопка комментария в frame_optionalTestsMenu_Section на
+    // все три вкладки (Response/Resolution/Step) — какая активна, решает
+    // tabWidget_optionalTests->currentIndex(), тот же приём, что уже
+    // используется в startOptionalTestClicked()/saveOptionalTestChartClicked().
+    void updateOptionalTestParamsDisplay();
+
     ChartImageStorage m_chartImageStorage;
     ChartSnapshotStorage m_chartSnapshotStorage;
 
     std::unique_ptr<ReportGenerationPresenter> m_reportPresenter;
+    std::unique_ptr<HistoryPresenter> m_historyPresenter;
 
     void syncTaskChartSeriesVisibility(quint8 sensorCount);
     void displayDependingPattern();
@@ -261,4 +309,5 @@ private:
     BalanceSeesawWidget* m_statusBalanceSeesaw = nullptr;
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 };

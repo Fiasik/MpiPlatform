@@ -78,6 +78,18 @@ public:
 
 	bool groupRows(int rowFirst, int rowLast, bool collapsed = true);
 	bool groupColumns(int colFirst, int colLast, bool collapsed = true);
+
+	// Печать/пагинация текущего листа — см. Worksheet::setPageOrientation()
+	// и соседние методы, QXlsx/LOCAL_PATCHES.md.
+	void setPageOrientation(const QString &orientation);
+	void setPaperSize(int paperSize);
+	void setPageScale(int percent);
+	void setPageMargins(double left, double right, double top, double bottom,
+	                    double header, double footer);
+	bool addRowPageBreak(int row);
+	void setFitToPage(int widthPages, int heightPages = 0);
+	void setHeaderText(const QString &oddHeader);
+	void setFooterText(const QString &oddFooter);
 	
 	bool addDataValidation(const DataValidation &validation);
 	bool addConditionalFormatting(const ConditionalFormatting &cf);

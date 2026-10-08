@@ -16,6 +16,9 @@ public:
 
 private:
     QByteArray sendMessage(const Message& message);
+    // См. его собственный комментарий в Reader.cpp — "слив" отложенных
+    // самовызовов Port перед сбросом m_isProbing в autoConnect().
+    void drainPendingPortErrors();
 
 public slots:
     void autoConnect();

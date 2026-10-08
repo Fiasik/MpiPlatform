@@ -10,6 +10,7 @@
 #include "Utils/StyledMessageBox.h"
 #include "Utils/NumberUtils.h"
 #include "Domain/BuildVariant.h"
+#include "Storage/HistoryReader.h"
 
 #include <QTimer>
 #include <QScreen>
@@ -18,6 +19,7 @@
 #include <QLabel>
 #include <QColorDialog>
 #include <QPushButton>
+#include <QComboBox>
 
 namespace {
 
@@ -140,6 +142,8 @@ void ValveWindow::updateManufacturerUi()
 
 void ValveWindow::setupConnections()
 {
+    // comboBox_manufacturer — Widgets::Combo::SearchableComboBox (см. .ui),
+    // поиск уже встроен в сам виджет.
     connect(ui->comboBox_manufacturer, &QComboBox::currentTextChanged,
             this, &ValveWindow::updateManufacturerUi);
 
@@ -443,22 +447,38 @@ void ValveWindow::setRegistry(Registry *registry)
 
     loadLinearRange();
 
+    const auto& objectInfo = m_registry->objectInfo();
+
     ui->comboBox_positionNumber->clear();
-    ui->comboBox_positionNumber->addItems(m_registry->positions());
+    ui->comboBox_positionNumber->addItems(HistoryReader::positions(
+        objectInfo.object, objectInfo.manufactory, objectInfo.department));
     ui->comboBox_positionNumber->addItem(kManualInput);
 
+    // "Последняя позиция" — по-прежнему локальный QSettings-хинт (что
+    // вводили НА ЭТОЙ машине последним), просто удобный дефолт при
+    // открытии окна. А вот сама карточка под ним — уже из общей на все
+    // стенды БД (HistoryReader), не из QSettings — см. positionChanged().
     const QString last = m_registry->lastPosition();
-    if (!last.isEmpty() && m_registry->loadValveInfo(last)) {
-        m_local = m_registry->valveInfo();
+    if (!last.isEmpty()
+        && HistoryReader::valveInfoAt(objectInfo.object, objectInfo.manufactory,
+                                      objectInfo.department, last, m_local)) {
+        m_registry->valveInfo() = m_local;
         Mapper::write(*this, m_local);
         applyFrictionLimitsFromStuffingBoxSeal();
     }
 
-    if (last == "") {
-        ui->comboBox_positionNumber->setCurrentIndex(ui->comboBox_positionNumber->count() - 1);
-    } else {
+    if (!last.isEmpty()) {
         ui->comboBox_positionNumber->setCurrentIndex(ui->comboBox_positionNumber->findText(last));
         positionChanged(last);
+    } else if (ui->comboBox_positionNumber->count() > 1) {
+        // Нет личного "последней позиции" хинта, но в БД для этого
+        // объекта/цеха/отделения есть история — подставляем первую из
+        // неё, а не молча падаем на "Ручной ввод" (тот всегда последний
+        // пункт списка, см. addItem(kManualInput) выше).
+        ui->comboBox_positionNumber->setCurrentIndex(0);
+        positionChanged(ui->comboBox_positionNumber->itemText(0));
+    } else {
+        ui->comboBox_positionNumber->setCurrentIndex(ui->comboBox_positionNumber->count() - 1);
     }
 
     connect(ui->comboBox_positionNumber, &QComboBox::currentTextChanged,
@@ -496,15 +516,15 @@ void ValveWindow::loadMaterialsToUi(const MaterialsOfComponentParts& m)
     ui->lineEdit_materialStock->setText(m.stock);
     ui->lineEdit_materialGuideSleeve->setText(m.guideSleeve);
 
-    ui->comboBox_materialStuffingBoxSeal
-        ->setCurrentText(m.stuffingBoxSeal);
-
     {
         QSignalBlocker b(ui->comboBox_materialStuffingBoxSeal);
         ui->comboBox_materialStuffingBoxSeal->setCurrentText(m.stuffingBoxSeal);
     }
 
-    // гарантированно применяем после установки
+    // Сигнал currentTextChanged() заблокирован выше не как подстраховка —
+    // setCurrentText() не эмитит его, если текст не поменялся (тот же
+    // случай, что и у setCurrentIndex() в Mapper::write()), так что
+    // полагаться на него нельзя. Применяем сами, гарантированно.
     applyFrictionLimitsFromStuffingBoxSeal();
 }
 
@@ -524,16 +544,20 @@ void ValveWindow::positionChanged(const QString &position)
         return;
     }
 
-    if (m_registry->loadValveInfo(position)) {
-        m_local = m_registry->valveInfo();
+    const auto& objectInfo = m_registry->objectInfo();
+
+    if (HistoryReader::valveInfoAt(objectInfo.object, objectInfo.manufactory,
+                                   objectInfo.department, position, m_local)) {
+        m_registry->valveInfo() = m_local;
         Mapper::write(*this, m_local);
 
         applyFrictionLimitsFromStuffingBoxSeal();
         updateCriticalFieldWarnings();
     }
 
-    if (m_registry->loadMaterialsOfComponentParts(position)) {
-        m_materialsLocal = m_registry->materialsOfComponentParts();
+    if (HistoryReader::materialsAt(objectInfo.object, objectInfo.manufactory,
+                                   objectInfo.department, position, m_materialsLocal)) {
+        m_registry->materialsOfComponentParts() = m_materialsLocal;
         loadMaterialsToUi(m_materialsLocal);
     }
 }
@@ -625,6 +649,13 @@ void ValveWindow::on_pushButton_netWindow_clicked()
 
     saveValveInfo();
     readMaterialsFromUi(m_materialsLocal);
+
+    // Запоминаем позицию, с которой реально закончили работу — раньше
+    // этот хинт нигде не писался (см. Registry::lastPosition()), поэтому
+    // окно при следующем запуске всегда подставляло первую позицию из
+    // списка, а не ту, что редактировали.
+    m_registry->setLastPosition(m_local.positionNumber);
+
     accept();
 }
 

@@ -40,6 +40,49 @@ struct CrossingStatus {
     State dynamicError = State::Unknown;
     State spring = State::Unknown;
     State linearCharacteristic = State::Unknown;
+
+    // Промах относительно нарушенной границы (факт - граница), знак говорит
+    // о направлении: "+" — выше верхней, "-" — ниже нижней. NaN, если
+    // проверка не Fail (Unknown/Ok) — тогда презентер ничего не рисует.
+    // У пружины границы две и независимые (см. CrossingStatusUpdater),
+    // поэтому у неё два промаха, а не один общий.
+    double frictionPercentMiss = qQNaN();
+    double valveStrokeMiss = qQNaN();
+    double dynamicErrorMiss = qQNaN();
+    double linearCharacteristicMiss = qQNaN();
+    double springLowMiss = qQNaN();
+    double springHighMiss = qQNaN();
+
+    // Факт и разрешённые границы [lower, upper] — то же самое, что уже
+    // участвовало в missFrom() внутри CrossingStatusUpdater, но раньше
+    // наружу отдавался только итог (State) и промах, сами границы терялись
+    // сразу после вычисления. Нужны презентеру для визуализации шкалы
+    // допуска (Widgets::ToleranceBar) — без них нечего рисовать, кроме
+    // факта прохождения/непрохождения. NaN у lower/upper — проверка
+    // выключена (State::Unknown), полосу допуска рисовать не из чего.
+    double frictionPercentValue = qQNaN();
+    double frictionPercentLower = qQNaN();
+    double frictionPercentUpper = qQNaN();
+
+    double valveStrokeValue = qQNaN();
+    double valveStrokeLower = qQNaN();
+    double valveStrokeUpper = qQNaN();
+
+    double dynamicErrorValue = qQNaN();
+    double dynamicErrorLower = qQNaN();
+    double dynamicErrorUpper = qQNaN();
+
+    double linearCharacteristicValue = qQNaN();
+    double linearCharacteristicLower = qQNaN();
+    double linearCharacteristicUpper = qQNaN();
+
+    double springLowValue = qQNaN();
+    double springLowLower = qQNaN();
+    double springLowUpper = qQNaN();
+
+    double springHighValue = qQNaN();
+    double springHighLower = qQNaN();
+    double springHighUpper = qQNaN();
 };
 
 struct ValveStrokeRecord {

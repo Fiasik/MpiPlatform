@@ -64,7 +64,11 @@
         if (qFuzzyCompare(to, from)) return;
 
         const double overshoot = (pos - to) / (to - from) * 100.0;
-        m_state.overshoot = qMax(m_state.overshoot, overshoot);
+        if (overshoot > m_state.overshoot) {
+            m_state.overshoot = overshoot;
+            m_state.overshootTime = static_cast<quint32>(time - m_state.startTime);
+            m_state.overshootPos = pos;
+        }
 
         // Проверка достижения T%
         if (!m_state.tReached) {
@@ -95,10 +99,15 @@
         r.to = qRound(m_state.to);
         r.T_value = m_state.tReached ? m_state.tTime : 0;
 
+        r.stepStartTimeMs = m_state.startTime;
+        r.T_valuePos = m_state.threshold;
+
         if (m_state.overshoot < -1e8) {
             r.overshoot = 0;
         } else {
             r.overshoot = std::round(m_state.overshoot * 100.0) / 100.0;
+            r.overshootTimeMs = m_state.overshootTime;
+            r.overshootPos = m_state.overshootPos;
         }
 
         m_result.steps.push_back(r);

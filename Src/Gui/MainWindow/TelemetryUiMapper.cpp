@@ -4,6 +4,7 @@
 #include "Gui/MainWindow/BalanceSeesawWidget.h"
 #include "Gui/Style/Palette.h"
 #include "Domain/Tests/Option/Response/Limits.h"
+#include "Utils/TimeUtils.h"
 
 #include <QAbstractItemView>
 #include <QLabel>
@@ -31,7 +32,12 @@ void TelemetryUiMapper::updateInit(const InitState& init,
         m_ui->label_deviceInitResult->setStyleSheet(
             "color:" + (init.initSucceeded ? okColor : errorColor).name(QColor::HexRgb));
     } else {
-        m_ui->label_deviceInitResult->setText(QString());
+        // "--", не пустая строка — иначе на неудачной попытке (порт не
+        // найден) вся строка "Инициализация" выглядит стёртой, а не "ещё не
+        // проводилась"/"нет данных", как остальные "--"-плейсхолдеры в
+        // этом блоке статуса.
+        m_ui->label_deviceInitResult->setText(QStringLiteral("--"));
+        m_ui->label_deviceInitResult->setStyleSheet(QString());
     }
 
     if (init.deviceConnected && init.initSucceeded) {
@@ -51,16 +57,28 @@ void TelemetryUiMapper::updateInit(const InitState& init,
         m_ui->label_connectedSensorsNumber->setStyleSheet(
             "color:" + sensorsColor.name(QColor::HexRgb));
     } else {
-        m_ui->label_connectedSensorsNumber->setText(QString());
+        m_ui->label_connectedSensorsNumber->setText(QStringLiteral("--"));
+        m_ui->label_connectedSensorsNumber->setStyleSheet(QString());
     }
 
+    // "Измерение" имеет смысл только пока реально идёт опрос датчика
+    // (устройство подключено и инициализация прошла) — иначе (порт не
+    // найден/инициализация упала) значение так и останется nullopt
+    // НАВСЕГДА, и "Измерение" вводит в заблуждение, будто что-то всё ещё
+    // происходит. См. ts.init = {} в начале Program::initialization() —
+    // startingPosition/finalPosition сбрасываются в nullopt на КАЖДОЙ
+    // попытке, в том числе неудачной.
+    const bool measuring = init.deviceConnected && init.initSucceeded;
     auto formatPosition = [&](const std::optional<qreal>& value, QLabel* label) {
         if (value) {
             label->setText(QString::number(*value, 'f', 2));
             label->setStyleSheet("color:" + okColor.name(QColor::HexRgb));
-        } else {
+        } else if (measuring) {
             label->setText(QStringLiteral("Измерение"));
             label->setStyleSheet("color:" + pendingColor.name(QColor::HexRgb));
+        } else {
+            label->setText(QStringLiteral("--"));
+            label->setStyleSheet(QString());
         }
     };
 
@@ -79,23 +97,22 @@ void TelemetryUiMapper::updateInit(const InitState& init,
 
 void TelemetryUiMapper::updateStrokeTest(const Domain::Tests::Stroke::Result& result)
 {
-    m_ui->label_strokeTest_forwardTime_Value->setText(
-        QTime(0, 0).addMSecs(result.forwardTimeMs).toString("mm:ss.zzz"));
+    const QString forwardTime = TimeUtils::msToText(result.forwardTimeMs);
+    const QString backwardTime = TimeUtils::msToText(result.backwardTimeMs);
+
+    m_ui->label_strokeTest_forwardTime_Value->setText(forwardTime);
 
     m_ui->label_strokeTest_respondingReactionForwardTime_Value->setText(
-        QTime(0, 0).addMSecs(result.forwardSignalDelayMs).toString("mm:ss.zzz"));
+        TimeUtils::msToText(result.forwardSignalDelayMs));
 
-    m_ui->lineEdit_resultsTable_strokeTest_forwardTime->setText(
-        QTime(0, 0).addMSecs(result.forwardTimeMs).toString("mm:ss.zzz"));
+    m_ui->lineEdit_resultsTable_strokeTest_forwardTime->setText(forwardTime);
 
-    m_ui->label_strokeTest_backwardTime_Value->setText(
-        QTime(0, 0).addMSecs(result.backwardTimeMs).toString("mm:ss.zzz"));
+    m_ui->label_strokeTest_backwardTime_Value->setText(backwardTime);
 
-    m_ui->lineEdit_resultsTable_strokeTest_backwardTime->setText(
-        QTime(0, 0).addMSecs(result.backwardTimeMs).toString("mm:ss.zzz"));
+    m_ui->lineEdit_resultsTable_strokeTest_backwardTime->setText(backwardTime);
 
     m_ui->label_strokeTest_respondingReactionBackwardTime_Value->setText(
-        QTime(0, 0).addMSecs(result.backwardSignalDelayMs).toString("mm:ss.zzz"));
+        TimeUtils::msToText(result.backwardSignalDelayMs));
 }
 
 void TelemetryUiMapper::updateMainTest(
@@ -530,8 +547,8 @@ void TelemetryUiMapper::updateResponseTest(
                                        ? QString::number(step.stepErrorPercent, 'f', 2)
                                        : "",
                                    isOk
-                                       ? QColor(198, 239, 206)
-                                       : QColor(255, 199, 206));
+                                       ? Gui::Style::passFillColor()
+                                       : Gui::Style::failFillColor());
         }
     };
 
@@ -599,9 +616,6 @@ void TelemetryUiMapper::updateSensorReadings(const Domain::Measurement::Sample& 
         m_ui->label_calcPressureBalance->setText(
             QString("%1").arg(diff, 0, 'f', 2));
 
-        // Жёлтый — если датчик линейных перемещений у края хода (0% или
-        // 100%, ±1%): там сама разность давлений не показательна. Иначе:
-        // больше 17% разбаланса — красный, 17% и меньше — зелёный.
         constexpr double kEdgeTolerancePercent = 1.0;
         constexpr double kBalanceThresholdPercent = 17.0;
 
@@ -622,8 +636,6 @@ void TelemetryUiMapper::updateSensorReadings(const Domain::Measurement::Sample& 
                 QStringLiteral("color: %1;").arg(color.name()));
 
             if (m_statusBalanceSeesaw) {
-                // Знак говорит, какой датчик сейчас выше: датчик 1 тянет
-                // метку влево, датчик 3 — вправо.
                 const double signedPercent =
                     (base > 0.0)
                         ? ((s.pressure1 - s.pressure3) / base * 100.0)

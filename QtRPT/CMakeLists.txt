@@ -21,7 +21,7 @@
 # спайк подтвердил движок рабочим для боевых PDF-отчётов (Report::Pdf,
 # см. Src/Report/Pdf/) — те же файлы, те же локальные патчи
 # (grep -rn "MPISDK FIX" QtRPT/), просто теперь не за опциональным
-# MPISDK_BUILD_QTRPT_SPIKE, а всегда собираются вместе с приложением.
+# MPIPLATFORM_BUILD_QTRPT_SPIKE, а всегда собираются вместе с приложением.
 
 qt_add_library(QtRptCore STATIC
     QtRPT/qtrpt.cpp

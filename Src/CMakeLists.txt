@@ -47,11 +47,16 @@ set(DOMAIN_CPP
 
     Storage/AppSettings.cpp
     Storage/Registry.cpp
+    Storage/HistoryDb.cpp
+    Storage/HistoryWriter.cpp
+    Storage/HistoryReader.cpp
     Storage/ChartImageStorage.cpp
     Storage/ChartSnapshotStorage.cpp
 
     Utils/NumberUtils.cpp
     Utils/StyledMessageBox.cpp
+    Utils/TimeUtils.cpp
+    Utils/UiText.cpp
 
     ValidatorFactory/ValidatorFactory.cpp
 )
@@ -128,6 +133,9 @@ set(DOMAIN_HEADERS
 
     Storage/AppSettings.h
     Storage/Registry.h
+    Storage/HistoryDb.h
+    Storage/HistoryWriter.h
+    Storage/HistoryReader.h
     Storage/SettingsGroup.h
     Storage/Telemetry.h
     Storage/ChartImageStorage.h
@@ -140,6 +148,8 @@ set(DOMAIN_HEADERS
     Utils/Shortcuts/TabActionRouter.h
     Utils/Shortcuts/TabBinder.h
     Utils/StyledMessageBox.h
+    Utils/TimeUtils.h
+    Utils/UiText.h
 
     ValidatorFactory/ValidatorFactory.h
     ValidatorFactory/RegexPatterns.h
@@ -227,6 +237,8 @@ set(GUI_CPP
     Gui/MainWindow/SparePartsPresenter.cpp
     Gui/MainWindow/StatusBarPresenter.cpp
     Gui/MainWindow/ReportGenerationPresenter.cpp
+    Gui/MainWindow/ReportGenerationWorker.cpp
+    Gui/MainWindow/HistoryPresenter.cpp
     Gui/Setup/ValveWindow/Logic.cpp
     Gui/Setup/ValveWindow/Mapper.cpp
     Gui/Setup/ObjectWindow.cpp
@@ -240,10 +252,14 @@ set(GUI_CPP
     Gui/TestSettings/CyclicTestSettings.cpp
     Widgets/Chart/ChartType.cpp
     Widgets/Chart/ChartView.cpp
+    Widgets/Chart/AnnotationBuilder.cpp
     Widgets/Chart/Series.cpp
     Widgets/Chart/ImageService.cpp
     Widgets/Chart/Manager.cpp
     Widgets/Slider/SliderView.cpp
+    Widgets/Combo/SearchableComboBox.cpp
+    Widgets/ToleranceBar.cpp
+    Widgets/Sparkline.cpp
     Widgets/Toast/ToastWidget.cpp
     Widgets/Toast/ToastManager.cpp
 )
@@ -260,6 +276,8 @@ set(GUI_HEADERS
     Gui/MainWindow/SparePartsPresenter.h
     Gui/MainWindow/StatusBarPresenter.h
     Gui/MainWindow/ReportGenerationPresenter.h
+    Gui/MainWindow/ReportGenerationWorker.h
+    Gui/MainWindow/HistoryPresenter.h
     Gui/Setup/ObjectWindow.h
     Gui/Setup/ValveWindow/Logic.h
     Gui/Setup/ValveWindow/ValveEnums.h
@@ -273,12 +291,16 @@ set(GUI_HEADERS
     Gui/TestSettings/CyclicTestSettings.h
     Gui/MainWindow/MainWindow.h
     Widgets/Chart/ChartView.h
+    Widgets/Chart/AnnotationBuilder.h
     Widgets/Chart/Series.h
     Widgets/Chart/ChartType.h
     Widgets/Chart/Point.h
     Widgets/Chart/ImageService.h
     Widgets/Chart/Manager.h
     Widgets/Slider/SliderView.h
+    Widgets/Combo/SearchableComboBox.h
+    Widgets/ToleranceBar.h
+    Widgets/Sparkline.h
     Widgets/Toast/ToastWidget.h
     Widgets/Toast/ToastManager.h
 )
@@ -309,16 +331,25 @@ target_link_libraries(Domain
         Qt6::Core
         Qt6::Charts
         Qt6::SerialPort
+        Qt6::Sql
+)
+
+# HistoryWriter грузит Database/mpiplatform.db с диска дерева исходников —
+# тот же приём и по той же причине, что и у Gui::Style::ThemeManager для
+# theme.qss (см. комментарий у Gui ниже).
+target_compile_definitions(Domain
+    PRIVATE
+        MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
 # PUBLIC — Report и Gui линкуют Domain и должны видеть то же значение
-# MPISDK_VARIANT_ILIM/MPISDK_VARIANT_SKI, чтобы их собственные
+# MPIPLATFORM_VARIANT_ILIM/MPIPLATFORM_VARIANT_SKI, чтобы их собственные
 # `if constexpr (kIlimVariant/kSkiVariant)` (страницы отчёта, видимость
 # таблиц) резолвились в то же значение.
-if(MPISDK_VARIANT STREQUAL "Ilim")
-    target_compile_definitions(Domain PUBLIC MPISDK_VARIANT_ILIM)
-elseif(MPISDK_VARIANT STREQUAL "Ski")
-    target_compile_definitions(Domain PUBLIC MPISDK_VARIANT_SKI)
+if(MPIPLATFORM_VARIANT STREQUAL "Ilim")
+    target_compile_definitions(Domain PUBLIC MPIPLATFORM_VARIANT_ILIM)
+elseif(MPIPLATFORM_VARIANT STREQUAL "Ski")
+    target_compile_definitions(Domain PUBLIC MPIPLATFORM_VARIANT_SKI)
 endif()
 
 target_sources(Domain
@@ -362,6 +393,7 @@ target_link_libraries(Gui
         Qt6::Widgets
         Qt6::Charts
         Qt6::Svg
+        Qt6::Sql
         Domain
         Report
 )
@@ -369,9 +401,9 @@ target_link_libraries(Gui
 # Gui::Style::ThemeManager грузит Src/Style/theme.qss с диска (не из
 # скомпилированного ресурса) — путь до дерева исходников на диске, а не
 # build-директории, нужен уже на уровне этой библиотеки, а не только у
-# итогового исполняемого MpiSdk (см. корневой CMakeLists.txt, тот же
+# итогового исполняемого MpiPlatform (см. корневой CMakeLists.txt, тот же
 # принцип).
 target_compile_definitions(Gui
     PRIVATE
-        MPISDK_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )

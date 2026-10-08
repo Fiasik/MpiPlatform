@@ -8,7 +8,6 @@
 #include "Report/Excel/Blocks/ResolutionTable.h"
 
 #include "Report/Context.h"
-#include "Report/CuratedChartSeries.h"
 #include "Widgets/Chart/ChartType.h"
 
 #include <utility>

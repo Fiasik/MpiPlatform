@@ -1,6 +1,93 @@
 #include "Registry.h"
 #include "SettingsGroup.h"
 
+namespace {
+
+// Читает поля ЗРА из текущей открытой группы позиции m_settings.
+// Общий код для loadValveInfo() (текущая связка) и valveInfoAt()
+// (произвольная связка, read-only предпросмотр).
+ValveInfo readValveGroup(QSettings& s)
+{
+    ValveInfo v;
+
+    v.manufacturer = s.value("manufacturer", "").toString();
+    v.valveModel = s.value("valveModel", "").toString();
+    v.serialNumber = s.value("serialNumber", "").toString();
+    v.DN = s.value("DN", "").toString();
+    v.PN = s.value("PN", "").toString();
+    v.positionerModel = s.value("positionerModel", "").toString();
+    v.solenoidValveModel = s.value("solenoidValveModel", "").toString();
+    v.limitSwitchModel = s.value("limitSwitchModel", "").toString();
+    v.positionSensorModel = s.value("positionSensorModel", "").toString();
+    v.dinamicErrorRecomend = s.value("dinamicErrorRecomend", "").toString();
+
+    v.strokeMovement =
+        static_cast<StrokeMovement>(s.value("strokeMovement", 0).toInt());
+
+    v.valveStroke = s.value("valveStroke", "").toString();
+    v.driveModel = s.value("driveModel", "").toString();
+
+    v.safePosition =
+        static_cast<SafePosition>(s.value("safePosition", 0).toInt());
+    v.driveType =
+        static_cast<DriveType>(s.value("driveType", 0).toInt());
+    v.positionerType =
+        static_cast<PositionerType>(s.value("positionerType", 0).toInt());
+    v.positionerScale =
+        static_cast<PositionerScale>(s.value("positionerScale", 0).toInt());
+
+    v.driveRangeLow = s.value("driveRangeLow", 0.0).toDouble();
+    v.driveRangeHigh = s.value("driveRangeHigh", 0.0).toDouble();
+    v.driveDiameter = s.value("driveDiameter", "").toDouble();
+
+    v.toolNumber =
+        static_cast<ToolNumber>(s.value("toolNumber", 0).toInt());
+    v.diameterPulley = s.value("diameterPulley", "").toInt();
+
+    v.materialStuffingBoxSeal =
+        static_cast<StuffingBoxSeal>(
+            s.value("materialStuffingBoxSeal", 0).toInt());
+
+    auto& c = v.crossingLimits;
+    c.frictionEnabled = s.value("crossing_frictionEnabled", false).toBool();
+    c.linearCharacteristicEnabled =
+        s.value("crossing_linearCharacteristicEnabled", false).toBool();
+    c.valveStrokeEnabled = s.value("crossing_valveStrokeEnabled", false).toBool();
+    c.springEnabled = s.value("crossing_springEnabled", false).toBool();
+    c.dynamicErrorEnabled =
+        s.value("crossing_dynamicErrorEnabled", false).toBool();
+    c.frictionCoefLower = s.value("crossing_frictionCoefLower", 0.0).toDouble();
+    c.frictionCoefUpper = s.value("crossing_frictionCoefUpper", 0.0).toDouble();
+    c.linearCharacteristic =
+        s.value("crossing_linearCharacteristic", 0.0).toDouble();
+    c.valveStroke = s.value("crossing_valveStroke", 0.0).toDouble();
+    c.springLower = s.value("crossing_springLower", 0.0).toDouble();
+    c.springUpper = s.value("crossing_springUpper", 0.0).toDouble();
+
+    return v;
+}
+
+MaterialsOfComponentParts readMaterialsGroup(QSettings& s)
+{
+    MaterialsOfComponentParts m;
+
+    m.saddle = s.value("saddle", "").toString();
+    m.CV = s.value("CV", "").toString();
+    m.stuffingBoxSeal = s.value("stuffingBoxSeal", "").toString();
+    m.corpus = s.value("corpus", "").toString();
+    m.cap = s.value("cap", "").toString();
+    m.ball = s.value("ball", "").toString();
+    m.disk = s.value("disk", "").toString();
+    m.plunger = s.value("plunger", "").toString();
+    m.shaft = s.value("shaft", "").toString();
+    m.stock = s.value("stock", "").toString();
+    m.guideSleeve = s.value("guideSleeve", "").toString();
+
+    return m;
+}
+
+}
+
 Registry::Registry() : m_settings("MPPI", "Data")
 {}
 
@@ -60,79 +147,57 @@ bool Registry::loadValveInfo(const QString& position)
 
     SettingsGroup g4(m_settings, position);
 
-    auto& v = m_valveInfo;
+    m_valveInfo = readValveGroup(m_settings);
+    m_valveInfo.positionNumber = position;
 
-    v = {};
-    v.positionNumber = position;
+    return true;
+}
 
-    v.manufacturer = m_settings.value("manufacturer", "").toString();
-    v.valveModel = m_settings.value("valveModel", "").toString();
-    v.serialNumber = m_settings.value("serialNumber", "").toString();
-    v.DN = m_settings.value("DN", "").toString();
-    v.PN = m_settings.value("PN", "").toString();
-    v.positionerModel = m_settings.value("positionerModel", "").toString();
-    v.solenoidValveModel = m_settings.value("solenoidValveModel", "").toString();
-    v.limitSwitchModel = m_settings.value("limitSwitchModel", "").toString();
-    v.positionSensorModel = m_settings.value("positionSensorModel", "").toString();
-    v.dinamicErrorRecomend = m_settings.value("dinamicErrorRecomend", "").toString();
+bool Registry::valveInfoAt(const QString& object,
+                           const QString& manufactory,
+                           const QString& department,
+                           const QString& position,
+                           ValveInfo& out)
+{
+    if (object.isEmpty() || manufactory.isEmpty()
+        || department.isEmpty() || position.isEmpty())
+        return false;
 
-    v.strokeMovement =
-        static_cast<StrokeMovement>(
-            m_settings.value("strokeMovement", 0).toInt());
+    SettingsGroup g1(m_settings, object);
+    SettingsGroup g2(m_settings, manufactory);
+    SettingsGroup g3(m_settings, department);
 
-    v.valveStroke = m_settings.value("valveStroke", "").toString();
-    v.driveModel = m_settings.value("driveModel", "").toString();
+    if (!m_settings.childGroups().contains(position))
+        return false;
 
-    v.safePosition =
-        static_cast<SafePosition>(
-            m_settings.value("safePosition", 0).toInt());
+    SettingsGroup g4(m_settings, position);
 
-    v.driveType =
-        static_cast<DriveType>(
-            m_settings.value("driveType", 0).toInt());
+    out = readValveGroup(m_settings);
+    out.positionNumber = position;
 
-    v.positionerType =
-        static_cast<PositionerType>(
-            m_settings.value("positionerType", 0).toInt());
+    return true;
+}
 
-    v.driveRangeLow = m_settings.value("driveRangeLow", 0.0).toDouble();
-    v.driveRangeHigh = m_settings.value("driveRangeHigh", 0.0).toDouble();
+bool Registry::materialsAt(const QString& object,
+                           const QString& manufactory,
+                           const QString& department,
+                           const QString& position,
+                           MaterialsOfComponentParts& out)
+{
+    if (object.isEmpty() || manufactory.isEmpty()
+        || department.isEmpty() || position.isEmpty())
+        return false;
 
-    v.driveDiameter = m_settings.value("driveDiameter", "").toDouble();
+    SettingsGroup g1(m_settings, object);
+    SettingsGroup g2(m_settings, manufactory);
+    SettingsGroup g3(m_settings, department);
 
-    v.toolNumber =
-        static_cast<ToolNumber>(
-            m_settings.value("toolNumber", 0).toInt());
-    v.diameterPulley = m_settings.value("diameterPulley", "").toInt();
+    if (!m_settings.childGroups().contains(position))
+        return false;
 
-    v.materialStuffingBoxSeal =
-        static_cast<StuffingBoxSeal>(
-            m_settings.value("materialStuffingBoxSeal", 0).toInt());
+    SettingsGroup g4(m_settings, position);
 
-    // crossing limits
-    v.crossingLimits.frictionEnabled =
-        m_settings.value("crossing_frictionEnabled", false).toBool();
-    v.crossingLimits.linearCharacteristicEnabled =
-        m_settings.value("crossing_linearCharacteristicEnabled", false).toBool();
-    v.crossingLimits.valveStrokeEnabled =
-        m_settings.value("crossing_valveStrokeEnabled", false).toBool();
-    v.crossingLimits.springEnabled =
-        m_settings.value("crossing_springEnabled", false).toBool();
-    v.crossingLimits.dynamicErrorEnabled =
-        m_settings.value("crossing_dynamicErrorEnabled", false).toBool();
-
-    v.crossingLimits.frictionCoefLower =
-        m_settings.value("crossing_frictionCoefLower", 0.0).toDouble();
-    v.crossingLimits.frictionCoefUpper =
-        m_settings.value("crossing_frictionCoefUpper", 0.0).toDouble();
-
-    v.crossingLimits.linearCharacteristic =
-        m_settings.value("crossing_linearCharacteristic", 0.0).toDouble();
-
-    v.crossingLimits.valveStroke = m_settings.value("crossing_valveStroke", 0.0).toDouble();
-
-    v.crossingLimits.springLower = m_settings.value("crossing_springLower", 0.0).toDouble();
-    v.crossingLimits.springUpper = m_settings.value("crossing_springUpper", 0.0).toDouble();
+    out = readMaterialsGroup(m_settings);
 
     return true;
 }
@@ -164,6 +229,7 @@ void Registry::saveValveInfo()
     setValue("safePosition", static_cast<int>(v.safePosition));
     setValue("driveType", static_cast<int>(v.driveType));
     setValue("positionerType", static_cast<int>(v.positionerType));
+    setValue("positionerScale", static_cast<int>(v.positionerScale));
 
     // setValue("driveRecomendRange", v.driveRecomendRange);
     setValue("driveRangeLow", v.driveRangeLow);
@@ -221,19 +287,7 @@ bool Registry::loadMaterialsOfComponentParts(const QString& position)
 
     m_settings.beginGroup(position);
 
-    m_materialsOfComponentParts = {};
-
-    m_materialsOfComponentParts.saddle = m_settings.value("saddle", "").toString();
-    m_materialsOfComponentParts.CV = m_settings.value("CV", "").toString();
-    m_materialsOfComponentParts.stuffingBoxSeal = m_settings.value("stuffingBoxSeal", "").toString();
-    m_materialsOfComponentParts.corpus = m_settings.value("corpus", "").toString();
-    m_materialsOfComponentParts.cap = m_settings.value("cap", "").toString();
-    m_materialsOfComponentParts.ball = m_settings.value("ball", "").toString();
-    m_materialsOfComponentParts.disk = m_settings.value("disk", "").toString();
-    m_materialsOfComponentParts.plunger = m_settings.value("plunger", "").toString();
-    m_materialsOfComponentParts.shaft = m_settings.value("shaft", "").toString();
-    m_materialsOfComponentParts.stock = m_settings.value("stock", "").toString();
-    m_materialsOfComponentParts.guideSleeve = m_settings.value("guideSleeve", "").toString();
+    m_materialsOfComponentParts = readMaterialsGroup(m_settings);
 
     m_settings.endGroup();
     m_settings.endGroup();
@@ -349,13 +403,9 @@ bool Registry::checkDepartment(const QString &department)
 
 bool Registry::checkPosition(const QString &position)
 {
-    SettingsGroup g1(m_settings, m_objectInfo.object);
-    SettingsGroup g2(m_settings, m_objectInfo.manufactory);
-    SettingsGroup g3(m_settings, m_objectInfo.department);
-
-    bool result = m_settings.childGroups().contains(position);
-
-    return result;
+    // Тот же набор вложенных групп (object/manufactory/department из
+    // m_objectInfo), что и у positions() ниже — там же и список.
+    return positions().contains(position);
 }
 
 QStringList Registry::positions()
@@ -369,6 +419,48 @@ QStringList Registry::positions()
     return result;
 }
 
+QStringList Registry::objects()
+{
+    // На верхнем уровне дерева лежат группы объектов плюс служебная
+    // группа "colors" (цвета датчиков) — её в список не отдаём.
+    QStringList result = m_settings.childGroups();
+    result.removeAll("colors");
+    return result;
+}
+
+QStringList Registry::manufactories(const QString& object)
+{
+    if (object.isEmpty())
+        return {};
+
+    SettingsGroup g1(m_settings, object);
+    return m_settings.childGroups();
+}
+
+QStringList Registry::departments(const QString& object,
+                                  const QString& manufactory)
+{
+    if (object.isEmpty() || manufactory.isEmpty())
+        return {};
+
+    SettingsGroup g1(m_settings, object);
+    SettingsGroup g2(m_settings, manufactory);
+    return m_settings.childGroups();
+}
+
+QStringList Registry::positions(const QString& object,
+                                const QString& manufactory,
+                                const QString& department)
+{
+    if (object.isEmpty() || manufactory.isEmpty() || department.isEmpty())
+        return {};
+
+    SettingsGroup g1(m_settings, object);
+    SettingsGroup g2(m_settings, manufactory);
+    SettingsGroup g3(m_settings, department);
+    return m_settings.childGroups();
+}
+
 QString Registry::lastPosition()
 {
     SettingsGroup g1(m_settings, m_objectInfo.object);
@@ -378,4 +470,13 @@ QString Registry::lastPosition()
     QString result = m_settings.value("last_position", "").toString();
 
     return result;
+}
+
+void Registry::setLastPosition(const QString& position)
+{
+    SettingsGroup g1(m_settings, m_objectInfo.object);
+    SettingsGroup g2(m_settings, m_objectInfo.manufactory);
+    SettingsGroup g3(m_settings, m_objectInfo.department);
+
+    m_settings.setValue("last_position", position);
 }

@@ -32,7 +32,7 @@ SliderView::SliderView(QWidget* parent)
     m_labels[20000] = "100% – 20 мА";
     m_labels[21000] = "21 мА";
 
-    setTickGap(6);
+    setTickGap(15);
     setTickLength(0);
     setLabelOffset(8);
 }

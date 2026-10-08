@@ -2,6 +2,7 @@
 
 #include "Report/Excel/Writer.h"
 #include "Report/Context.h"
+#include "Utils/TimeUtils.h"
 
 #include <QTime>
 
@@ -18,14 +19,14 @@ void CyclicSummary::build(Writer& writer, const Report::Context& ctx)
 
     if (const auto& stroke = ctx.telemetry.testStroke) {
         writer.cell(m_layout.sheet, row, m_layout.column,
-                    QTime(0, 0).addMSecs(stroke->forwardTimeMs).toString("mm:ss.zzz"));
+                    TimeUtils::msToText(stroke->forwardTimeMs));
     }
 
     row += m_layout.rowStep;
 
     if (const auto& stroke = ctx.telemetry.testStroke) {
         writer.cell(m_layout.sheet, row, m_layout.column,
-                    QTime(0, 0).addMSecs(stroke->backwardTimeMs).toString("mm:ss.zzz"));
+                    TimeUtils::msToText(stroke->backwardTimeMs));
     }
 
     row += m_layout.rowStep;

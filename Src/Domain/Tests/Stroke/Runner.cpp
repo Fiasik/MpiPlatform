@@ -1,10 +1,14 @@
 #include "Runner.h"
 #include "Algorithm.h"
 
+#include "Utils/SignalUtils.h"
+
 namespace Domain::Tests::Stroke {
     RunnerConfig Runner::buildConfig()
     {
-        auto worker = std::make_unique<Algorithm>();
+        auto worker = std::make_unique<Algorithm>(
+            SignalUtils::safeParkRaw(m_scale),
+            SignalUtils::farRaw(m_scale));
 
         return makeConfig(std::move(worker), 0, Widgets::Chart::ChartType::Stroke);
     }

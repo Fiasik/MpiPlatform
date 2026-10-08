@@ -157,6 +157,7 @@ private:
     // init
     void waitForDacCycle();
     void finalizeInitialization();
+    quint16 safeParkRaw() const;
 
     bool m_suppressPublicTestFinished = false;
 

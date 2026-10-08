@@ -5,6 +5,8 @@
 #include "Domain/Tests/Main/Analyzer.h"
 #include "Domain/Tests/Main/CrossingStatusUpdater.h"
 
+#include "Utils/SignalUtils.h"
+
 #include <QDebug>
 
 namespace Domain::Tests::Main::Standard {
@@ -34,10 +36,11 @@ void Scenario::beforeStart()
 std::unique_ptr<BaseRunner> Scenario::createRunner()
 {
     const bool normalOpen = m_context.config.safePosition == SafePosition::NormallyOpen;
+    const bool invertTask = SignalUtils::isTaskInverted(normalOpen, m_context.config.positionerScale);
 
     return std::make_unique<Runner>(
         m_context.device,
-        normalOpen,
+        invertTask,
         m_params,
         this
     );

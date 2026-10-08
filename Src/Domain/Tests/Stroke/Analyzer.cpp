@@ -506,6 +506,16 @@ Result Analyzer::computeTimes(
         backwardMoveStartTime
         );
 
+    r.forwardMoveStartTimeMs = forwardMoveStartTime;
+    r.forwardMoveStartPos = forwardStartLevel;
+    r.forwardMoveEndTimeMs = forwardMoveEndTime;
+    r.forwardMoveEndPos = t.forwardEnd;
+
+    r.backwardMoveStartTimeMs = backwardMoveStartTime;
+    r.backwardMoveStartPos = backwardStartLevel;
+    r.backwardMoveEndTimeMs = backwardMoveEndTime;
+    r.backwardMoveEndPos = t.backwardEnd;
+
     return r;
 }
 

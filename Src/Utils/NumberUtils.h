@@ -13,4 +13,8 @@ parseRange(QString s);
 
 void readRange(QLineEdit* le, double& low, double& high);
 
+// Зеркало parseRange() — пара чисел в текст "lo–hi" (эндэш, 2 знака после
+// запятой), lo/hi переставляются местами сами, если пришли не по порядку.
+QString formatRange(double lo, double hi);
+
 }

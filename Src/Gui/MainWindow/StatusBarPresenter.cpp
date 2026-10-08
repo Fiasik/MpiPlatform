@@ -4,6 +4,7 @@
 #include "Gui/MainWindow/TelemetryUiMapper.h"
 #include "Gui/Style/ThemeManager.h"
 #include "Widgets/Chart/Manager.h"
+#include "Widgets/ToleranceBar.h"
 #include "ui_MainWindow.h"
 
 #include <QHBoxLayout>
@@ -157,12 +158,23 @@ void StatusBarPresenter::setThemeManager(Gui::Style::ThemeManager* themeManager)
     updateThemeToggleIcon(m_themeManager->currentScheme());
     updatePalette();
     m_chartManager->applyPalette(m_themeManager->currentPalette());
+    applyToleranceBarsPalette(m_themeManager->currentPalette());
 
     connect(m_themeManager, &Gui::Style::ThemeManager::schemeChanged, this, [this](Gui::Style::ColorScheme scheme) {
         updateThemeToggleIcon(scheme);
         updatePalette();
         m_chartManager->applyPalette(m_themeManager->currentPalette());
+        applyToleranceBarsPalette(m_themeManager->currentPalette());
     });
+}
+
+void StatusBarPresenter::applyToleranceBarsPalette(const Gui::Style::Palette& palette)
+{
+    m_ui->toleranceBar_coefficientFriction->applyPalette(palette);
+    m_ui->toleranceBar_linearCharacteristic->applyPalette(palette);
+    m_ui->toleranceBar_dynamicError->applyPalette(palette);
+    m_ui->toleranceBar_spring->applyPalette(palette);
+    m_ui->toleranceBar_range->applyPalette(palette);
 }
 
 void StatusBarPresenter::buildThemeToggle()

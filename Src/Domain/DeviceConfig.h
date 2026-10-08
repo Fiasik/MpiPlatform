@@ -9,6 +9,7 @@
 namespace Domain {
     struct DeviceConfig {
         SafePosition safePosition;
+        PositionerScale positionerScale = PositionerScale::Normal;
         QString valveStroke;
         CrossingLimits crossingLimits;
         StrokeMovement strokeMovement = StrokeMovement::Linear;

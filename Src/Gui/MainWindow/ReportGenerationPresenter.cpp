@@ -5,7 +5,6 @@
 #include "Gui/MainWindow/ConclusionPresenter.h"
 #include "Gui/MainWindow/SparePartsPresenter.h"
 #include "Report/Context.h"
-#include "Report/Excel/Builder.h"
 #include "Report/Pdf/Builder.h"
 #include "Report/Saver.h"
 #include "Storage/ChartImageStorage.h"
@@ -13,7 +12,7 @@
 #include "Storage/Registry.h"
 #include "Storage/Telemetry.h"
 #include "Utils/NumberUtils.h"
-#include "Domain/BuildVariant.h"
+#include "Utils/TimeUtils.h"
 
 #include <QDateTime>
 #include <QDesktopServices>
@@ -25,20 +24,6 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QDebug>
-
-namespace {
-quint32 timeTextToMs(const QString& text)
-{
-    const QTime time = QTime::fromString(text.trimmed(), "mm:ss.zzz");
-
-    if (!time.isValid())
-        return 0;
-
-    return static_cast<quint32>(
-        QTime(0, 0).msecsTo(time)
-        );
-}
-}
 
 ReportGenerationPresenter::ReportGenerationPresenter(
     Ui::MainWindow* ui,
@@ -99,10 +84,10 @@ void ReportGenerationPresenter::collectReportOverrides()
     // Stroke test
     if (m_telemetry.testStroke) {
         m_telemetry.testStroke->forwardTimeMs =
-            timeTextToMs(m_ui->lineEdit_resultsTable_strokeTest_forwardTime->text());
+            TimeUtils::textToMs(m_ui->lineEdit_resultsTable_strokeTest_forwardTime->text());
 
         m_telemetry.testStroke->backwardTimeMs =
-            timeTextToMs(m_ui->lineEdit_resultsTable_strokeTest_backwardTime->text());
+            TimeUtils::textToMs(m_ui->lineEdit_resultsTable_strokeTest_backwardTime->text());
     }
 
     // SupplyRecord
@@ -224,77 +209,39 @@ void ReportGenerationPresenter::saveCommentsPdfIfNeeded()
     Report::Pdf::Builder().buildComments(ctx, path);
 }
 
-bool ReportGenerationPresenter::generateReport()
+std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareReportGeneration()
 {
     collectReportOverrides();
 
-    ObjectInfo objectInfo = m_registry->objectInfo();
-    ValveInfo valveInfo = m_registry->valveInfo();
-    OtherParameters otherParameters = m_registry->otherParameters();
+    ReportGenerationWorker::Input input;
 
-    collectRegistryOverrides(objectInfo, valveInfo, otherParameters);
+    input.object = m_registry->objectInfo();
+    input.valve = m_registry->valveInfo();
+    input.params = m_registry->otherParameters();
 
-    auto reportBuilder = std::make_unique<Report::Excel::Builder>(m_patternType);
+    collectRegistryOverrides(input.object, input.valve, input.params);
 
-    if (!reportBuilder) {
-        qWarning() << "[ReportGenerationPresenter] Не выбран корректный паттерн отчёта";
-        return false;
-    }
+    input.telemetry = m_telemetry;
+    input.materials = m_registry->materialsOfComponentParts();
+    input.chartImages = m_chartImageStorage;
+    input.chartData = m_chartSnapshotStorage;
+    input.conclusionAnswers = m_conclusionPresenter->fieldAnswers();
+    input.conclusionSummary = m_conclusionPresenter->summaryText();
+    input.testComments = m_testComments;
+    input.spareParts = m_sparePartsPresenter->selectedParts();
+    input.pattern = m_patternType;
+    input.buildTechnicalInspectionPdf = m_ui->checkBox_report_TO->isChecked();
 
-    const auto conclusionAnswers = m_conclusionPresenter->fieldAnswers();
-    const QString conclusionSummary = m_conclusionPresenter->summaryText();
-    const QStringList spareParts = m_sparePartsPresenter->selectedParts();
-
-    Report::Context ctx{
-        m_telemetry,
-        m_registry->objectInfo(),
-        m_registry->valveInfo(),
-        m_registry->materialsOfComponentParts(),
-        m_registry->otherParameters(),
-        m_chartImageStorage,
-        m_chartSnapshotStorage,
-        conclusionAnswers,
-        conclusionSummary,
-        m_testComments,
-        spareParts,
-        m_patternType
-    };
-
-    Report::Excel::ReportData report;
-
-    reportBuilder->build(report, ctx);
-
-    bool allOk = m_reportSaver->saveReport(report, reportBuilder->templatePath());
-    m_ui->pushButton_report_open->setEnabled(allOk);
-
+    // Резолвим папку сохранения здесь и только здесь — Saver может в
+    // ответ интерактивно спросить пользователя (диалог выбора папки),
+    // это обязано остаться на GUI-потоке (см. комментарий
+    // ReportGenerationWorker.h). После этого ReportGenerationWorker
+    // спокойно вызывает saveReport()/saveChartCsv() с воркер-потока —
+    // их собственный внутренний ensureDirectory() уже просто вернёт true.
     if (!m_reportSaver->ensureDirectory())
-        return false;
+        return std::nullopt;
 
-    Report::Pdf::Builder pdfBuilder;
-    allOk = pdfBuilder.buildTechnicalInspection(
-                ctx, m_reportSaver->reportPdfPath(QObject::tr("Акт ТО.pdf"))) && allOk;
-    allOk = pdfBuilder.buildStepReaction(
-                ctx, m_reportSaver->reportPdfPath(QObject::tr("Акт ТШР.pdf"))) && allOk;
-
-    if constexpr (Domain::kIlimVariant) {
-        allOk = pdfBuilder.buildResponse(
-                    ctx, m_reportSaver->reportPdfPath(QObject::tr("Акт ТЧР.pdf"))) && allOk;
-        allOk = pdfBuilder.buildResolution(
-                    ctx, m_reportSaver->reportPdfPath(QObject::tr("Акт ТРС.pdf"))) && allOk;
-    }
-
-    using Widgets::Chart::ChartType;
-    static const QList<ChartType> csvChartTypes = {
-        ChartType::Task, ChartType::Pressure, ChartType::Friction,
-        ChartType::Response, ChartType::Resolution, ChartType::Stroke,
-        ChartType::Step, ChartType::Trend, ChartType::Cyclic,
-    };
-    for (ChartType type : csvChartTypes) {
-        if (m_chartSnapshotStorage.contains(type))
-            allOk = m_reportSaver->saveChartCsv(type, m_chartSnapshotStorage.get(type)) && allOk;
-    }
-
-    return allOk;
+    return input;
 }
 
 bool ReportGenerationPresenter::openReport()

@@ -66,6 +66,15 @@ private:
     void run(const std::function<void()>& start);
     void setState(TestState s);
 
+    // Общее тело всех runXxxTest(params) слотов выше — отличаются только
+    // вызываемый метод Program и тип Params, остальная диспетчеризация
+    // (run()/QMetaObject::invokeMethod на поток Program) идентична.
+    template <typename Params>
+    void runWithParams(void (Domain::Program::*startFn)(const Params&), const Params& params);
+
+    // То же самое для единственного теста без параметров (runStrokeTest).
+    void runNoParams(void (Domain::Program::*startFn)());
+
 private:
     Domain::Program* m_program = nullptr;
     TestState m_state = TestState::Idle;

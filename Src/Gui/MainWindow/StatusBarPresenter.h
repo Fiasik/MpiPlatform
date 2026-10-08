@@ -48,6 +48,10 @@ public:
 private:
     void build();
     void updatePalette();
+    // ToleranceBar (frame_mainTests_result_crossingLimits_Section) красится
+    // не через theme.qss (рисуется в paintEvent), а вызовом applyPalette()
+    // на каждый — тот же приём, что уже есть для m_chartManager рядом.
+    void applyToleranceBarsPalette(const Gui::Style::Palette& palette);
     void buildThemeToggle();
     void updateThemeToggleIcon(Gui::Style::ColorScheme scheme);
 

@@ -17,6 +17,7 @@
 #include <QMapIterator>
 #include <QMap>
 
+#include <algorithm>
 #include <cmath>
 
 #include "xlsxrichstring.h"
@@ -1322,6 +1323,17 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
 	//    writer.writeAttribute("xmlns:x14ac", "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
 	//    writer.writeAttribute("mc:Ignorable", "x14ac");
 
+    // sheetPr — не было вообще (см. Worksheet::setFitToPage()); по схеме
+    // (ECMA-376 §18.3.1.82) это первый дочерний элемент <worksheet>, перед
+    // <dimension>.
+    if (d->fitToPage) {
+        writer.writeStartElement(QStringLiteral("sheetPr"));
+        writer.writeStartElement(QStringLiteral("pageSetUpPr"));
+        writer.writeAttribute(QStringLiteral("fitToPage"), QStringLiteral("1"));
+        writer.writeEndElement(); // pageSetUpPr
+        writer.writeEndElement(); // sheetPr
+    }
+
 	writer.writeStartElement(QStringLiteral("dimension"));
 	writer.writeAttribute(QStringLiteral("ref"), d->generateDimensionString());
 	writer.writeEndElement();//dimension
@@ -1431,11 +1443,36 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
     }
 
     // dev57
-    if ( !d->Prid.isEmpty() )
+    //
+    // Раньше висело строго на d->Prid (r:id на встроенный
+    // printerSettingsN.bin) — это заполняется ТОЛЬКО при загрузке уже
+    // существующего файла с таким блоком, поэтому лист, построенный с нуля
+    // через публичные setPageOrientation/setPaperSize/setPageScale выше,
+    // никогда не проходил это условие, и весь <pageSetup> просто не
+    // писался, даже если сами атрибуты были заданы. r:id — необязательный
+    // атрибут этого элемента и без него, пишем элемент, если задано
+    // хоть что-то из видимых настроек печати.
+    if ( !d->Prid.isEmpty() ||
+         !d->Pscale.isEmpty() ||
+         !d->PpaperSize.isEmpty() ||
+         !d->Porientation.isEmpty() ||
+         d->fitToPage )
     {
         writer.writeStartElement(QStringLiteral("pageSetup")); // pageSetup
 
-        writer.writeAttribute(QStringLiteral("r:id"), d->Prid);
+        if ( !d->Prid.isEmpty() )
+            writer.writeAttribute(QStringLiteral("r:id"), d->Prid);
+
+        // fitToWidth/fitToHeight — тут же, а не только через <sheetPr>:
+        // fitToPage=1 в sheetPr включает РЕЖИМ "вписать", а сколько именно
+        // страниц — задаётся этими двумя атрибутами pageSetup. 0 для
+        // fitToHeight — валидное значение по схеме ("не ограничивать
+        // высоту"), в отличие от отсутствия атрибута вовсе.
+        if ( d->fitToPage )
+        {
+            writer.writeAttribute(QStringLiteral("fitToWidth"), QString::number(d->fitToPageWidth));
+            writer.writeAttribute(QStringLiteral("fitToHeight"), QString::number(d->fitToPageHeight));
+        }
 
         if ( !d->PverticalDpi.isEmpty() )
         {
@@ -1479,7 +1516,7 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
 
         writer.writeEndElement(); // pageSetup
 
-    } // if ( !d->Prid.isEmpty() )
+    }
 
     // headerFooter
     if( !(d->ModdHeader.isNull()) ||
@@ -1507,6 +1544,29 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
         writer.writeEndElement(); // headerFooter
     }
 
+    // rowBreaks — не было в этой сборке QXlsx вообще (ни чтения, ни
+    // записи), см. Worksheet::addRowPageBreak()/LOCAL_PATCHES.md. Порядок
+    // элемента (после headerFooter, до hyperlinks/drawing) — по схеме
+    // ECMA-376 §18.3.1.99 (CT_Worksheet).
+    if (!d->rowPageBreaks.isEmpty()) {
+        QList<int> breaks = d->rowPageBreaks;
+        std::sort(breaks.begin(), breaks.end());
+
+        writer.writeStartElement(QStringLiteral("rowBreaks"));
+        writer.writeAttribute(QStringLiteral("count"), QString::number(breaks.size()));
+        writer.writeAttribute(QStringLiteral("manualBreakCount"), QString::number(breaks.size()));
+        for (int row : std::as_const(breaks)) {
+            writer.writeEmptyElement(QStringLiteral("brk"));
+            writer.writeAttribute(QStringLiteral("id"), QString::number(row));
+            // max — последний столбец разрыва (0-based, включительно);
+            // dimension.lastColumn() достаточно широк для наших листов и
+            // не требует от вызывающего кода знать точную ширину печати.
+            writer.writeAttribute(QStringLiteral("max"), QString::number(qMax(0, d->dimension.lastColumn() - 1)));
+            writer.writeAttribute(QStringLiteral("man"), QStringLiteral("1"));
+        }
+        writer.writeEndElement(); // rowBreaks
+    }
+
 	d->saveXmlHyperlinks(writer);
 	d->saveXmlDrawings(writer);
 
@@ -1524,6 +1584,68 @@ bool Worksheet::setStartPage(int spagen)
     return true;
 }
 //}}
+
+// Публичные сеттеры для полей печати, добавленных liufeijin выше —
+// см. комментарий в xlsxworksheet.h и LOCAL_PATCHES.md.
+void Worksheet::setPageOrientation(const QString &orientation)
+{
+    Q_D(Worksheet);
+    d->Porientation = orientation;
+}
+
+void Worksheet::setPaperSize(int paperSize)
+{
+    Q_D(Worksheet);
+    d->PpaperSize = QString::number(paperSize);
+}
+
+void Worksheet::setPageScale(int percent)
+{
+    Q_D(Worksheet);
+    d->Pscale = QString::number(percent);
+}
+
+void Worksheet::setPageMargins(double left, double right, double top, double bottom,
+                                double header, double footer)
+{
+    Q_D(Worksheet);
+    d->PMleft = QString::number(left);
+    d->PMright = QString::number(right);
+    d->PMtop = QString::number(top);
+    d->PMbotton = QString::number(bottom);
+    d->PMheader = QString::number(header);
+    d->PMfooter = QString::number(footer);
+}
+
+bool Worksheet::addRowPageBreak(int row)
+{
+    Q_D(Worksheet);
+    if (row <= 0)
+        return false;
+    if (!d->rowPageBreaks.contains(row))
+        d->rowPageBreaks.append(row);
+    return true;
+}
+
+void Worksheet::setFitToPage(int widthPages, int heightPages)
+{
+    Q_D(Worksheet);
+    d->fitToPage = true;
+    d->fitToPageWidth = widthPages;
+    d->fitToPageHeight = heightPages;
+}
+
+void Worksheet::setHeaderText(const QString &oddHeader)
+{
+    Q_D(Worksheet);
+    d->ModdHeader = oddHeader;
+}
+
+void Worksheet::setFooterText(const QString &oddFooter)
+{
+    Q_D(Worksheet);
+    d->MoodFooter = oddFooter;
+}
 
 void WorksheetPrivate::saveXmlSheetData(QXmlStreamWriter &writer) const
 {

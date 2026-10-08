@@ -99,6 +99,7 @@ void TechnicalInspectionSource::buildValues()
             m_values[QStringLiteral("resDynErrorNote")] = valve.dinamicErrorRecomend;
         } else {
             m_values[QStringLiteral("resDynErrorValue")] = f2(main->dynamicErrorReal);
+            m_values[QStringLiteral("resDynErrorNorm")] = valve.dinamicErrorRecomend;
             m_values[QStringLiteral("resDynErrorNote")] = resultOk(t.crossingStatus.dynamicError);
         }
 

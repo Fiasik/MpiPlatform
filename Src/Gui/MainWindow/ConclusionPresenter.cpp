@@ -2,31 +2,12 @@
 #include "ui_MainWindow.h"
 
 #include <QComboBox>
-#include <QSizePolicy>
 
 using Report::Html::ConclusionField;
 
 void ConclusionPresenter::setupSummaryTemplateItems()
 {
-    auto* combo = m_ui->comboBox_conclusion_summaryTemplate;
-
-    // Некоторые шаблоны заключения — готовые абзацы под 500 символов
-    // (см. .ui). sizeAdjustPolicy сам по себе не спасает (проверено
-    // вживую) — похоже, при восстановлении окна из развёрнутого
-    // состояния Qt всё равно где-то опрашивает "естественный" размер по
-    // содержимому. Жёсткий setMaximumWidth тоже не годится — не
-    // адаптивно, фиксированное число пикселей. Правильный инструмент —
-    // QSizePolicy::Ignored по горизонтали: layout вообще перестаёт
-    // спрашивать sizeHint() виджета при распределении места и просто
-    // отдаёт ему сколько есть, независимо от того, что там в контенте —
-    // сам виджет остаётся адаптивным, а не приколоченным к числу.
-    combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-    combo->setMinimumContentsLength(30);
-    QSizePolicy sp = combo->sizePolicy();
-    sp.setHorizontalPolicy(QSizePolicy::Ignored);
-    combo->setSizePolicy(sp);
-
-    combo->addItem(QObject::tr("Ручной ввод"));
+    m_ui->comboBox_conclusion_summaryTemplate->addItem(QObject::tr("Ручной ввод"));
 }
 
 void ConclusionPresenter::onSummaryTemplateChanged()
