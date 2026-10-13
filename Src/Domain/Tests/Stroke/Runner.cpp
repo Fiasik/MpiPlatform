@@ -1,6 +1,8 @@
 #include "Runner.h"
 #include "Algorithm.h"
 
+#include "Domain/Mpi/Device.h"
+#include "Domain/Measurement/Sensor.h"
 #include "Utils/SignalUtils.h"
 
 namespace Domain::Tests::Stroke {
@@ -8,7 +10,9 @@ namespace Domain::Tests::Stroke {
     {
         auto worker = std::make_unique<Algorithm>(
             SignalUtils::safeParkRaw(m_scale),
-            SignalUtils::farRaw(m_scale));
+            SignalUtils::farRaw(
+                m_scale,
+                m_device.dac()->rawFromValue(SignalUtils::kMinPoweredCurrent)));
 
         return makeConfig(std::move(worker), 0, Widgets::Chart::ChartType::Stroke);
     }

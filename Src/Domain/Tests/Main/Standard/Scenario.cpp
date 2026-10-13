@@ -41,6 +41,7 @@ std::unique_ptr<BaseRunner> Scenario::createRunner()
     return std::make_unique<Runner>(
         m_context.device,
         invertTask,
+        m_context.config.positionerScale,
         m_params,
         this
     );

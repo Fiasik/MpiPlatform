@@ -26,6 +26,7 @@
 
 #include "Utils/Shortcuts/TabBinder.h"
 #include "Utils/NumberUtils.h"
+#include "Utils/SignalUtils.h"
 #include "Utils/StyledMessageBox.h"
 #include "Utils/UiText.h"
 #include "Widgets/Chart/ChartView.h"
@@ -40,6 +41,10 @@ namespace {
 // процент считается напрямую из мА, а не хранится отдельным массивом:
 // при PositionerScale::Reverse он просто идёт в обратную сторону (20 мА
 // = 0%, 4 мА = 100%), числа остаются согласованными сами по себе.
+// Это процент сигнала в терминах позиционера (совпадает с его дисплеем),
+// а не открытие клапана, поэтому SafePosition сюда не входит: у
+// нормально открытого клапана подпись "100% – 4 мА" при положении 0% —
+// не противоречие.
 QMap<int, QString> taskSliderLabels(PositionerScale scale)
 {
     QMap<int, QString> labels;
@@ -2060,7 +2065,13 @@ void MainWindow::getImage(QLabel* label, ChartType chart)
 void MainWindow::initClicked()
 {
     applyInitState(InitState::Running);
-    ui->doubleSpinBox_task->setValue(4.0);
+    // До конца инициализации реальный ЦАП неизвестен; показываем ток покоя
+    // по шкале (при Reverse — 20 мА), а не всегда 4 мА. Точное значение
+    // придёт из Program::finalizeInitialization() через setTask().
+    const PositionerScale scale = m_registry
+        ? m_registry->valveInfo().positionerScale
+        : PositionerScale::Normal;
+    ui->doubleSpinBox_task->setValue(SignalUtils::safeCurrent(scale));
 
     ui->statusbar->showMessage(tr("Инициализация устройства..."));
     if (m_toastManager)

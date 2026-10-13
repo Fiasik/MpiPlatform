@@ -28,9 +28,11 @@ isTaskInverted(bool normalOpen, PositionerScale scale)
 
 // Raw-значение ЦАП, на котором привод стоит на пружине/минимальном выходе
 // позиционера (а не просто "0 по счётчику") — это безопасное положение, и
-// именно отсюда начинается любая работа. При Normal-шкале минимальный
-// выход — на 4 мА (raw 0), при Reverse — на 20 мА (raw 65535): какому
-// проценту хода оно соответствует, уже отдельный вопрос (SafePosition).
+// именно отсюда начинается любая работа. Это край ЦАП, а не якорь: raw 0
+// зажимается в dacMin (3 мА), 65535 — в dacMax (21 мА). При Normal на 3 мА
+// позиционер обесточен, но пружина ведёт клапан ровно туда же, куда и
+// команда 4 мА, поэтому это безвредно. Какому проценту хода покой
+// соответствует, уже отдельный вопрос (SafePosition).
 inline quint16
 safeParkRaw(PositionerScale scale)
 {
@@ -45,11 +47,29 @@ safeCurrent(PositionerScale scale)
     return scale == PositionerScale::Reverse ? 20.0 : 4.0;
 }
 
-// Противоположный край диапазона ЦАП — куда идти от safeParkRaw().
+// Позиционер питается от токовой петли: ниже ~3.75 мА (замерено на
+// реальном позиционере) он обесточивается и клапан уходит на пружину, то
+// есть в покой, а не туда, куда его шлёт ток. Берём якорь 4 мА с запасом
+// на погрешность, а не измеренный порог.
+constexpr qreal kMinPoweredCurrent = 4.0;
+
+// Самый низкий raw ЦАП, которым ещё можно командовать позиционером.
+// minPoweredRaw — kMinPoweredCurrent, переведённый через dac()->rawFromValue()
+// (там учтён bias из settings.ini). При Normal нижний край — сторона покоя,
+// пружина и команда совпадают, поэтому опускаемся до упора, как было всегда.
+// При Reverse нижний край — дальний от покоя: на 3 мА клапан вернулся бы в
+// покой вместо полного хода, и инициализация снимала бы ноль хода.
 inline quint16
-farRaw(PositionerScale scale)
+lowestDriveRaw(PositionerScale scale, quint16 minPoweredRaw)
 {
-    return scale == PositionerScale::Reverse ? 0 : 65535;
+    return scale == PositionerScale::Reverse ? minPoweredRaw : 0;
+}
+
+// Противоположный от safeParkRaw() край — куда идти из покоя.
+inline quint16
+farRaw(PositionerScale scale, quint16 minPoweredRaw)
+{
+    return scale == PositionerScale::Reverse ? lowestDriveRaw(scale, minPoweredRaw) : 65535;
 }
 
 inline qreal

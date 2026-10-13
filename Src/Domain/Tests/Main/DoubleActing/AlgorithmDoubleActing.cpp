@@ -6,11 +6,9 @@ void AlgorithmDoubleActing::run()
 {
     const quint16 pointNumbers = m_params.pointNumbers;
 
-    // Прямой ход: 3 -> 21 мА.
+    // Прямой ход: из покоя к дальнему краю (Normal: 3 -> 21 мА, Reverse: 21 -> 4).
     for (quint16 i = 0; i <= pointNumbers; ++i) {
-        const quint16 dac =
-            i * (m_params.dac_max - m_params.dac_min) / pointNumbers
-            + m_params.dac_min;
+        const quint16 dac = sweepDac(m_params, i);
 
         setDacBlocked(dac, m_params.response);
 
@@ -23,8 +21,8 @@ void AlgorithmDoubleActing::run()
     // Остановка подсчета точек после доведения клапана до предела
     emit dataCollectionPaused();
 
-    // Сброс в 3мА
-    setDacBlocked(m_params.dac_min, 0, true);
+    // Сброс в покой
+    setDacBlocked(sweepStartDac(m_params), 0, true);
     if (m_terminate) { emit finished(); return; }
 
     emit waitingForManualResume();
@@ -35,11 +33,9 @@ void AlgorithmDoubleActing::run()
     emit backwardStrokeStarted();
     emit dublSeries();
 
-    // Второй проход идёт в ту же сторону, 3 -> 21 мА (не разворот, а повтор для сравнения).
+    // Второй проход идёт в ту же сторону (не разворот, а повтор для сравнения).
     for (quint16 i = 0; i <= pointNumbers; ++i) {
-        const quint16 dac =
-            i * (m_params.dac_max - m_params.dac_min) / pointNumbers
-            + m_params.dac_min;
+        const quint16 dac = sweepDac(m_params, i);
 
         setDacBlocked(dac, m_params.response);
 
@@ -49,7 +45,7 @@ void AlgorithmDoubleActing::run()
         }
     }
 
-    setDacBlocked(m_params.dac_min, 0, true);
+    setDacBlocked(sweepStartDac(m_params), 0, true);
     emit processCompleted();
     emit finished();
 }

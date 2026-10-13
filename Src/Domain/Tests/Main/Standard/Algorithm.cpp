@@ -9,9 +9,7 @@ void Algorithm::run()
     qint64 time = QDateTime::currentMSecsSinceEpoch();
 
     for (quint16 i = 0; i <= pointNumbers; ++i) {
-        const quint16 dac =
-            i * (m_params.dac_max - m_params.dac_min) / pointNumbers
-            + m_params.dac_min;
+        const quint16 dac = sweepDac(m_params, i);
 
         time += m_params.response;
 
@@ -28,7 +26,7 @@ void Algorithm::run()
         }
     }
 
-    setDacBlocked(m_params.dac_max, 0, true);
+    setDacBlocked(sweepEndDac(m_params), 0, true);
 
     emit backwardStrokeStarted();
     emit dublSeries();
@@ -38,9 +36,7 @@ void Algorithm::run()
     time = QDateTime::currentMSecsSinceEpoch();
 
     for (qint16 i = pointNumbers; i >= 0; --i) {
-        const quint16 dac =
-            i * (m_params.dac_max - m_params.dac_min) / pointNumbers
-            + m_params.dac_min;
+        const quint16 dac = sweepDac(m_params, i);
 
         time += m_params.response;
 
@@ -57,7 +53,7 @@ void Algorithm::run()
         }
     }
 
-    setDacBlocked(m_params.dac_min, 0, true);
+    setDacBlocked(sweepStartDac(m_params), 0, true);
 
     if (m_terminate) {
         emit finished();

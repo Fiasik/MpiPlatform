@@ -21,6 +21,7 @@ std::unique_ptr<BaseRunner> ScenarioDoubleActing::createRunner()
     return std::make_unique<RunnerDoubleActing>(
         m_context.device,
         invertTask,
+        m_context.config.positionerScale,
         m_params,
         this
         );

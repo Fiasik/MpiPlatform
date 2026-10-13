@@ -382,8 +382,13 @@ void Program::initialization()
     // соответствует, зависит от шкалы (Normal: 4 мА, Reverse: 20 мА), поэтому
     // "начало" берём как safeParkRaw(), а "конец" — противоположный край.
     // С жёстким 0 -> 65535 при Reverse проценты положения выходили зеркальными.
+    // При Reverse "конец" — 4 мА, а не 3: на 3 мА позиционер обесточен и
+    // клапан стоит на пружине, то есть в том же покое, что и "начало", и
+    // ход снимался нулевым (см. SignalUtils::lowestDriveRaw).
     const quint16 startRaw = safeParkRaw();
-    const quint16 endRaw = SignalUtils::farRaw(m_deviceConfig.positionerScale);
+    const quint16 endRaw = SignalUtils::farRaw(
+        m_deviceConfig.positionerScale,
+        m_device.dac()->rawFromValue(SignalUtils::kMinPoweredCurrent));
 
     if (m_patternType == SelectTests::Pattern_B_SACVT ||
         m_patternType == SelectTests::Pattern_C_SACVT ||

@@ -8,9 +8,9 @@ namespace Domain::Tests::Main::DoubleActing {
 class RunnerDoubleActing : public Standard::Runner {
     Q_OBJECT
 public:
-    RunnerDoubleActing(Mpi::Device& device, bool normalOpen,
+    RunnerDoubleActing(Mpi::Device& device, bool normalOpen, PositionerScale scale,
                        const Params& params, QObject* parent = nullptr)
-        : Standard::Runner(device, normalOpen, params, parent), m_daParams(params) {}
+        : Standard::Runner(device, normalOpen, scale, params, parent), m_daParams(params) {}
 
 signals:
     void waitingForManualResume();

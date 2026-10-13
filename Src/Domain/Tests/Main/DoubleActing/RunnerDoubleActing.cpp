@@ -12,7 +12,7 @@ RunnerConfig RunnerDoubleActing::buildConfig()
     if (p.delay == 0)
         return {};
 
-    // Оба прохода идут 3 -> 21 мА (N+1 точек, response мс на точку каждый).
+    // Оба прохода идут из покоя к дальнему краю (N+1 точек, response мс на точку каждый).
     // Пауза на сброс тока и ручной возврат клапана заранее не известна — берём с запасом.
     const quint64 N = static_cast<quint64>(p.pointNumbers);
     const quint64 sweepMs = (N + 1) * p.response;
@@ -27,13 +27,7 @@ RunnerConfig RunnerDoubleActing::buildConfig()
     const quint64 totalMs =
         sweepMs + kMinSettleMs + manualPauseMarginMs + sweepMs + kMinSettleMs;
 
-    p.dac_min =
-        qMax(m_device.dac()->rawFromValue(p.signal_min),
-             m_device.dacMin());
-
-    p.dac_max =
-        qMin(m_device.dac()->rawFromValue(p.signal_max),
-             m_device.dacMax());
+    applyDacRange(p);
 
     auto worker = std::make_unique<AlgorithmDoubleActing>(p);
 

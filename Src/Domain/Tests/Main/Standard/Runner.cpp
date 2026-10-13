@@ -2,6 +2,7 @@
 
 #include "Domain/Measurement/Sensor.h"
 #include "Domain/Mpi/Device.h"
+#include "Utils/SignalUtils.h"
 
 namespace Domain::Tests::Main::Standard {
 
@@ -25,17 +26,11 @@ RunnerConfig Runner::buildConfig()
     constexpr quint64 kMinSettleMs = 50 * 50;
 
     const quint64 totalMs =
-        N * params.response + kMinSettleMs   // прямой ход + остановка на dac_max
+        N * params.response + kMinSettleMs   // прямой ход + остановка на дальнем краю
         + params.delay                        // Sleep(delay) между ходами
-        + N * params.response + kMinSettleMs; // обратный ход + остановка на dac_min
+        + N * params.response + kMinSettleMs; // обратный ход + остановка в покое
 
-    params.dac_min =
-        qMax(m_device.dac()->rawFromValue(params.signal_min),
-             m_device.dacMin());
-
-    params.dac_max =
-        qMin(m_device.dac()->rawFromValue(params.signal_max),
-             m_device.dacMax());
+    applyDacRange(params);
 
     auto worker = std::make_unique<Algorithm>(params);
 
@@ -44,6 +39,25 @@ RunnerConfig Runner::buildConfig()
         totalMs,
         Widgets::Chart::ChartType::Task
         );
+}
+
+void Runner::applyDacRange(Params& p) const
+{
+    p.dac_min =
+        qMax(m_device.dac()->rawFromValue(p.signal_min),
+             m_device.dacMin());
+
+    p.dac_max =
+        qMin(m_device.dac()->rawFromValue(p.signal_max),
+             m_device.dacMax());
+
+    // При Reverse покой на верхнем краю: тест стартует оттуда. Без нижнего
+    // предела ход начинался бы с обесточенного позиционера, и на ~3.75 мА
+    // он рывком бросал бы клапан почти на полный ход.
+    p.descending = (m_scale == PositionerScale::Reverse);
+    p.dac_floor = SignalUtils::lowestDriveRaw(
+        m_scale,
+        m_device.dac()->rawFromValue(SignalUtils::kMinPoweredCurrent));
 }
 
 void Runner::wireSpecificSignals(AbstractTestAlgorithm& base)
