@@ -81,6 +81,19 @@
       </widget>
      </item>
      <item>
+      <widget class="QCheckBox" name="checkBox_linearityRejectSpikes">
+       <property name="toolTip">
+        <string>Не учитывать одиночные отсчёты, у которых давление или положение резко отличается от соседей (сбой датчика или связи). Официальный расчёт выбросы не отбрасывает</string>
+       </property>
+       <property name="text">
+        <string>Без выбросов</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="pushButton_linearityRecalculate">
        <property name="text">
         <string>Пересчитать</string>

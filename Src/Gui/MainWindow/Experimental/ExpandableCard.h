@@ -7,7 +7,7 @@
 // нажатие — всё обратно.
 //
 // Ничего не знает про конкретный параметр: панель подробностей даёт
-// вызывающий (сейчас — LinearityLabPresenter). Вставляется кодом, без
+// вызывающий (LinearityLabPresenter, DynamicErrorLabPresenter). Вставляется кодом, без
 // правки MainWindow.ui. Собирается только при MPIPLATFORM_EXPERIMENTAL_LINEARITY=ON.
 
 #include <QHash>

@@ -26,4 +26,9 @@ target_include_directories(AnalyzerTests
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# ЭКСПЕРИМЕНТ: проверки карточек линейности и динамической ошибки.
+if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    target_sources(AnalyzerTests PRIVATE labs/MainTestLabsTest.cpp labs/MainTestLabsTest.h)
+endif()
+
 add_test(NAME AnalyzerTests COMMAND AnalyzerTests)

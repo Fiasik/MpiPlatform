@@ -123,6 +123,8 @@ LinearityLabPresenter::LinearityLabPresenter(Widgets::Chart::Manager* charts, QO
             this, &LinearityLabPresenter::refresh);
     connect(m_ui->checkBox_linearityShowOnCharts, &QCheckBox::toggled,
             this, &LinearityLabPresenter::refresh);
+    connect(m_ui->checkBox_linearityRejectSpikes, &QCheckBox::toggled,
+            this, &LinearityLabPresenter::refresh);
     connect(m_ui->pushButton_linearityRecalculate, &QPushButton::clicked,
             this, &LinearityLabPresenter::refresh);
 
@@ -172,7 +174,8 @@ void LinearityLabPresenter::refresh()
         // переносит прямой ход в "дубль"-слой серии: second — прямой ход,
         // first — обратный. Из истории грузится только first.
         const auto points = pressure->getPoints(0);
-        m_result = computeLinearity(method, points.second, points.first, currentBasis());
+        m_result = computeLinearity(method, points.second, points.first, currentBasis(),
+                                    m_ui->checkBox_linearityRejectSpikes->isChecked());
     }
 
     render();
@@ -231,8 +234,24 @@ void LinearityLabPresenter::render()
 
     m_ui->label_linearityWindows_Value->setText(tr("%1 из %2").arg(s.usedWindows).arg(s.totalWindows));
 
-    m_ui->label_linearityCalcRange_Norm->setText(tr("расчёт по 10–90 % хода: %1–%2 мм")
-        .arg(num(m_result.windowMin, 1), num(m_result.windowMax, 1)));
+    QString range = tr("расчёт по 10–90 % хода: %1–%2 мм")
+        .arg(num(m_result.windowMin, 1), num(m_result.windowMax, 1));
+    const int spikes = m_result.spikes[0].size() + m_result.spikes[1].size();
+    if (spikes > 0) {
+        // Где выброс — чтобы его можно было найти на графиках.
+        QStringList where;
+        for (int i = 0; i < 2; ++i) {
+            for (const QPointF& p : m_result.spikes[i]) {
+                if (where.size() == 3)
+                    break;
+                where << tr("%1 ход %2 мм · %3 бар").arg(i == 0 ? tr("прямой") : tr("обратный"),
+                                                          num(p.y(), 1), num(p.x(), 2));
+            }
+        }
+        range += tr(" · отброшено выбросов: %1 (%2%3)")
+            .arg(spikes).arg(where.join(QStringLiteral("; ")), spikes > where.size() ? QStringLiteral("; …") : QString());
+    }
+    m_ui->label_linearityCalcRange_Norm->setText(range);
 
     m_ui->label_linearityProfile_Title->setText(integral
         ? tr("Отклонение от прямой по ходу, мм")
@@ -251,9 +270,10 @@ void LinearityLabPresenter::render()
 
 void LinearityLabPresenter::reapplyCardOverride()
 {
-    // Официальный = текущий способ по худшему из двух ходов.
+    // Официальный = текущий способ по худшему из двух ходов, без отброшенных выбросов.
     const bool official = m_result.method == LinearityMethod::DifferentialCurrent
-        && m_result.basis == StrokeBasis::WorstOfTwo;
+        && m_result.basis == StrokeBasis::WorstOfTwo
+        && m_result.spikes[0].isEmpty() && m_result.spikes[1].isEmpty();
     const bool wanted = m_active && m_result.valid && !official
         && m_registry && m_card.value && m_card.status && m_card.bar
         && m_registry->valveInfo().crossingLimits.linearCharacteristicEnabled;

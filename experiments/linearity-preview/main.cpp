@@ -1,12 +1,13 @@
-// ЭКСПЕРИМЕНТ — превью раскрывающейся карточки линейности в блоке Pass|Fail
-// на НАСТОЯЩЕМ MainWindow, без устройства.
+// ЭКСПЕРИМЕНТ — превью раскрывающихся карточек линейности и динамической
+// ошибки в блоке Pass|Fail на НАСТОЯЩЕМ MainWindow, без устройства.
 //
 // Графики «давление от перемещения» и задания заполняются синтетическими
 // данными (оба хода, загиб у закрытого края, местное «провисание» крутизны,
-// шум) или реальными архивными .data (--data <папка с Pressure_1.data и
-// Task_1.data>; в файле оба хода: живой слой — обратный, «дубль» — прямой).
-// Результат и статусы Pass|Fail подаются в окно через те же слоты, что и у
-// живого теста.
+// шум) или реальными архивными .data (--data <папка с Pressure_N.data и
+// Task_N.data, N — любой номер; в файле оба хода: живой слой — обратный,
+// «дубль» — прямой). Результат считает настоящий Analyzer по тем же точкам
+// (как при живом тесте), статусы Pass|Fail — updateCrossingStatus(); в окно
+// они подаются через те же слоты, что и у живого теста.
 //
 // Режимы:
 //   без аргументов     — окно для ручной проверки (карточка уже раскрыта);
@@ -19,7 +20,9 @@
 //                        линиями (окно на несколько секунд появится);
 //   --report           — таблица «способ × ход» и проверка сглаживания
 //                        полосами средней кривой в консоль, без окна;
-//   --dark             — тёмная тема.
+//   --dark             — тёмная тема;
+//   --card dynamic     — раскрыть карточку динамической ошибки, а не линейности
+//                        (и для --shots).
 //
 // Настройки (QSettings), данные приложения и база истории (MPIPLATFORM_DB)
 // перенаправлены во временную папку — реестр, настройки и рабочая база
@@ -31,6 +34,7 @@
 #include <QDataStream>
 #include <QDebug>
 #include <QDir>
+#include <QDirIterator>
 #include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
@@ -53,6 +57,8 @@
 #include <cmath>
 #include <optional>
 
+#include "Domain/Tests/Main/Analyzer.h"
+#include "Domain/Tests/Main/CrossingStatusUpdater.h"
 #include "Domain/Tests/Main/Experimental/LinearityLab.h"
 #include "Domain/Tests/Main/Result.h"
 #include "Gui/MainWindow/MainWindow.h"
@@ -74,11 +80,17 @@ void wait(int ms)
     loop.exec();
 }
 
+// Все шрифты из fonts.qrc, как loadApplicationFonts() в main.cpp приложения:
+// Inter — текст, JetBrains Mono — числа (theme.qss). Без JetBrains Mono числа
+// карточек рисовались запасным шрифтом с засечками.
 void loadFonts()
 {
-    for (const char* path : {":/Src/Fonts/Inter-Regular.ttf", ":/Src/Fonts/Inter-Medium.ttf",
-                             ":/Src/Fonts/Inter-SemiBold.ttf", ":/Src/Fonts/Inter-Bold.ttf"})
-        QFontDatabase::addApplicationFont(QString::fromLatin1(path));
+    QDirIterator it(QStringLiteral(":/Src/Fonts"), {QStringLiteral("*.ttf")}, QDir::Files);
+    while (it.hasNext()) {
+        const QString path = it.next();
+        if (QFontDatabase::addApplicationFont(path) == -1)
+            qWarning() << "Не загружен шрифт" << path;
+    }
 }
 
 // Нормальное число как в лекции (сумма 12 равномерных − 6) — детерминированно.
@@ -214,6 +226,14 @@ std::optional<DataFile> readDataFile(const QString& path)
     return d;
 }
 
+// Файл испытания в папке: Report::Saver пишет <name>_<номер>.data; номер
+// любой (у второго прогона — _2). Берётся первый по имени.
+QString findDataFile(const QString& folder, const QString& name)
+{
+    const QStringList files = QDir(folder).entryList({name + QStringLiteral("_*.data")}, QDir::Files, QDir::Name);
+    return files.isEmpty() ? QString() : folder + QStringLiteral("/") + files.first();
+}
+
 // Подать испытание из .data так же, как живой тест: прямой ход, затем
 // duplicateChartSeries() на старте обратного, затем обратный.
 void fillFromFiles(ChartView* pressure, ChartView* task, const DataFile& p, const DataFile& t)
@@ -292,65 +312,35 @@ void addRegressionLines(ChartView* pressure)
     }
 }
 
-Domain::Tests::Main::Result makeResult(const QVector<QPointF>& forward, const QVector<QPointF>& backward)
+// Результат — настоящий Analyzer по точкам графика задания, как при живом
+// тесте: на каждый отсчёт Program кладёт в серию 1 (задание, положение) и в
+// серию 2 (задание, давление 1) по точке — отсчёты совпадают по индексу.
+// second — прямой ход («дубль»), first — обратный.
+Domain::Tests::Main::Result analyze(ChartView* task, double driveDiameter)
 {
-    Domain::Tests::Main::Result r;
-    r.pressureSeriesForward = forward;
-    r.pressureSeriesBackward = backward;
-    // Официальная линейность = способ 3 (точная копия Analyzer).
-    r.linearityError = computeLinearity(LinearityMethod::DifferentialCurrent, forward, backward).value;
-    r.linearity = 100.0 - r.linearityError;
-    r.linearityErrorIntegral = computeLinearity(LinearityMethod::IntegralLeastSquares, forward, backward).value;
-    // Остальное — правдоподобные константы, только чтобы карточки были заполнены.
-    r.pressureDiff = 0.03;
-    r.frictionForce = 310.0;
-    r.frictionPercent = 8.2;
-    r.dynamicErrorMean = 0.08;
-    r.dynamicErrorMax = 0.21;
-    r.dynamicErrorMeanPercent = r.dynamicErrorMean / 0.16;
-    r.dynamicErrorMaxPercent = r.dynamicErrorMax / 0.16;
-    r.dynamicErrorReal = r.dynamicErrorMeanPercent;
-    r.lowLimitPressure = 0.48;
-    r.highLimitPressure = 1.07;
-    r.springLow = 1480.0;
-    r.springHigh = 2610.0;
+    Domain::Tests::Main::Analyzer analyzer;
+    analyzer.setConfig({driveDiameter});
+    analyzer.start();
+    const auto position = task->getPoints(1);
+    const auto pressure = task->getPoints(2);
+    auto feed = [&analyzer](const QList<QPointF>& pos, const QList<QPointF>& pr) {
+        for (int i = 0; i < qMin(pos.size(), pr.size()); ++i) {
+            Domain::Measurement::Sample s;
+            s.dac = pos.at(i).x();
+            s.positionValue = pos.at(i).y();
+            s.pressure1 = pr.at(i).y();
+            analyzer.onSample(s);
+        }
+    };
+    feed(position.second, pressure.second);
+    analyzer.startBackwardStroke();
+    feed(position.first, pressure.first);
+    analyzer.finish();
+
+    Domain::Tests::Main::Result r = analyzer.result();
+    r.pressureSeriesForward = analyzer.pressureSeriesForward();
+    r.pressureSeriesBackward = analyzer.pressureSeriesBackward();
     return r;
-}
-
-CrossingStatus makeStatus(const Domain::Tests::Main::Result& r, double linearTolerance)
-{
-    using State = CrossingStatus::State;
-    CrossingStatus cs;
-    cs.frictionPercent = State::Ok;
-    cs.frictionPercentValue = r.frictionPercent;
-    cs.frictionPercentLower = 5.0;
-    cs.frictionPercentUpper = 15.0;
-
-    cs.linearCharacteristicValue = r.linearityError;
-    cs.linearCharacteristicLower = 0.0;
-    cs.linearCharacteristicUpper = linearTolerance;
-    cs.linearCharacteristic = r.linearityError <= linearTolerance ? State::Ok : State::Fail;
-    if (cs.linearCharacteristic == State::Fail)
-        cs.linearCharacteristicMiss = r.linearityError - linearTolerance;
-
-    cs.dynamicError = State::Ok;
-    cs.dynamicErrorValue = r.dynamicErrorMeanPercent;
-    cs.dynamicErrorLower = 0.0;
-    cs.dynamicErrorUpper = 1.5;
-
-    cs.spring = State::Ok;
-    cs.springLowValue = r.springLow;
-    cs.springLowLower = 1350.0;
-    cs.springLowUpper = 1650.0;
-    cs.springHighValue = r.springHigh;
-    cs.springHighLower = 2350.0;
-    cs.springHighUpper = 2870.0;
-
-    cs.valveStroke = State::Ok;
-    cs.valveStrokeValue = 53.4;
-    cs.valveStrokeLower = 48.6;
-    cs.valveStrokeUpper = 59.4;
-    return cs;
 }
 
 // grab() не видит содержимое QOpenGLWidget (серии графиков рисуются через
@@ -394,6 +384,7 @@ int main(int argc, char* argv[])
     bool dark = false;
     bool gl = false;
     bool report = false;
+    bool dynamicCard = false;
     for (int i = 1; i < argc; ++i) {
         const QString a = QString::fromLocal8Bit(argv[i]);
         if (a == QStringLiteral("--shots") && i + 1 < argc)
@@ -406,6 +397,8 @@ int main(int argc, char* argv[])
             gl = true;
         else if (a == QStringLiteral("--report"))
             report = true;
+        else if (a == QStringLiteral("--card") && i + 1 < argc)
+            dynamicCard = QString::fromLocal8Bit(argv[++i]) == QStringLiteral("dynamic");
     }
     if ((!shotsDir.isEmpty() && !gl) || report)
         qputenv("QT_QPA_PLATFORM", "offscreen");
@@ -448,6 +441,7 @@ int main(int argc, char* argv[])
     limits.springLower = 10.0;
     limits.springUpper = 10.0;
     limits.dynamicErrorEnabled = true;
+    valve.dinamicErrorRecomend = QStringLiteral("1.5");
 
     MainWindow window;
     window.setPatternType(SelectTests::Pattern_C_CVT);
@@ -477,12 +471,14 @@ int main(int argc, char* argv[])
         if (folder.isEmpty()) {
             fillCharts(pressure, task, makeSynthetic());
         } else {
-            const auto p = readDataFile(folder + QStringLiteral("/Pressure_1.data"));
-            const auto t = readDataFile(folder + QStringLiteral("/Task_1.data"));
+            const auto p = readDataFile(findDataFile(folder, QStringLiteral("Pressure")));
+            const auto t = readDataFile(findDataFile(folder, QStringLiteral("Task")));
             if (p && t)
                 fillFromFiles(pressure, task, *p, *t);
+            else
+                qWarning() << "В папке нет Pressure_N.data / Task_N.data:" << folder;
             if (friction) {
-                if (const auto f = readDataFile(folder + QStringLiteral("/Friction_1.data")))
+                if (const auto f = readDataFile(findDataFile(folder, QStringLiteral("Friction"))))
                     for (const QPointF& q : f->live.value(0)) friction->addPoint(0, q.x(), q.y());
             }
         }
@@ -490,16 +486,28 @@ int main(int argc, char* argv[])
         QMetaObject::invokeMethod(&window, "setRegressionEnabled", Qt::DirectConnection, Q_ARG(bool, true));
         app.processEvents();
 
-        const auto points = pressure->getPoints(0);
-        const auto result = makeResult(points.second, points.first);
+        const auto result = analyze(task, valve.driveDiameter);
+        Telemetry telemetry;
+        telemetry.testMain = result;
+        Domain::DeviceConfig cfg;
+        cfg.valveStroke = valve.valveStroke;
+        cfg.crossingLimits = limits;
+        cfg.driveDiameter = valve.driveDiameter;
+        cfg.driveRangeLow = valve.driveRangeLow;
+        cfg.driveRangeHigh = valve.driveRangeHigh;
+        cfg.dinamicErrorRecomend = valve.dinamicErrorRecomend.toDouble();
+        Domain::Tests::Main::updateCrossingStatus(telemetry, cfg);
         QMetaObject::invokeMethod(&window, "onMainResultUpdated", Qt::DirectConnection,
                                   Q_ARG(Domain::Tests::Main::Result, result));
         QMetaObject::invokeMethod(&window, "onCrossingStatusUpdated", Qt::DirectConnection,
-                                  Q_ARG(CrossingStatus, makeStatus(result, limits.linearCharacteristic)));
-        qInfo().noquote() << QStringLiteral("%1: официальная линейность (текущий способ) %2 %, интегральная %3 %")
+                                  Q_ARG(CrossingStatus, telemetry.crossingStatus));
+        qInfo().noquote() << QStringLiteral("%1: линейность %2 % (интегральная %3 %), динамическая ошибка %4 % (макс. %5 %), трение %6 %")
                                  .arg(folder.isEmpty() ? QStringLiteral("синтетика") : folder)
                                  .arg(result.linearityError, 0, 'f', 2)
-                                 .arg(result.linearityErrorIntegral, 0, 'f', 2);
+                                 .arg(result.linearityErrorIntegral, 0, 'f', 2)
+                                 .arg(result.dynamicErrorReal, 0, 'f', 2)
+                                 .arg(result.dynamicErrorMaxPercent, 0, 'f', 2)
+                                 .arg(result.frictionPercent, 0, 'f', 2);
     };
     loadTest(dataDir);
 
@@ -539,7 +547,7 @@ int main(int argc, char* argv[])
     window.statusBar()->addPermanentWidget(importButton);
     QObject::connect(importButton, &QPushButton::clicked, &window, [&] {
         const QString folder = QFileDialog::getExistingDirectory(
-            &window, QStringLiteral("Папка испытания с Pressure_1.data и Task_1.data"));
+            &window, QStringLiteral("Папка испытания с Pressure_N.data и Task_N.data"));
         if (!folder.isEmpty())
             loadTest(folder);
     });
@@ -551,10 +559,12 @@ int main(int argc, char* argv[])
     testTabs->setCurrentWidget(resultTab);
     app.processEvents();
 
-    auto* card = window.findChild<QFrame*>(QStringLiteral("frame_crossingLimits_linearCharacteristic_Card"));
+    auto* card = window.findChild<QFrame*>(dynamicCard
+        ? QStringLiteral("frame_crossingLimits_dynamicError_Card")
+        : QStringLiteral("frame_crossingLimits_linearCharacteristic_Card"));
     QToolButton* arrow = card ? card->findChild<QToolButton*>() : nullptr;
     if (!arrow) {
-        qCritical() << "Стрелка карточки линейности не найдена";
+        qCritical() << "Стрелка карточки не найдена";
         return 1;
     }
 
@@ -575,6 +585,30 @@ int main(int argc, char* argv[])
 
     arrow->click();
     wait(500); // анимация 220 мс
+    if (dynamicCard) {
+        auto* method = window.findChild<QComboBox*>(QStringLiteral("comboBox_dynamicErrorMethod"));
+        auto* measure = window.findChild<QComboBox*>(QStringLiteral("comboBox_dynamicErrorMeasure"));
+        for (int i = 0; method && i < method->count(); ++i) {
+            method->setCurrentIndex(i);
+            app.processEvents();
+            shot(QStringLiteral("dyn_method%1").arg(i + 1));
+        }
+        if (method && measure) {
+            method->setCurrentIndex(4); // максимум
+            measure->setCurrentIndex(1); // вся петля
+            app.processEvents();
+            shot(QStringLiteral("dyn_method5_full"));
+            method->setCurrentIndex(0);
+            measure->setCurrentIndex(0);
+        }
+        testTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_mainTests_task")));
+        shot(QStringLiteral("dyn_task_marks"));
+        testTabs->setCurrentWidget(resultTab);
+        arrow->click();
+        wait(500);
+        shot(QStringLiteral("dyn_collapsed_again"));
+        return 0;
+    }
     QComboBox* combo = methodCombo(&window);
     for (int i = 0; combo && i < combo->count(); ++i) {
         combo->setCurrentIndex(i);

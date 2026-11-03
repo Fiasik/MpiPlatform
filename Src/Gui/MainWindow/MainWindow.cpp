@@ -36,6 +36,7 @@
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Gui/MainWindow/Experimental/ExpandableCard.h"        // ЭКСПЕРИМЕНТ
 #include "Gui/MainWindow/Experimental/LinearityLabPresenter.h" // ЭКСПЕРИМЕНТ
+#include "Gui/MainWindow/Experimental/DynamicErrorLabPresenter.h" // ЭКСПЕРИМЕНТ
 #endif
 
 using ChartType = Widgets::Chart::ChartType;
@@ -509,6 +510,8 @@ MainWindow::~MainWindow()
     // раньше delete ui, чтобы сигналы при разборе виджетов не пришли в них.
     m_linearityCard.reset();
     m_linearityLab.reset();
+    m_dynamicErrorCard.reset();
+    m_dynamicErrorLab.reset();
 #endif
 
     if (m_program) {
@@ -728,26 +731,14 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
     applyArrowButtonIcons(themeManager->currentPalette());
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     m_labThemeManager = themeManager; // ЭКСПЕРИМЕНТ
-    if (m_linearityLab)
-        m_linearityLab->applyPalette(themeManager->currentPalette());
-    if (m_linearityCard) {
-        const auto& p = themeManager->currentPalette();
-        m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
-                                       p.iconChevronUp, p.iconChevronUpActive);
-    }
+    applyLabPalette();
 #endif
     connect(themeManager, &Gui::Style::ThemeManager::schemeChanged, this,
             [this, themeManager](Gui::Style::ColorScheme) {
                 m_historyPresenter->applyPalette(themeManager->currentPalette());
                 applyArrowButtonIcons(themeManager->currentPalette());
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-                if (m_linearityLab) // ЭКСПЕРИМЕНТ
-                    m_linearityLab->applyPalette(themeManager->currentPalette());
-                if (m_linearityCard) {
-                    const auto& p = themeManager->currentPalette();
-                    m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
-                                                   p.iconChevronUp, p.iconChevronUpActive);
-                }
+                applyLabPalette(); // ЭКСПЕРИМЕНТ
 #endif
             });
 }
@@ -903,6 +894,8 @@ void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
         m_linearityLab->refresh();
+    if (m_dynamicErrorLab)
+        m_dynamicErrorLab->refresh();
 #endif
 }
 
@@ -916,6 +909,8 @@ void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& res
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
         m_linearityLab->refresh();
+    if (m_dynamicErrorLab)
+        m_dynamicErrorLab->refresh();
 #endif
 }
 
@@ -963,6 +958,8 @@ void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
         m_linearityLab->reapplyCardOverride();
+    if (m_dynamicErrorLab)
+        m_dynamicErrorLab->reapplyCardOverride();
 #endif
 }
 
@@ -988,6 +985,8 @@ void MainWindow::onTelemetryUpdated(const Telemetry& t)
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
         m_linearityLab->reapplyCardOverride();
+    if (m_dynamicErrorLab)
+        m_dynamicErrorLab->reapplyCardOverride();
 #endif
 }
 
@@ -1241,15 +1240,19 @@ void MainWindow::setRegistry(Registry* registry)
     }
 
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    // ЭКСПЕРИМЕНТ: стрелка в карточке «Линейность характеристики» блока
-    // Pass|Fail раскрывает под ней способы расчёта; остальные карточки
-    // сворачиваются до строки «название + статус».
+    // ЭКСПЕРИМЕНТ: стрелки в карточках «Линейность характеристики» и
+    // «Динамическая ошибка» блока Pass|Fail раскрывают под ними способы
+    // расчёта; остальные карточки сворачиваются до строки «название + статус».
     if (!m_linearityLab) {
-        m_linearityLab = std::make_unique<LinearityLabPresenter>(m_chartManager.get());
-        if (m_labThemeManager)
-            m_linearityLab->applyPalette(m_labThemeManager->currentPalette());
-
         using Card = ExpandableCard::Card;
+        // Карточка снова показывает официальный результат из телеметрии.
+        auto restoreOfficial = [this] {
+            m_crossingIndicators->update(m_telemetry.crossingStatus);
+            if (m_telemetry.testMain)
+                m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
+        };
+
+        m_linearityLab = std::make_unique<LinearityLabPresenter>(m_chartManager.get());
         m_linearityCard = std::make_unique<ExpandableCard>(
             ui->verticalLayout_41,
             Card{ui->frame_crossingLimits_linearCharacteristic_Card, ui->horizontalLayout_linearCharacteristic_1},
@@ -1263,33 +1266,64 @@ void MainWindow::setRegistry(Registry* registry)
             },
             m_linearityLab->panel(),
             tr("Подробнее: способы расчёта линейности (эксперимент)"));
-
         connect(m_linearityCard.get(), &ExpandableCard::expandedChanged,
                 m_linearityLab.get(), &LinearityLabPresenter::setActive);
-
         // Результат выбранного способа — прямо в карточке; при сворачивании
         // (или выборе «текущего») — официальный из телеметрии обратно.
         m_linearityLab->setCardTargets(
             {ui->label_crossingLimits_linearCharacteristic_Value,
              ui->label_crossingLimits_linearCharacteristic_Status,
              ui->toleranceBar_linearCharacteristic},
-            [this] {
-                m_crossingIndicators->update(m_telemetry.crossingStatus);
-                if (m_telemetry.testMain)
-                    m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
-            });
-        if (m_labThemeManager) {
-            const auto& p = m_labThemeManager->currentPalette();
-            m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
-                                           p.iconChevronUp, p.iconChevronUpActive);
-        }
+            restoreOfficial);
+
+        m_dynamicErrorLab = std::make_unique<DynamicErrorLabPresenter>(m_chartManager.get());
+        m_dynamicErrorCard = std::make_unique<ExpandableCard>(
+            ui->verticalLayout_41,
+            Card{ui->frame_crossingLimits_dynamicError_Card, ui->horizontalLayout_dynamicError_1},
+            QVector<QWidget*>{
+                ui->frame_crossingLimits_coefficientFriction_control_Card,
+                ui->frame_crossingLimits_linearCharacteristic_Card,
+                ui->frame_crossingLimits_spring_Card,
+                ui->frame_crossingLimits_range_Card,
+            },
+            m_dynamicErrorLab->panel(),
+            tr("Подробнее: динамическая ошибка по ходу (эксперимент)"));
+        connect(m_dynamicErrorCard.get(), &ExpandableCard::expandedChanged,
+                m_dynamicErrorLab.get(), &DynamicErrorLabPresenter::setActive);
+        m_dynamicErrorLab->setCardTargets(
+            {ui->label_crossingLimits_dynamicError_Value,
+             ui->label_crossingLimits_dynamicError_Status,
+             ui->toleranceBar_dynamicError},
+            restoreOfficial);
+
+        applyLabPalette();
     } else {
         // Другой клапан — набор карточек мог поменяться: сворачиваем сразу.
         m_linearityCard->setExpanded(false, false);
+        m_dynamicErrorCard->setExpanded(false, false);
     }
     m_linearityLab->setRegistry(registry);
+    m_dynamicErrorLab->setRegistry(registry);
 #endif
 }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+void MainWindow::applyLabPalette()
+{
+    if (!m_labThemeManager)
+        return;
+    const auto& p = m_labThemeManager->currentPalette();
+    if (m_linearityLab)
+        m_linearityLab->applyPalette(p);
+    if (m_dynamicErrorLab)
+        m_dynamicErrorLab->applyPalette(p);
+    for (ExpandableCard* card : {m_linearityCard.get(), m_dynamicErrorCard.get()}) {
+        if (card)
+            card->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
+                                p.iconChevronUp, p.iconChevronUpActive);
+    }
+}
+#endif
 
 void MainWindow::setTask(qreal task)
 {

@@ -5,6 +5,9 @@
 #include "analyzers/StrokeTestAnalyzerTest.h"
 #include "analyzers/StepTestAnalyzerTest.h"
 #include "analyzers/MainTestAnalyzerTest.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+#include "labs/MainTestLabsTest.h"
+#endif
 
 
 namespace {
@@ -44,6 +47,12 @@ int main(int argc, char *argv[])
     const int status3 = runSuite(mainTestAnalyzer, "MainTestAnalyzerTest", argc, argv);
     // const int status4 = runSuite(сyclicRegulatoryAnalyzer, "CyclicRegulatoryAnalyzerTest", argc, argv);
 
+    int status4 = 0;
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    MainTestLabsTest mainTestLabs;
+    status4 = runSuite(mainTestLabs, "MainTestLabsTest", argc, argv);
+#endif
+
     // ctest должен видеть падение любого из наборов, а не только первого.
-    return (status != 0 || status2 != 0 || status3 != 0) ? 1 : 0;
+    return (status != 0 || status2 != 0 || status3 != 0 || status4 != 0) ? 1 : 0;
 }

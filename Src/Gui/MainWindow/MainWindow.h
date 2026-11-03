@@ -47,6 +47,7 @@ namespace Gui::Style { class ThemeManager; struct Palette; }
 class StatusBarPresenter;
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 class LinearityLabPresenter; // ЭКСПЕРИМЕНТ: подробности линейности в карточке Pass|Fail
+class DynamicErrorLabPresenter; // ЭКСПЕРИМЕНТ: подробности динамической ошибки
 class ExpandableCard;
 #endif
 class ReportGenerationPresenter;
@@ -295,7 +296,10 @@ private:
     // через m_labThemeManager (setThemeManager() зовётся раньше).
     std::unique_ptr<LinearityLabPresenter> m_linearityLab;
     std::unique_ptr<ExpandableCard> m_linearityCard;
+    std::unique_ptr<DynamicErrorLabPresenter> m_dynamicErrorLab;
+    std::unique_ptr<ExpandableCard> m_dynamicErrorCard;
     Gui::Style::ThemeManager* m_labThemeManager = nullptr;
+    void applyLabPalette(); // палитра и шевроны обеих карточек
 #endif
 
     void syncTaskChartSeriesVisibility(quint8 sensorCount);

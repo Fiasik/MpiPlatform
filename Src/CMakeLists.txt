@@ -330,19 +330,24 @@ set(GUI_UI
     Gui/TestSettings/CyclicTestSettings.ui
 )
 
-# ЭКСПЕРИМЕНТ: раскрывающаяся карточка линейности в Pass|Fail — сравнение способов расчёта
-# линейности характеристики (Domain/Tests/Main/Experimental,
+# ЭКСПЕРИМЕНТ: раскрывающиеся карточки линейности и динамической ошибки в
+# Pass|Fail — сравнение способов расчёта (Domain/Tests/Main/Experimental,
 # Gui/MainWindow/Experimental). На официальный Pass|Fail, отчёт и базу не
 # влияет. Выключить: -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=OFF.
 option(MPIPLATFORM_EXPERIMENTAL_LINEARITY "Experimental linearity methods tab (main test)" ON)
 if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-    list(APPEND DOMAIN_CPP Domain/Tests/Main/Experimental/LinearityLab.cpp)
-    list(APPEND DOMAIN_HEADERS Domain/Tests/Main/Experimental/LinearityLab.h)
+    list(APPEND DOMAIN_CPP Domain/Tests/Main/Experimental/LinearityLab.cpp
+                           Domain/Tests/Main/Experimental/DynamicErrorLab.cpp)
+    list(APPEND DOMAIN_HEADERS Domain/Tests/Main/Experimental/LinearityLab.h
+                               Domain/Tests/Main/Experimental/DynamicErrorLab.h)
     list(APPEND GUI_CPP Gui/MainWindow/Experimental/LinearityLabPresenter.cpp
+                        Gui/MainWindow/Experimental/DynamicErrorLabPresenter.cpp
                         Gui/MainWindow/Experimental/ExpandableCard.cpp)
     list(APPEND GUI_HEADERS Gui/MainWindow/Experimental/LinearityLabPresenter.h
+                            Gui/MainWindow/Experimental/DynamicErrorLabPresenter.h
                             Gui/MainWindow/Experimental/ExpandableCard.h)
     list(APPEND GUI_UI Gui/MainWindow/Experimental/LinearityLabPanel.ui
+                       Gui/MainWindow/Experimental/DynamicErrorLabPanel.ui
                        Gui/MainWindow/Experimental/LinearityInfoPopup.ui)
 endif()
 
@@ -442,4 +447,4 @@ target_link_libraries(Gui
 target_compile_definitions(Gui
     PRIVATE
         MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-)
+)

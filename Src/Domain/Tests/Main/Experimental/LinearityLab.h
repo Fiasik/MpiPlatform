@@ -96,7 +96,16 @@ struct LinearityLabResult {
     StrokeLinearity strokes[3]; // [0] прямой ход, [1] обратный, [2] средняя кривая
     int worstStroke = -1;       // какой из strokes дал value (для WorstOfTwo — худший из 0/1)
     QString summary; // готовая фраза «где и насколько»
+    // Отброшенные одиночные выбросы (rejectSpikes): x = давление, y = положение.
+    QVector<QPointF> spikes[2]; // [0] прямой ход, [1] обратный
 };
+
+// [ЭЛ-7] Одиночные выбросы (сбой датчика или связи): отсчёт, у которого
+// давление или положение резко отличается от соседей по записи (фильтр
+// Хампеля: медиана ±kSpikeHalfWindow соседних отсчётов, порог — большее из
+// 5·σ по MAD и 3 % размаха хода). Плавная характеристика и крутой, но
+// многоточечный подъём не задеваются. dropped — отброшенные точки.
+QVector<QPointF> removeSpikes(const QVector<QPointF>& points, QVector<QPointF>* dropped = nullptr);
 
 // forward / backward — точки графика «Перемещение от давления»
 // (x = давление, y = положение) в порядке записи. Пустой ход пропускается;
@@ -104,7 +113,8 @@ struct LinearityLabResult {
 LinearityLabResult computeLinearity(LinearityMethod method,
                                     const QVector<QPointF>& forward,
                                     const QVector<QPointF>& backward,
-                                    StrokeBasis basis = StrokeBasis::WorstOfTwo);
+                                    StrokeBasis basis = StrokeBasis::WorstOfTwo,
+                                    bool rejectSpikes = false);
 
 // Средняя кривая: ход делится на полосы по 0,5 % по положению; в каждой
 // полосе — медиана давления и положения на каждом ходу, затем среднее двух

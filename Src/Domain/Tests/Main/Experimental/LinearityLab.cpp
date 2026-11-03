@@ -25,6 +25,10 @@ constexpr double kStrokeWindow = 0.10;
 constexpr double kStrokeStep = 0.025;
 // Средняя кривая: полосы по 0,5 % хода.
 constexpr double kAverageBin = 0.005;
+// [ЭЛ-7] Выбросы: соседей с каждой стороны, порог в σ (по MAD) и доля размаха.
+constexpr int kSpikeHalfWindow = 5;
+constexpr double kSpikeSigma = 5.0;
+constexpr double kSpikeRangeFrac = 0.03;
 
 struct Line {
     double k = 0.0;
@@ -407,14 +411,70 @@ double strokePercent(const LinearityLabResult& result, double position)
     return (position - result.strokeMin) / stroke * 100.0;
 }
 
+// [ЭЛ-7] — docs/formulas/main_test.md
+QVector<QPointF> removeSpikes(const QVector<QPointF>& points, QVector<QPointF>* dropped)
+{
+    const int n = points.size();
+    if (n < 2 * kSpikeHalfWindow + 1)
+        return points;
+
+    double minX = points.first().x(), maxX = minX;
+    double minY = points.first().y(), maxY = minY;
+    for (const QPointF& p : points) {
+        minX = qMin(minX, p.x()); maxX = qMax(maxX, p.x());
+        minY = qMin(minY, p.y()); maxY = qMax(maxY, p.y());
+    }
+    const double floorX = kSpikeRangeFrac * (maxX - minX);
+    const double floorY = kSpikeRangeFrac * (maxY - minY);
+
+    // Отклоняется ли value от соседей сильнее порога.
+    auto isSpike = [](const QVector<double>& around, double value, double floor) {
+        const double m = median(around);
+        QVector<double> dev;
+        dev.reserve(around.size());
+        for (double v : around)
+            dev.push_back(std::abs(v - m));
+        const double sigma = 1.4826 * median(dev);
+        return std::abs(value - m) > qMax(kSpikeSigma * sigma, floor);
+    };
+
+    QVector<QPointF> kept;
+    kept.reserve(n);
+    QVector<double> xs, ys;
+    for (int i = 0; i < n; ++i) {
+        // Окно у краёв записи сдвигается внутрь, чтобы всегда было 2h соседей.
+        const int from = qBound(0, i - kSpikeHalfWindow, n - 1 - 2 * kSpikeHalfWindow);
+        xs.clear();
+        ys.clear();
+        for (int j = from; j <= from + 2 * kSpikeHalfWindow; ++j) {
+            if (j == i)
+                continue;
+            xs.push_back(points[j].x());
+            ys.push_back(points[j].y());
+        }
+        const QPointF& p = points[i];
+        if (isSpike(xs, p.x(), floorX) || isSpike(ys, p.y(), floorY)) {
+            if (dropped)
+                dropped->push_back(p);
+        } else {
+            kept.push_back(p);
+        }
+    }
+    return kept;
+}
+
 LinearityLabResult computeLinearity(LinearityMethod method,
-                                    const QVector<QPointF>& forward,
-                                    const QVector<QPointF>& backward,
-                                    StrokeBasis basis)
+                                    const QVector<QPointF>& forwardRaw,
+                                    const QVector<QPointF>& backwardRaw,
+                                    StrokeBasis basis,
+                                    bool rejectSpikes)
 {
     LinearityLabResult result;
     result.method = method;
     result.basis = basis;
+
+    const QVector<QPointF> forward = rejectSpikes ? removeSpikes(forwardRaw, &result.spikes[0]) : forwardRaw;
+    const QVector<QPointF> backward = rejectSpikes ? removeSpikes(backwardRaw, &result.spikes[1]) : backwardRaw;
 
     // Границы хода — по обоим ходам сразу, как Analyzer::computePressureLimits().
     bool any = false;
