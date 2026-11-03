@@ -43,37 +43,64 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 qt_standard_project_setup()
 
+# Собираем ли под Windows через MinGW. Одного MINGW мало: у части
+# build-директорий этого проекта (напр. Windows_MinGW_Static_64bit_Release)
+# CMAKE_CXX_COMPILER указан на mingw впрямую, без CMAKE_TOOLCHAIN_FILE —
+# CMake там не опознаёт кросс-компиляцию под Windows (WIN32 и MINGW
+# ложные), хотя компилятор честно собирает рабочий .exe под Windows.
+# Задаётся до add_subdirectory(), чтобы подпроекты проверяли то же самое.
+if (MINGW OR CMAKE_CXX_COMPILER MATCHES "mingw")
+    set(MPIPLATFORM_MINGW ON)
+else()
+    set(MPIPLATFORM_MINGW OFF)
+endif()
+
 add_subdirectory(QXlsx)
 add_subdirectory(QtRPT)
 add_subdirectory(Src)
 add_subdirectory(Viewer)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
-# Иконка .exe — компилируем AppIcon.rc сами через add_custom_command()
-# (windres -O coff) в готовый .o и линкуем его как обычный объектный
-# файл — НЕ через enable_language(RC) + .rc прямо в сорцах
-# qt_add_executable(). Так надёжнее: штатный путь заставляет CMake самому
-# решать, в каком синтаксисе генерировать команду компиляции .rc (GNU
-# windres: "-o file" vs MSVC rc.exe: "/fo file") — а это решение
-# завязано на CMAKE_SYSTEM_NAME/CMAKE_TOOLCHAIN_FILE. У части
-# build-директорий этого проекта (напр.
-# Windows_MinGW_Static_64bit_Release) CMAKE_CXX_COMPILER указан на mingw
-# впрямую, без CMAKE_TOOLCHAIN_FILE — CMake там не опознаёт кросс-
-# компиляцию под Windows (WIN32 ложный) и при enable_language(RC)
-# генерирует команду в MSVC-синтаксисе, который windres не понимает и
-# падает с "Usage: ... windres [option(s)]" — хотя компилятор честно
-# собирает рабочий .exe под Windows (тем же способом уже отличают такие
-# директории чуть ниже, для -static-libgcc/-static). Вызывая windres
-# явно и напрямую, обходим это распознавание совсем — работает одинаково
-# в любой из build-директорий независимо от того, как она настроена.
+# Иконка .exe (AppIcon.rc).
+#
+# Нативная сборка под Windows (WIN32 истинный — киты Qt Creator MinGW и
+# MSVC): .rc просто кладём в сорцы qt_add_executable(). Язык RC CMake на
+# Windows включает сам и сам выбирает и компилятор, и синтаксис команды
+# (windres "-O coff ... -o file" у MinGW, rc.exe "/fo file" у MSVC).
+#
+# Кросс-сборка без toolchain-файла (см. MPIPLATFORM_MINGW выше): WIN32
+# там ложный, и при enable_language(RC) CMake генерирует команду в
+# MSVC-синтаксисе, на которой windres падает с "Usage: ... windres
+# [option(s)]". Поэтому там компилируем AppIcon.rc сами через
+# add_custom_command() (windres -O coff) в готовый .o и линкуем его как
+# обычный объектный файл.
 set(MPIPLATFORM_WIN32_RESOURCES)
-if (WIN32 OR CMAKE_CXX_COMPILER MATCHES "mingw")
+if (WIN32)
+    list(APPEND MPIPLATFORM_WIN32_RESOURCES AppIcon.rc)
+elseif (MPIPLATFORM_MINGW)
+    # Старые build-директории могли закэшировать сам компилятор вместо
+    # windres (см. ниже) — такое значение сбрасываем и ищем заново.
+    if (MPIPLATFORM_RC_COMPILER MATCHES "(g\\+\\+|gcc|c\\+\\+)(\\.exe)?$")
+        unset(MPIPLATFORM_RC_COMPILER CACHE)
+    endif()
     if (NOT MPIPLATFORM_RC_COMPILER)
+        # Префиксный windres (x86_64-w64-mingw32-windres) угадываем только
+        # если у компилятора есть префикс: у Qt-шного MinGW он называется
+        # просто g++.exe, замена не срабатывает, и "догадкой" оказывался
+        # сам g++ — он не понимает "-O coff -i" и сборка падала.
+        set(_mpiplatform_windres_names windres x86_64-w64-mingw32-windres i686-w64-mingw32-windres)
         string(REGEX REPLACE "-g\\+\\+(\\.exe)?$" "-windres" _mpiplatform_windres_guess "${CMAKE_CXX_COMPILER}")
+        if (NOT _mpiplatform_windres_guess STREQUAL CMAKE_CXX_COMPILER)
+            list(PREPEND _mpiplatform_windres_names "${_mpiplatform_windres_guess}")
+        endif()
+        get_filename_component(_mpiplatform_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
         find_program(MPIPLATFORM_RC_COMPILER
-            NAMES "${_mpiplatform_windres_guess}" windres x86_64-w64-mingw32-windres i686-w64-mingw32-windres
+            NAMES ${_mpiplatform_windres_names}
+            HINTS "${_mpiplatform_compiler_dir}"
         )
         unset(_mpiplatform_windres_guess)
+        unset(_mpiplatform_windres_names)
+        unset(_mpiplatform_compiler_dir)
     endif()
 
     if (MPIPLATFORM_RC_COMPILER)
@@ -104,7 +131,7 @@ qt_add_executable(${PROJECT_NAME}
     ${MPIPLATFORM_WIN32_RESOURCES}
 )
 
-if (CMAKE_CXX_COMPILER MATCHES "mingw")
+if (MPIPLATFORM_MINGW)
     target_link_options(MpiPlatform PRIVATE
         -static-libgcc -static-libstdc++ -static
         -Wl,-subsystem,windows

@@ -34,7 +34,7 @@ target_compile_definitions(DataViewer
         MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
-if (CMAKE_CXX_COMPILER MATCHES "mingw")
+if (MPIPLATFORM_MINGW)
     target_link_options(DataViewer PRIVATE
         -static-libgcc -static-libstdc++ -static
         -Wl,-subsystem,windows

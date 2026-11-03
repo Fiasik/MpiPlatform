@@ -20,7 +20,7 @@ target_compile_definitions(VerifyTheme
 # libgcc_s_seh-1.dll/libwinpthread-1.dll, а под Wine это даёт отдельную
 # несовместимость (__cxa_thread_atexit unimplemented), не относящуюся к
 # исследуемому крашу.
-if (CMAKE_CXX_COMPILER MATCHES "mingw")
+if (MPIPLATFORM_MINGW)
     target_link_options(VerifyTheme PRIVATE
         -static-libgcc -static-libstdc++ -static
     )
