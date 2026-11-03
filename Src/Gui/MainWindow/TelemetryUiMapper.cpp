@@ -5,6 +5,7 @@
 #include "Gui/Style/Palette.h"
 #include "Domain/Tests/Option/Response/Limits.h"
 #include "Utils/TimeUtils.h"
+#include "Widgets/BackgroundRoleDelegate.h"
 
 #include <QAbstractItemView>
 #include <QLabel>
@@ -258,21 +259,13 @@ void TelemetryUiMapper::setupOptionCell(QTableWidget* table,
                                         int col,
                                         const QString& text)
 {
+    // Ячейки обычные, без заливки — как таблицы в отчёте (ТЧР/ТРС): единственное,
+    // что красится, — "Ошибка на шаг" по результату проверки допуска, см.
+    // setupColoredOptionCell(). Прежние яркие заливки подписей (жёлтая, оранжевая,
+    // зелёная) из старых версий тема всё равно не показывала (см.
+    // Widgets::BackgroundRoleDelegate), а с делегатом проявились бы.
     auto* item = new QTableWidgetItem(text);
     item->setTextAlignment(Qt::AlignCenter);
-
-    if (text == "Восходящее движение") {
-        item->setBackground(QColor(Qt::yellow));
-    } else if (text == "Нисходящее движение" ||
-               text == "Ошибка по положению, %") {
-        item->setBackground(QColor(QStringLiteral("#fd7d13")));
-    } else if (text == "Задание, %" ||
-               text == "Факт, %" ||
-               text == "Допустимая ошибка, %" ||
-               text == "Ошибка на шаг, %") {
-        item->setBackground(QColor(Qt::green));
-    }
-
     table->setItem(row, col, item);
 }
 
@@ -398,6 +391,11 @@ void TelemetryUiMapper::updateResponseTest(
     const Domain::Tests::Option::Response::Result& result)
 {
     auto* table = m_ui->tableWidget_responseResults;
+
+    // Без собственного делегата тема (QSS QTableWidget::item) не рисует
+    // заливку ячеек "прошло/не прошло" вообще.
+    if (!table->findChild<Widgets::BackgroundRoleDelegate*>(QString(), Qt::FindDirectChildrenOnly))
+        table->setItemDelegate(new Widgets::BackgroundRoleDelegate(table));
 
     const int steps = std::max(result.upward.size(),
                                result.downward.size());

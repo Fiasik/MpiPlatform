@@ -448,6 +448,32 @@
        <number>8</number>
       </property>
       <item>
+       <widget class="QPushButton" name="pushButton_exportData">
+        <property name="toolTip">
+         <string>Сохранить всю базу данных и папки с графиками в одну папку для переноса на другой компьютер</string>
+        </property>
+        <property name="text">
+         <string>Экспорт данных…</string>
+        </property>
+        <property name="autoDefault">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_importData">
+        <property name="toolTip">
+         <string>Добавить в эту базу данные из папки экспорта или из папки другой установки приложения</string>
+        </property>
+        <property name="text">
+         <string>Импорт данных…</string>
+        </property>
+        <property name="autoDefault">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>

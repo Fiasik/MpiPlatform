@@ -33,6 +33,10 @@
 #include "Widgets/Chart/AnnotationBuilder.h"
 
 #include "Widgets/Chart/ImageService.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+#include "Gui/MainWindow/Experimental/ExpandableCard.h"        // ЭКСПЕРИМЕНТ
+#include "Gui/MainWindow/Experimental/LinearityLabPresenter.h" // ЭКСПЕРИМЕНТ
+#endif
 
 using ChartType = Widgets::Chart::ChartType;
 
@@ -105,6 +109,12 @@ MainWindow::MainWindow(QWidget *parent)
             });
     connect(ui->checkBox_history_needsRepair, &QCheckBox::toggled,
             this, [this](bool checked) { m_historyPresenter->onNeedsRepairToggled(checked); });
+    connect(ui->pushButton_history_compareLatest, &QPushButton::clicked,
+            this, [this] { m_historyPresenter->compareLatestTwo(); });
+    connect(ui->listWidget_history_sessions, &QListWidget::itemSelectionChanged,
+            this, [this] { m_historyPresenter->onSelectionChanged(); });
+    connect(ui->pushButton_history_deleteSessions, &QPushButton::clicked,
+            this, [this] { m_historyPresenter->deleteSelectedSessions(); });
 
     m_statusBarPresenter = new StatusBarPresenter(ui, m_mapper.get(), m_chartManager.get(), this);
     m_statusStateValue = m_statusBarPresenter->stateValueLabel();
@@ -188,6 +198,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_program = new Domain::Program;
     m_programThread = new QThread(this);
     m_program->moveToThread(m_programThread);
+    // Удаляем Program в его же потоке, при завершении потока: таймеры
+    // Program и открытый им порт нельзя останавливать и закрывать из GUI.
+    connect(m_programThread, &QThread::finished,
+            m_program, &QObject::deleteLater);
     m_programThread->start();
 
     m_testController = new TestController(this);
@@ -337,6 +351,13 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::directoryToSave,
             Qt::DirectConnection);
 
+    // Папка сессии появляется лениво (при первом сохранённом графике/отчёте) —
+    // связываем её с сессией в БД, чтобы экспорт/импорт знали, какие файлы чьи.
+    connect(m_reportSaver, &Report::Saver::directoryCreated,
+            this, [this](const QString& path) {
+                HistoryWriter::setSessionFolder(m_sessionId, path);
+            });
+
     connect(ui->checkBox_autoinit, &QCheckBox::checkStateChanged,
             this, [&](int state) {
                 ui->pushButton_set->setEnabled(!state);
@@ -483,6 +504,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // ЭКСПЕРИМЕНТ: панель лежит внутри ui — убираем карточку и презентер
+    // раньше delete ui, чтобы сигналы при разборе виджетов не пришли в них.
+    m_linearityCard.reset();
+    m_linearityLab.reset();
+#endif
+
     if (m_program) {
         QMetaObject::invokeMethod(
             m_program, "terminateTest",
@@ -491,6 +519,9 @@ MainWindow::~MainWindow()
 
     m_programThread->quit();
     m_programThread->wait();
+    // QThread разбирает отложенные удаления до возврата из wait(), так что
+    // здесь Program уже удалён.
+    m_program = nullptr;
 
     m_reportWorkerThread->quit();
     m_reportWorkerThread->wait();
@@ -695,10 +726,29 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
 
     m_historyPresenter->applyPalette(themeManager->currentPalette());
     applyArrowButtonIcons(themeManager->currentPalette());
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    m_labThemeManager = themeManager; // ЭКСПЕРИМЕНТ
+    if (m_linearityLab)
+        m_linearityLab->applyPalette(themeManager->currentPalette());
+    if (m_linearityCard) {
+        const auto& p = themeManager->currentPalette();
+        m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
+                                       p.iconChevronUp, p.iconChevronUpActive);
+    }
+#endif
     connect(themeManager, &Gui::Style::ThemeManager::schemeChanged, this,
             [this, themeManager](Gui::Style::ColorScheme) {
                 m_historyPresenter->applyPalette(themeManager->currentPalette());
                 applyArrowButtonIcons(themeManager->currentPalette());
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+                if (m_linearityLab) // ЭКСПЕРИМЕНТ
+                    m_linearityLab->applyPalette(themeManager->currentPalette());
+                if (m_linearityCard) {
+                    const auto& p = themeManager->currentPalette();
+                    m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
+                                                   p.iconChevronUp, p.iconChevronUpActive);
+                }
+#endif
             });
 }
 
@@ -849,6 +899,11 @@ void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
 
     if (auto* chart = m_chartManager->chart(ChartType::Pressure))
         chart->snapshotDraggableSeries();
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
+        m_linearityLab->refresh();
+#endif
 }
 
 void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& result)
@@ -857,6 +912,11 @@ void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& res
 
     m_mapper->updateMainTest(result, m_telemetry.valveStrokeRecord);
     m_mapper->updateCrossingValues(result, m_telemetry.valveStrokeRecord);
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
+        m_linearityLab->refresh();
+#endif
 }
 
 void MainWindow::onStrokeResultUpdated(const Domain::Tests::Stroke::Result& result)
@@ -899,6 +959,11 @@ void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
 {
     m_telemetry.crossingStatus = status;
     m_crossingIndicators->update(status);
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
+        m_linearityLab->reapplyCardOverride();
+#endif
 }
 
 void MainWindow::onTelemetryUpdated(const Telemetry& t)
@@ -919,6 +984,11 @@ void MainWindow::onTelemetryUpdated(const Telemetry& t)
         m_mapper->updateStepTest(*t.testStep);
 
     m_crossingIndicators->update(t.crossingStatus);
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
+        m_linearityLab->reapplyCardOverride();
+#endif
 }
 
 void MainWindow::appendLog(const QString& text) {
@@ -1012,6 +1082,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 
     QMainWindow::closeEvent(event);
+}
+
+void MainWindow::setSessionId(qint64 sessionId)
+{
+    m_sessionId = sessionId;
+    // Сессию, в которую сейчас пишутся результаты, из истории удалять нельзя.
+    m_historyPresenter->setCurrentSessionId(sessionId);
 }
 
 void MainWindow::setPatternType(SelectTests::PatternType pattern)
@@ -1162,6 +1239,56 @@ void MainWindow::setRegistry(Registry* registry)
         initCharts();
         m_chartsInitialized = true;
     }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // ЭКСПЕРИМЕНТ: стрелка в карточке «Линейность характеристики» блока
+    // Pass|Fail раскрывает под ней способы расчёта; остальные карточки
+    // сворачиваются до строки «название + статус».
+    if (!m_linearityLab) {
+        m_linearityLab = std::make_unique<LinearityLabPresenter>(m_chartManager.get());
+        if (m_labThemeManager)
+            m_linearityLab->applyPalette(m_labThemeManager->currentPalette());
+
+        using Card = ExpandableCard::Card;
+        m_linearityCard = std::make_unique<ExpandableCard>(
+            ui->verticalLayout_41,
+            Card{ui->frame_crossingLimits_linearCharacteristic_Card, ui->horizontalLayout_linearCharacteristic_1},
+            QVector<QWidget*>{
+                // остальные карточки Pass|Fail
+                ui->frame_crossingLimits_coefficientFriction_control_Card,
+                ui->frame_crossingLimits_dynamicError_Card,
+                ui->frame_crossingLimits_spring_Card,
+                ui->frame_crossingLimits_range_Card,
+                // левая колонка вкладки «Результаты» остаётся на месте
+            },
+            m_linearityLab->panel(),
+            tr("Подробнее: способы расчёта линейности (эксперимент)"));
+
+        connect(m_linearityCard.get(), &ExpandableCard::expandedChanged,
+                m_linearityLab.get(), &LinearityLabPresenter::setActive);
+
+        // Результат выбранного способа — прямо в карточке; при сворачивании
+        // (или выборе «текущего») — официальный из телеметрии обратно.
+        m_linearityLab->setCardTargets(
+            {ui->label_crossingLimits_linearCharacteristic_Value,
+             ui->label_crossingLimits_linearCharacteristic_Status,
+             ui->toleranceBar_linearCharacteristic},
+            [this] {
+                m_crossingIndicators->update(m_telemetry.crossingStatus);
+                if (m_telemetry.testMain)
+                    m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
+            });
+        if (m_labThemeManager) {
+            const auto& p = m_labThemeManager->currentPalette();
+            m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
+                                           p.iconChevronUp, p.iconChevronUpActive);
+        }
+    } else {
+        // Другой клапан — набор карточек мог поменяться: сворачиваем сразу.
+        m_linearityCard->setExpanded(false, false);
+    }
+    m_linearityLab->setRegistry(registry);
+#endif
 }
 
 void MainWindow::setTask(qreal task)
@@ -1217,6 +1344,12 @@ void MainWindow::setSensorNumber(quint8 sensorCount)
 
 void MainWindow::onInitializationFinished(bool success)
 {
+    // setSensorNumber(0), пришедший перед этим, уже написал «Готов к работе»
+    // — при неудаче это неправда. Баннер об отключении (если он есть) не
+    // трогаем: он точнее называет причину.
+    if (!success && !m_deviceDisconnected)
+        showInitFailedState();
+
     if (success && m_deviceDisconnected) {
         m_deviceDisconnected = false;
         // applyInitState() ниже ничего не пишет в статус-бар — без этого
@@ -1281,7 +1414,10 @@ void MainWindow::endTest()
         // (см. CrossingStatusUpdater), остальные просто перезапишут БД тем
         // же значением (INSERT OR REPLACE в writeCrossingResults()).
         // m_sessionId == -1 — сессия в БД не завелась, тихо ничего не пишем.
-        HistoryWriter::writeCrossingResults(m_sessionId, m_telemetry.crossingStatus);
+        if (m_registry) {
+            HistoryWriter::writeCrossingResults(
+                m_sessionId, m_telemetry.crossingStatus, m_registry->valveInfo().crossingLimits);
+        }
 
         // endTest() не знает, какой именно из опциональных тестов только что
         // завершился (testFinished() общий на все типы, см. Program::endTest()) —
@@ -1374,6 +1510,12 @@ void MainWindow::showIdleState()
 {
     ui->statusbar->showMessage(tr("Готов к работе"));
     setStatusStateChip(m_statusStateValue, tr("Готов к работе"), QStringLiteral("#5B6472"));
+}
+
+void MainWindow::showInitFailedState()
+{
+    ui->statusbar->showMessage(tr("Инициализация не выполнена"));
+    setStatusStateChip(m_statusStateValue, tr("Ошибка"), QStringLiteral("#D64545"));
 }
 
 void MainWindow::onDeviceDisconnected()
@@ -1577,7 +1719,7 @@ void MainWindow::updateOptionalTestParamsDisplay()
         QStringList parts;
         parts.reserve(values.size());
         for (qreal v : values)
-            parts << QString::number(v, 'f', 0);
+            parts << QString::number(v, 'g', 6);   // 'f',0 округлял шаг 0.5 до "1"
         return parts.join('-') + "%";
     };
 
@@ -2176,6 +2318,12 @@ void MainWindow::generateReportClicked()
         return;
     }
 
+    // Что оператор сделал на вкладке отчёта (заключение, ЗИП, ручные правки
+    // значений) — в историю сессии; пишется при каждом формировании и
+    // заменяет прежнее. -1 (БД не завелась) — тихо ничего не пишем.
+    if (m_sessionId >= 0)
+        m_reportPresenter->saveReportExtrasToHistory(m_sessionId);
+
     setReportGenerationInProgress(true);
 
     // На m_reportWorkerThread, тем же приёмом, что и TestController
@@ -2263,6 +2411,22 @@ void MainWindow::backClicked()
     valveWindow.setPatternType(m_patternType);
 
     if (valveWindow.exec() == QDialog::Accepted) {
+        // Правка карточки по "Назад" должна дойти до БД: ValveWindow при
+        // следующем открытии читает карточку оттуда, а не из Registry. Та же
+        // позиция — обновляется снимок этой же сессии, другая — новая сессия
+        // (см. HistoryWriter::saveCard()). -1 — БД недоступна, сохраняем
+        // прежний id, чтобы результаты тестов не потеряли свою сессию.
+        const qint64 sessionId = HistoryWriter::saveCard(
+            m_sessionId, *m_registry, Domain::VariantToString(Domain::kVariant),
+            SelectTests::patternKey(m_patternType));
+        if (sessionId >= 0) {
+            // Новая сессия (сменились объект/позиция) — свои графики и своя
+            // папка: setBasePath() у уже созданной папки игнорируется.
+            if (sessionId != m_sessionId)
+                m_reportSaver->resetDirectory();
+            setSessionId(sessionId);
+        }
+
         setRegistry(m_registry);
     }
 }

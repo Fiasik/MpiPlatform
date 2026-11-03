@@ -1,81 +1,99 @@
 #include "Reader.h"
 #include <QCoreApplication>
+#include <QDebug>
 #include <QSerialPortInfo>
 #include <QThread>
 
 namespace Domain::Uart {
+namespace {
+// Кадр на 115200 идёт ~2 мс; 150 мс — большой запас на обработку в приборе,
+// USB-адаптер и планировщик ОС. Было 500 мс x 5 попыток = ~2.6 с на команду
+// в молчащий прибор, и всё это время поток Program стоял. Если окажется, что
+// прибор отвечает медленнее, подстраивать здесь.
+constexpr int kResponseTimeoutMs = 150;
+constexpr int kAttemptsPerCommand = 2;
+constexpr int kRetryPauseMs = 20;
+// Одна неудачная команда — ещё не потеря связи (помеха, разовый сбой);
+// три подряд, то есть ~1 с тишины, — уже да.
+constexpr int kFailuresBeforeLost = 3;
+}
+
 Reader::Reader(QObject *parent)
     : QObject(parent)
 {
     m_port = new Port(this);
     m_adcPollTimer = new QTimer(this);
 
-    connect(m_port, &Port::portOpened,
-            this, &Reader::onPortOpened,
-            Qt::DirectConnection);
-
     connect(m_port, &Port::portClosed,
-            this, &Reader::onPortClosed,
-            Qt::DirectConnection);
+            this, &Reader::onPortClosed);
 
     connect(m_port, &Port::errorOccurred,
-            this, &Reader::onPortError,
-            Qt::DirectConnection);
-
-    connect(this, &Reader::openPort,
-            m_port, &Port::open,
-            Qt::DirectConnection);
-
-    connect(this, &Reader::closePort,
-            m_port, &Port::close,
-            Qt::DirectConnection);
-
-    connect(this, &Reader::writeAndRead,
-            m_port, &Port::writeAndRead,
-            Qt::DirectConnection);
+            this, &Reader::onPortError);
 
     connect(m_adcPollTimer, &QTimer::timeout,
             this, &Reader::onAdcPollTimer);
 }
 
-QByteArray Reader::sendMessage(const Message& message)
+std::optional<QByteArray> Reader::sendMessage(const Message& message)
 {
-    for (quint8 attempt = 0; attempt < m_maxAttempts; ++attempt) {
-        QByteArray readData;
-        emit writeAndRead(message.toByteArray(), readData);
+    // Единственная точка, через которую идёт обмен: если сюда пришли из
+    // чужого потока, QSerialPort сломается не сразу и не здесь.
+    Q_ASSERT(QThread::currentThread() == m_port->thread());
 
-        if (readData.isEmpty()) {
-            // qDebug() << "Port empty reply cmd" << int(message.command())
-            // << "attempt" << attempt;
-            QThread::msleep(20);
+    for (int attempt = 0; attempt < kAttemptsPerCommand; ++attempt) {
+        const std::optional<QByteArray> readData =
+            m_port->transact(message.toByteArray(), kResponseTimeoutMs);
+
+        if (!readData) {
+            // Порт закрылся (обрыв) — повторять в закрытый порт бессмысленно.
+            if (!m_port->isOpen())
+                return std::nullopt;
+            QThread::msleep(kRetryPauseMs);
             continue;
         }
 
-        Message response(readData);
+        Message response(*readData);
 
-        if (!response.checkCrc()) {
-            // qDebug() << "Port CRC fail cmd" << int(message.command())
-            // << "attempt" << attempt;
+        if (!response.checkCrc())
             continue;
-        }
 
         if (!(response.command() == Command::OK ||
-              response.command() == message.command())) {
-            // qDebug() << "UART unexpected cmd" << int(response.command())
-            // << "expected" << int(message.command());
+              response.command() == message.command()))
             continue;
-        }
 
+        m_consecutiveFailures = 0;
         return response.data();
     }
 
-    // qDebug() << "UART failed cmd" << int(message.command())
-    //          << "after attempts" << m_maxAttempts;
-
-    return {};
+    registerFailure();
+    return std::nullopt;
 }
 
-void Reader::autoConnect()
+void Reader::registerFailure()
+{
+    // При переборе портов молчание — нормальный ответ «это не наш порт».
+    if (m_isProbing)
+        return;
+
+    if (++m_consecutiveFailures < kFailuresBeforeLost)
+        return;
+
+    m_consecutiveFailures = 0;
+    qWarning() << "[Reader] device lost: no response to" << kFailuresBeforeLost << "commands in a row";
+
+    // Закрываем порт сразу: дальше каждая команда возвращается мгновенно
+    // (isConnected() == false), а не ждёт тайм-аут в молчащий прибор.
+    m_adcPollTimer->stop();
+    m_port->close();
+
+    // Сигнал — через очередь: сюда приходим из глубины вызова (например,
+    // Program::setDacRaw -> Device -> Reader), а реакция на потерю связи
+    // прерывает тест и выходит из вложенных циклов ожидания. Делать это
+    // посреди чужого незавершённого вызова — реентерабельность.
+    QMetaObject::invokeMethod(this, &Reader::deviceLost, Qt::QueuedConnection);
+}
+
+bool Reader::autoConnect(const QString &preferredPort)
 {
     // m_isProbing подавляет onPortError()'s emit portError() на время
     // перебора — иначе каждый порт, который не открылся (а на реальной
@@ -84,25 +102,31 @@ void Reader::autoConnect()
     // ("устройство не найдено") — вместо потока по одной на порт.
     m_isProbing = true;
 
-    for (const QSerialPortInfo &port : QSerialPortInfo::availablePorts()) {
-        emit openPort(port.portName());
-        if (!m_isConnected) {
-            emit closePort();
+    QStringList names;
+    for (const QSerialPortInfo &port : QSerialPortInfo::availablePorts())
+        names << port.portName();
+    if (names.removeOne(preferredPort))
+        names.prepend(preferredPort);
+
+    for (const QString &name : std::as_const(names)) {
+        if (!m_port->open(name))
             continue;
-        }
-        QByteArray version = sendMessage(Message(Command::GetVersion));
-        if (!version.isEmpty()) {
-            m_version = version.at(0);
+
+        const std::optional<QByteArray> version = sendMessage(Message(Command::GetVersion));
+        if (version && !version->isEmpty()) {
+            m_version = quint8(version->at(0));
+            m_consecutiveFailures = 0;
             drainPendingPortErrors();
             m_isProbing = false;
-            return;
+            return true;
         }
-        emit closePort();
+        m_port->close();
     }
 
     drainPendingPortErrors();
     m_isProbing = false;
     emit errorOccured(QStringLiteral("Устройство не найдено"));
+    return false;
 }
 
 // Port::open() на неудаче сам может отложить обработку СВОЕЙ же ошибки на
@@ -119,95 +143,95 @@ void Reader::drainPendingPortErrors()
     QCoreApplication::sendPostedEvents(m_port, QEvent::MetaCall);
 }
 
-void Reader::readVersion(quint8 &version)
+bool Reader::isConnected() const
 {
-    if (!m_isConnected) return;
-    version = m_version;
+    return m_port->isOpen();
 }
 
-void Reader::setDacValue(quint16 value)
+QString Reader::portName() const
 {
-    if (!m_isConnected) return;
-    sendMessage(Message(Command::DAC, value));
+    return m_port->portName();
 }
 
-void Reader::setAdcChannels(quint8 channels)
+bool Reader::setDacValue(quint16 value)
 {
-    if (!m_isConnected) return;
-    sendMessage(Message(Command::SetChADC, channels));
+    if (!isConnected()) return false;
+    return sendMessage(Message(Command::DAC, value)).has_value();
 }
 
-void Reader::setAdcTimerInterval(quint16 timer)
+bool Reader::setAdcChannels(quint8 channels)
 {
-    if (!m_isConnected) return;
-    sendMessage(Message(Command::TimerArr, timer));
+    if (!isConnected()) return false;
+    return sendMessage(Message(Command::SetChADC, channels)).has_value();
 }
 
-void Reader::enableAdc()
+bool Reader::setAdcTimerInterval(quint16 timer)
 {
-    if (!m_isConnected) return;
-    sendMessage(Message(Command::ADC_OnOff, static_cast<quint8>(1)));
+    if (!isConnected()) return false;
+    return sendMessage(Message(Command::TimerArr, timer)).has_value();
 }
 
-void Reader::disableAdc()
+bool Reader::enableAdc()
 {
-    if (!m_isConnected) return;
-    sendMessage(Message(Command::ADC_OnOff, static_cast<quint8>(0)));
+    if (!isConnected()) return false;
+    return sendMessage(Message(Command::ADC_OnOff, static_cast<quint8>(1))).has_value();
 }
 
-void Reader::readAdcValues(QVector<quint16> &adc)
+bool Reader::disableAdc()
 {
-    if (!m_isConnected) return;
-    QByteArray raw = sendMessage(Message(Command::ADC));
-    adc.clear();
-    for (int i = 0; i + 1 < raw.size(); i += 2) {
-        quint16 val = (static_cast<quint8>(raw.at(i)) << 8) |
-                      static_cast<quint8>(raw.at(i+1));
+    if (!isConnected()) return false;
+    return sendMessage(Message(Command::ADC_OnOff, static_cast<quint8>(0))).has_value();
+}
+
+std::optional<QVector<quint16>> Reader::readAdcValues()
+{
+    if (!isConnected()) return std::nullopt;
+
+    const std::optional<QByteArray> raw = sendMessage(Message(Command::ADC));
+    if (!raw) return std::nullopt;
+
+    QVector<quint16> adc;
+    for (int i = 0; i + 1 < raw->size(); i += 2) {
+        quint16 val = (static_cast<quint8>(raw->at(i)) << 8) |
+                      static_cast<quint8>(raw->at(i+1));
         adc.append(val);
     }
+    return adc;
 }
 
 void Reader::setAdcPolling(bool enable, quint16 interval)
 {
-    if (m_isConnected && enable)
+    if (isConnected() && enable)
         m_adcPollTimer->start(interval);
     else
         m_adcPollTimer->stop();
 }
 
-void Reader::setDigitalOutput(quint8 outputNumber, bool state)
+bool Reader::setDigitalOutput(quint8 outputNumber, bool state)
 {
-    if (!m_isConnected || outputNumber > 7) return;
+    if (!isConnected() || outputNumber > 7) return false;
     quint8 value = (state ? 0x08 : 0) | outputNumber;
-    sendMessage(Message(Command::SetDO, value));
+    return sendMessage(Message(Command::SetDO, value)).has_value();
 }
 
-void Reader::readDigitalOutputs(quint8 &digitalOutputs)
+std::optional<quint8> Reader::readDigitalOutputs()
 {
-    if (!m_isConnected) return;
-    QByteArray raw = sendMessage(Message(Command::GetDO));
-    if (!raw.isEmpty())
-        digitalOutputs = static_cast<quint8>(raw.at(0));
+    if (!isConnected()) return std::nullopt;
+    const std::optional<QByteArray> raw = sendMessage(Message(Command::GetDO));
+    if (!raw || raw->isEmpty()) return std::nullopt;
+    return static_cast<quint8>(raw->at(0));
 }
 
-void Reader::readDigitalInputs(quint8 &digitalInputs)
+std::optional<quint8> Reader::readDigitalInputs()
 {
-    if (!m_isConnected) return;
-    QByteArray raw = sendMessage(Message(Command::GetDI));
-    if (!raw.isEmpty())
-        digitalInputs = static_cast<quint8>(raw.at(0));
-}
-
-void Reader::onPortOpened(const QString &portName)
-{
-    m_portName = portName;
-    m_isConnected = true;
-    emit portOpened(portName);
+    if (!isConnected()) return std::nullopt;
+    const std::optional<QByteArray> raw = sendMessage(Message(Command::GetDI));
+    if (!raw || raw->isEmpty()) return std::nullopt;
+    return static_cast<quint8>(raw->at(0));
 }
 
 void Reader::onPortClosed()
 {
-    m_isConnected = false;
     m_adcPollTimer->stop();
     emit portClosed();
 }
@@ -217,17 +241,14 @@ void Reader::onPortError(QSerialPort::SerialPortError error)
     if (error == QSerialPort::NoError || error == QSerialPort::TimeoutError)
         return;
 
-    // qWarning() << "UART error:" << error;
-
     switch (error) {
     case QSerialPort::WriteError:
     case QSerialPort::ReadError:
     case QSerialPort::ResourceError:
     case QSerialPort::DeviceNotFoundError:
     case QSerialPort::PermissionError:
-        m_isConnected = false;
         m_adcPollTimer->stop();
-        emit closePort();
+        m_port->close();
         break;
     default:
         break;
@@ -239,8 +260,9 @@ void Reader::onPortError(QSerialPort::SerialPortError error)
 
 void Reader::onAdcPollTimer()
 {
-    QVector<quint16> data;
-    readAdcValues(data);
-    emit adcDataReady(data);
+    // Неудачное чтение раньше уходило пустым вектором, который Device
+    // всё равно пропускал; теперь просто не отправляем.
+    if (const auto adc = readAdcValues())
+        emit adcDataReady(*adc);
 }
 }

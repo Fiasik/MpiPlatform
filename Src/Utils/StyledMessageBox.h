@@ -20,4 +20,6 @@ QMessageBox::StandardButton question(
 
 void warning(QWidget* parent, const QString& title, const QString& text);
 
+void information(QWidget* parent, const QString& title, const QString& text);
+
 } // namespace StyledMessageBox

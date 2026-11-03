@@ -28,6 +28,7 @@ struct Params
 
 // Точка step (0..pointNumbers) от начала прохода. Сетка та же, что при
 // Normal, только пройденная в обратном порядке.
+// [ОТ-1] Шаги задания — docs/formulas/main_test.md
 inline quint16 sweepDac(const Params& p, quint16 step)
 {
     const quint16 pointNumbers = p.pointNumbers;

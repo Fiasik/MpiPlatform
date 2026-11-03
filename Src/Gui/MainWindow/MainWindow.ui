@@ -45,7 +45,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab_manual">
        <attribute name="title">
@@ -2014,9 +2014,6 @@
               </item>
               <item>
                <widget class="QDoubleSpinBox" name="doubleSpinBox_task">
-                <property name="visible">
-                 <bool>false</bool>
-                </property>
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
@@ -2031,6 +2028,9 @@
                   <width>0</width>
                   <height>0</height>
                  </size>
+                </property>
+                <property name="visible">
+                 <bool>false</bool>
                 </property>
                 <property name="buttonSymbols">
                  <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
@@ -3066,7 +3066,7 @@
            </font>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>3</number>
           </property>
           <widget class="QWidget" name="tab_mainTests_task">
            <attribute name="title">
@@ -6125,26 +6125,50 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_history_body">
           <item>
-           <widget class="QListWidget" name="listWidget_history_sessions">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_history_sessions">
+            <item>
+             <widget class="QPushButton" name="pushButton_history_compareLatest">
+              <property name="toolTip">
+               <string>Отметить две самые новые сессии позиции для сравнения</string>
+              </property>
+              <property name="text">
+               <string>Сравнить две последние</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QListWidget" name="listWidget_history_sessions">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>10</width>
+                <height>10</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_history_deleteSessions">
+              <property name="toolTip">
+               <string>Удалить выделенные сессии (Ctrl/Shift — несколько) вместе с их результатами</string>
+              </property>
+              <property name="text">
+               <string>Удалить выбранные…</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QScrollArea" name="scrollArea_history_details">
@@ -6159,8 +6183,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1424</width>
-               <height>1033</height>
+               <width>1408</width>
+               <height>2176</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_history_scrollContents">
@@ -6257,6 +6281,50 @@
                     </size>
                    </property>
                   </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QFrame" name="frame_history_report_Section">
+                <property name="frameShape">
+                 <enum>QFrame::Shape::NoFrame</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Shadow::Raised</enum>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_history_report">
+                 <property name="leftMargin">
+                  <number>8</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>8</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>8</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>8</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_history_report_Title">
+                   <property name="text">
+                    <string>Заключение и ЗИП</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_history_report_Text">
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </widget>
@@ -7154,7 +7222,7 @@
                      <item>
                       <widget class="QLabel" name="label_history_compare_Hint">
                        <property name="text">
-                        <string>Отметьте две сессии галочками слева, чтобы сравнить.</string>
+                        <string>Выберите две сессии (галочками слева) для детального сравнения</string>
                        </property>
                       </widget>
                      </item>
@@ -7882,6 +7950,19 @@
                     </layout>
                    </widget>
                   </item>
+                  <item>
+                   <spacer name="verticalSpacer_historyCompare_main_bottom">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Vertical</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
                  </layout>
                 </widget>
                 <widget class="QWidget" name="tab_historyCompare_step">
@@ -7932,7 +8013,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_step_Hint">
                        <property name="text">
-                        <string>Отметьте две сессии галочками слева, чтобы сравнить.</string>
+                        <string>Выберите две сессии (галочками слева) для детального сравнения</string>
                        </property>
                       </widget>
                      </item>
@@ -7947,14 +8028,14 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QFrame" name="frame_historyCompare_stepOvershoot_Section">
+                   <widget class="QFrame" name="frame_historyCompare_stepOvershootUp_Section">
                     <property name="frameShape">
                      <enum>QFrame::Shape::NoFrame</enum>
                     </property>
                     <property name="frameShadow">
                      <enum>QFrame::Shadow::Raised</enum>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepOvershoot">
+                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepOvershootUp">
                      <property name="leftMargin">
                       <number>8</number>
                      </property>
@@ -7965,24 +8046,24 @@
                       <number>8</number>
                      </property>
                      <item>
-                      <widget class="QLabel" name="label_historyCompare_stepOvershoot_Title">
+                      <widget class="QLabel" name="label_historyCompare_stepOvershootUp_Title">
                        <property name="text">
-                        <string>Перерегулирование, %</string>
+                        <string>Восходящее движение — перерегулирование, %</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepOvershoot">
+                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepOvershootUp">
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
-                         <height>200</height>
+                         <height>340</height>
                         </size>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepOvershoot">
+                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepOvershootUp">
                        <property name="font">
                         <font>
                          <family>JetBrains Mono</family>
@@ -7995,14 +8076,14 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QFrame" name="frame_historyCompare_stepTime_Section">
+                   <widget class="QFrame" name="frame_historyCompare_stepTimeUp_Section">
                     <property name="frameShape">
                      <enum>QFrame::Shape::NoFrame</enum>
                     </property>
                     <property name="frameShadow">
                      <enum>QFrame::Shadow::Raised</enum>
                     </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepTime">
+                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepTimeUp">
                      <property name="leftMargin">
                       <number>8</number>
                      </property>
@@ -8016,24 +8097,24 @@
                       <number>8</number>
                      </property>
                      <item>
-                      <widget class="QLabel" name="label_historyCompare_stepTime_Title">
+                      <widget class="QLabel" name="label_historyCompare_stepTimeUp_Title">
                        <property name="text">
-                        <string>Время переключения T, мс</string>
+                        <string>Восходящее движение — время переключения T, мс</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepTime">
+                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepTimeUp">
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
-                         <height>200</height>
+                         <height>340</height>
                         </size>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepTime">
+                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepTimeUp">
                        <property name="font">
                         <font>
                          <family>JetBrains Mono</family>
@@ -8046,16 +8127,102 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="pushButton_history_refresh">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
+                   <widget class="QFrame" name="frame_historyCompare_stepOvershootDown_Section">
+                    <property name="frameShape">
+                     <enum>QFrame::Shape::NoFrame</enum>
                     </property>
-                    <property name="text">
-                     <string>Обновить</string>
+                    <property name="frameShadow">
+                     <enum>QFrame::Shadow::Raised</enum>
                     </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepOvershootDown">
+                     <property name="leftMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_historyCompare_stepOvershootDown_Title">
+                       <property name="text">
+                        <string>Нисходящее движение — перерегулирование, %</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepOvershootDown">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>340</height>
+                        </size>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepOvershootDown">
+                       <property name="font">
+                        <font>
+                         <family>JetBrains Mono</family>
+                         <pointsize>11</pointsize>
+                        </font>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QFrame" name="frame_historyCompare_stepTimeDown_Section">
+                    <property name="frameShape">
+                     <enum>QFrame::Shape::NoFrame</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Shadow::Raised</enum>
+                    </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_stepTimeDown">
+                     <property name="leftMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_historyCompare_stepTimeDown_Title">
+                       <property name="text">
+                        <string>Нисходящее движение — время переключения T, мс</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_stepTimeDown">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>340</height>
+                        </size>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTableWidget" name="tableWidget_historyCompare_stepTimeDown">
+                       <property name="font">
+                        <font>
+                         <family>JetBrains Mono</family>
+                         <pointsize>11</pointsize>
+                        </font>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
                    </widget>
                   </item>
                   <item>
@@ -8121,7 +8288,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_response_Hint">
                        <property name="text">
-                        <string>Отметьте две сессии галочками слева, чтобы сравнить.</string>
+                        <string>Выберите две сессии (галочками слева) для детального сравнения</string>
                        </property>
                       </widget>
                      </item>
@@ -8129,6 +8296,13 @@
                       <widget class="QLabel" name="label_historyCompare_response_Legend">
                        <property name="text">
                         <string>—</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_historyCompare_response_Hysteresis">
+                       <property name="text">
+                        <string/>
                        </property>
                       </widget>
                      </item>
@@ -8159,7 +8333,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_responseUp_Title">
                        <property name="text">
-                        <string>Ход вверх</string>
+                        <string>Восходящее движение</string>
                        </property>
                       </widget>
                      </item>
@@ -8168,7 +8342,7 @@
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
-                         <height>200</height>
+                         <height>340</height>
                         </size>
                        </property>
                       </widget>
@@ -8210,7 +8384,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_responseDown_Title">
                        <property name="text">
-                        <string>Ход вниз</string>
+                        <string>Нисходящее движение</string>
                        </property>
                       </widget>
                      </item>
@@ -8219,7 +8393,7 @@
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
-                         <height>200</height>
+                         <height>340</height>
                         </size>
                        </property>
                       </widget>
@@ -8300,7 +8474,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_resolution_Hint">
                        <property name="text">
-                        <string>Отметьте две сессии галочками слева, чтобы сравнить.</string>
+                        <string>Выберите две сессии (галочками слева) для детального сравнения</string>
                        </property>
                       </widget>
                      </item>
@@ -8308,57 +8482,6 @@
                       <widget class="QLabel" name="label_historyCompare_resolution_Legend">
                        <property name="text">
                         <string>—</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QFrame" name="frame_historyCompare_resolutionDown_Section">
-                    <property name="frameShape">
-                     <enum>QFrame::Shape::NoFrame</enum>
-                    </property>
-                    <property name="frameShadow">
-                     <enum>QFrame::Shadow::Raised</enum>
-                    </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_resolutionDown">
-                     <property name="leftMargin">
-                      <number>8</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>8</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>8</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>8</number>
-                     </property>
-                     <item>
-                      <widget class="QLabel" name="label_historyCompare_resolutionDown_Title">
-                       <property name="text">
-                        <string>Ход вниз</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_resolutionDown">
-                       <property name="minimumSize">
-                        <size>
-                         <width>0</width>
-                         <height>200</height>
-                        </size>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QTableWidget" name="tableWidget_historyCompare_resolutionDown">
-                       <property name="font">
-                        <font>
-                         <family>JetBrains Mono</family>
-                         <pointsize>11</pointsize>
-                        </font>
                        </property>
                       </widget>
                      </item>
@@ -8389,7 +8512,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_resolutionUp_Title">
                        <property name="text">
-                        <string>Ход вверх</string>
+                        <string>Восходящее движение</string>
                        </property>
                       </widget>
                      </item>
@@ -8398,13 +8521,64 @@
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
-                         <height>200</height>
+                         <height>340</height>
                         </size>
                        </property>
                       </widget>
                      </item>
                      <item>
                       <widget class="QTableWidget" name="tableWidget_historyCompare_resolutionUp">
+                       <property name="font">
+                        <font>
+                         <family>JetBrains Mono</family>
+                         <pointsize>11</pointsize>
+                        </font>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QFrame" name="frame_historyCompare_resolutionDown_Section">
+                    <property name="frameShape">
+                     <enum>QFrame::Shape::NoFrame</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Shadow::Raised</enum>
+                    </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_historyCompare_resolutionDown">
+                     <property name="leftMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_historyCompare_resolutionDown_Title">
+                       <property name="text">
+                        <string>Нисходящее движение</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="Widgets::Chart::ChartView" name="chartView_historyCompare_resolutionDown">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>340</height>
+                        </size>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTableWidget" name="tableWidget_historyCompare_resolutionDown">
                        <property name="font">
                         <font>
                          <family>JetBrains Mono</family>
@@ -8793,7 +8967,7 @@
                      <item>
                       <widget class="QLabel" name="label_historyCompare_stroke_Hint">
                        <property name="text">
-                        <string>Отметьте две сессии галочками слева, чтобы сравнить.</string>
+                        <string>Выберите две сессии (галочками слева) для детального сравнения</string>
                        </property>
                       </widget>
                      </item>
@@ -9037,6 +9211,19 @@
                 </widget>
                </widget>
               </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_history_refresh">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Обновить</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </widget>
@@ -9084,7 +9271,7 @@
            <string notr="true"/>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="tab_info">
            <attribute name="title">
@@ -11404,9 +11591,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11494,9 +11678,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11513,9 +11694,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11531,9 +11709,6 @@
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
                    <property name="text">
                     <string/>
@@ -11595,9 +11770,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11636,9 +11808,6 @@
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
                    <property name="text">
                     <string/>
@@ -11681,9 +11850,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11699,9 +11865,6 @@
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
                    <property name="text">
                     <string/>
@@ -11761,9 +11924,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11780,9 +11940,6 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
                    <property name="text">
                     <string/>
                    </property>
@@ -11798,9 +11955,6 @@
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
                    <property name="text">
                     <string/>

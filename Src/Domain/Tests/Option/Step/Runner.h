@@ -3,6 +3,7 @@
 #include "Domain/Tests/BaseRunner.h"
 #include "Domain/Tests/Option/Step/Params.h"
 #include "Result.h"
+#include "Domain/ValveEnums.h"
 
 namespace Domain::Tests::Option::Step {
     class Runner : public BaseRunner
@@ -10,8 +11,8 @@ namespace Domain::Tests::Option::Step {
         Q_OBJECT
     public:
         Runner(Mpi::Device& device, bool normalOpen, const Params& params,
-               QObject* parent = nullptr)
-            : BaseRunner(device, normalOpen, parent), m_params(params) {}
+               PositionerScale scale, QObject* parent = nullptr)
+            : BaseRunner(device, normalOpen, parent), m_params(params), m_scale(scale) {}
 
     signals:
         void results();
@@ -22,5 +23,6 @@ namespace Domain::Tests::Option::Step {
 
     private:
         Params m_params;
+        PositionerScale m_scale;
     };
 }

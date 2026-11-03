@@ -45,6 +45,10 @@ namespace Ui { class MainWindow; }
 namespace Gui::Style { class ThemeManager; struct Palette; }
 
 class StatusBarPresenter;
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+class LinearityLabPresenter; // ЭКСПЕРИМЕНТ: подробности линейности в карточке Pass|Fail
+class ExpandableCard;
+#endif
 class ReportGenerationPresenter;
 class ReportGenerationWorker;
 class HistoryPresenter;
@@ -65,7 +69,7 @@ public:
     // строку sessions, см. HistoryWriter::writeCrossingResults(). -1 —
     // сессия в БД не завелась (ошибка БД на старте), endTest() тогда просто
     // ничего не пишет.
-    void setSessionId(qint64 sessionId) { m_sessionId = sessionId; }
+    void setSessionId(qint64 sessionId);
 
     // Тело — в .cpp: setPatternType() зовёт m_reportPresenter->..., а
     // ReportGenerationPresenter тут только forward-declared (хранится по
@@ -228,6 +232,7 @@ private:
     void applyTestStateToUi(TestState  state);
     void setTestState(TestState state);
     void showIdleState();
+    void showInitFailedState();
 
     // Единое состояние попытки инициализации устройства — single source of
     // truth для базовой доступности блоков ручного управления
@@ -285,6 +290,13 @@ private:
 
     std::unique_ptr<ReportGenerationPresenter> m_reportPresenter;
     std::unique_ptr<HistoryPresenter> m_historyPresenter;
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // ЭКСПЕРИМЕНТ: создаются в setRegistry() после initCharts(); тема —
+    // через m_labThemeManager (setThemeManager() зовётся раньше).
+    std::unique_ptr<LinearityLabPresenter> m_linearityLab;
+    std::unique_ptr<ExpandableCard> m_linearityCard;
+    Gui::Style::ThemeManager* m_labThemeManager = nullptr;
+#endif
 
     void syncTaskChartSeriesVisibility(quint8 sensorCount);
     void displayDependingPattern();

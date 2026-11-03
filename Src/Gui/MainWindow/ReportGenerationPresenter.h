@@ -5,7 +5,10 @@
 #include <QMap>
 #include <QString>
 
+#include <QVector>
+
 #include "Report/Html/CommentCard.h"
+#include "Storage/FieldOverrides.h"
 #include "Gui/Setup/SelectTests.h"
 #include "ReportGenerationWorker.h"
 
@@ -61,6 +64,12 @@ public:
     // выбрали папку) — тогда до воркера дело не доходит вообще.
     std::optional<ReportGenerationWorker::Input> prepareReportGeneration();
 
+    // Пишет в историю сессии то, что оператор сделал на вкладке отчёта:
+    // заключение, ЗИП и ручные правки значений (см. HistoryWriter::
+    // writeReportExtras()). Правки определены в последнем prepareReportGeneration(),
+    // поэтому вызывать надо сразу после него.
+    void saveReportExtrasToHistory(qint64 sessionId);
+
     // Возвращают false при неудаче — MainWindow решает, как об этом
     // сообщить оператору (тост), этот класс сознательно ничего не знает
     // про ToastManager (см. комментарий класса выше).
@@ -69,7 +78,12 @@ public:
     void editComment(Report::Html::CommentSlot slot);
 
 private:
-    void collectReportOverrides();
+    // Подставляет в telemetry (КОПИЮ для отчёта, а не m_telemetry) значения,
+    // поправленные оператором в lineEdit_resultsTable_*, и собирает список этих
+    // правок. m_telemetry остаётся посчитанным — иначе при повторном
+    // формировании отчёта посчитанное значение было бы уже потеряно и правка
+    // не определялась.
+    void collectReportOverrides(Telemetry& telemetry, QVector<FieldOverrides::Record>& overrides) const;
     void collectRegistryOverrides(ObjectInfo& objectInfo, ValveInfo& valveInfo,
                                   OtherParameters& otherParameters);
     bool hasAnyTestComments() const;
@@ -88,4 +102,7 @@ private:
     SelectTests::PatternType m_patternType = SelectTests::Pattern_None;
 
     QMap<Report::Html::CommentSlot, QString> m_testComments;
+
+    // Правки значений, найденные последним prepareReportGeneration().
+    QVector<FieldOverrides::Record> m_lastOverrides;
 };

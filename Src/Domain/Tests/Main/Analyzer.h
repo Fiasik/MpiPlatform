@@ -133,7 +133,17 @@ private:
         const Regression& regressionSecond,
         const Limits& pressureLimits);
 
+    // Интегральная линейность (прежний метод): max |положение - (k*давление+b)|
+    // в % от рабочего окна хода. Оставлена для сравнения.
     double computeLinearityError(
+        const QVector<PressurePoint>& points,
+        const Regression& regression,
+        const Limits& limits) const;
+
+    // Дифференциальная линейность: локальный наклон d(положение)/d(давление)
+    // в скользящем окне (МНК по ~10 % точек), отклонение от наклона
+    // regression.k в %, берётся максимум по окнам.
+    double computeDifferentialLinearityError(
         const QVector<PressurePoint>& points,
         const Regression& regression,
         const Limits& limits) const;

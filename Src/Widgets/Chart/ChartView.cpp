@@ -719,6 +719,8 @@ void ChartView::autoScale(qreal min, qreal max)
         }
 
         qreal Llim = 0;
+        if (m_allowNegativeY && !first && Ymin < 0)
+            Llim = qFloor(Ymin * 1.1);
 
         qreal Hlim = qMax(1.0, Ymax * 1.1);
         Hlim = qCeil(Hlim);
@@ -731,6 +733,18 @@ void ChartView::autoScale(qreal min, qreal max)
     }
 
     updateAnnotationPositions();
+}
+
+void ChartView::setXTickStep(qreal step)
+{
+    if (step <= 0) {
+        m_xaxisValue->setTickType(QValueAxis::TicksFixed);
+        m_xaxisValue->setTickCount(5);
+        return;
+    }
+    m_xaxisValue->setTickType(QValueAxis::TicksDynamic);
+    m_xaxisValue->setTickAnchor(0);
+    m_xaxisValue->setTickInterval(step);
 }
 
 void ChartView::autoUpdate(bool update)

@@ -58,9 +58,21 @@ Program::Program(QObject *parent)
 void Program::onDeviceDisconnected()
 {
     m_isInitialized = false;
+    m_connectionLost = true;
 
-    if (m_currentScenario)
+    // Новых данных не будет: сэмплы с замершими значениями только
+    // дорисовывали бы графики. Повторная инициализация запустит снова.
+    m_timerSensors->stop();
+    m_timerDI->stop();
+
+    if (m_currentScenario) {
         terminateTest();
+    } else {
+        // Прервать ожидание внутри initialization() (setDacRaw/
+        // waitForDacCycle), иначе она досидит фиксированные 10 с шага.
+        m_isDacStopRequested = true;
+        m_dacEventLoop->quit();
+    }
 
     emit deviceDisconnected();
 }
@@ -76,6 +88,14 @@ void Program::onRunnerActuallyStarted()
 
 void Program::setDacRaw(quint16 dac, quint32 sleepMs, bool waitForStop, bool waitForStart)
 {
+    // Связь уже потеряна: ни выставлять, ни ждать нечего. Проверка — до
+    // сброса m_isDacStopRequested ниже, иначе ожидания шага стали бы
+    // непрерываемыми.
+    if (m_connectionLost) {
+        emit releaseBlock();
+        return;
+    }
+
     m_isDacStopRequested = false;
 
     if (m_device.sensorCount() == 0) {
@@ -343,6 +363,7 @@ void Program::initialization()
     auto &ts = m_telemetry;
 
     m_isInitialized = false;
+    m_connectionLost = false;
 
     ts.init = {};
 
@@ -404,6 +425,8 @@ void Program::initialization()
 
         setDacRaw(endRaw, 10000, true);
         waitForDacCycle();
+        if (initializationAborted())
+            return;
         initializer.measureEndPositionShutoff(
             m_initialDoStates,
             m_savedInitialDoStates);
@@ -412,6 +435,8 @@ void Program::initialization()
 
         setDacRaw(startRaw, 10000, true);
         waitForDacCycle();
+        if (initializationAborted())
+            return;
         initializer.measureStartPositionShutoff(
             m_initialDoStates,
             m_savedInitialDoStates);
@@ -425,11 +450,15 @@ void Program::initialization()
         setDacRaw(startRaw, 10000, true);
 
         waitForDacCycle();
+        if (initializationAborted())
+            return;
         initializer.measureStartPosition();
         emit telemetryUpdated(m_telemetry);
 
         setDacRaw(endRaw, 10000, true);
         waitForDacCycle();
+        if (initializationAborted())
+            return;
         initializer.measureEndPosition();
         emit telemetryUpdated(m_telemetry);
     }
@@ -447,6 +476,9 @@ void Program::initialization()
 
         emit telemetryUpdated(m_telemetry);
     }
+
+    if (initializationAborted())
+        return;
 
     finalizeInitialization();
 }
@@ -466,6 +498,18 @@ void Program::waitForDacCycle()
     timer.start(50);
     m_dacEventLoop->exec();
     timer.stop();
+}
+
+// Связь пропала посреди инициализации: дальше значения АЦП замершие, и
+// шаги «измерили» бы ход по ним. Сообщаем о неудаче и выходим.
+bool Program::initializationAborted()
+{
+    if (!m_connectionLost)
+        return false;
+
+    emit telemetryUpdated(m_telemetry);
+    emit initializationFinished(false);
+    return true;
 }
 
 void Program::finalizeInitialization()
@@ -515,6 +559,7 @@ void Program::startMainTest(const Tests::Main::Params& params)
     emit clearPoints(ChartType::Friction);
 }
 
+// [ОТ-11] График трения: разность давлений × forceCoef [ОТ-9] — docs/formulas/main_test.md
 void Program::addFriction(const QVector<QPointF> &points)
 {
     QVector<Widgets::Chart::Point> chartPoints;
@@ -1015,4 +1060,4 @@ void Program::terminateTest()
     m_dacEventLoop->quit();
     emit stopTheTest();
 }
-}
+}

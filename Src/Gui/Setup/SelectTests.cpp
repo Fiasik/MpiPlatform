@@ -272,6 +272,18 @@ SelectTests::PatternType SelectTests::currentPattern() const {
 SelectTests::BlockCTS SelectTests::getCTS() const {
     return m_blockCts;
 }
+
+QString SelectTests::patternKey(PatternType pattern) {
+    switch (pattern) {
+    case Pattern_C_SOVT: return QStringLiteral("C_SOVT");
+    case Pattern_B_SACVT: return QStringLiteral("B_SACVT");
+    case Pattern_C_SACVT: return QStringLiteral("C_SACVT");
+    case Pattern_B_CVT: return QStringLiteral("B_CVT");
+    case Pattern_C_CVT: return QStringLiteral("C_CVT");
+    case Pattern_None: return QStringLiteral("None");
+    }
+    return QStringLiteral("None");
+}
 void SelectTests::ButtonClick() {
     accept();
 }

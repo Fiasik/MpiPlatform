@@ -164,6 +164,13 @@ void Mapper::write(ValveWindow& view, const ValveInfo& v)
     ui->comboBox_positionerType->setCurrentIndex(static_cast<int>(v.positionerType));
     ui->comboBox_scale->setCurrentIndex(static_cast<int>(v.positionerScale));
 
+    // Список динамической ошибки зависит от типа позиционера и пересобирается
+    // в onPositionerTypeChanged() с выбором первого пункта — возвращаем
+    // сохранённое значение уже после него.
+    const int dynamicErrorIndex = ui->comboBox_dinamicError->findText(v.dinamicErrorRecomend);
+    if (dynamicErrorIndex >= 0)
+        ui->comboBox_dinamicError->setCurrentIndex(dynamicErrorIndex);
+
     auto& c = v.crossingLimits;
 
     ui->checkBox_crossingLimits_coefficientFriction->setChecked(

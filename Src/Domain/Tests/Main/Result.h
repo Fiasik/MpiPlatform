@@ -31,8 +31,18 @@ namespace Domain::Tests::Main {
         qreal springLow = 0.0; // Н
         qreal springHigh = 0.0; // Н
 
+        // Линейность характеристики "давление -> положение" ДИФФЕРЕНЦИАЛЬНЫМ
+        // методом: максимальное относительное отклонение локального наклона
+        // d(положение)/d(давление) от среднего наклона прямой, % (см.
+        // Analyzer::computeDifferentialLinearityError()). Именно оно сравнивается
+        // с допуском на вкладке Pass | Fail.
         qreal linearityError = 0.0; // %
         qreal linearity = 0.0; // %
+
+        // Прежний (интегральный) расчёт: максимальное отклонение точки от
+        // МНК-прямой в % от рабочего окна хода. Только для сравнения методов,
+        // нигде не используется для допуска.
+        qreal linearityErrorIntegral = 0.0; // %
     };
 }
 Q_DECLARE_METATYPE(Domain::Tests::Main::Result)

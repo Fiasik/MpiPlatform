@@ -106,6 +106,12 @@ int runNotificationDialog(QWidget* parent,
 
     outer->addLayout(buttonRow);
 
+    // sizeHint() диалога считается по ширине одной строки текста, а не по
+    // фиксированным 440 px, поэтому для многострочного текста (сводка
+    // импорта, длинные пути) начальная высота выходит меньше нужной и
+    // текст обрезается. Высоту при заданной ширине считаем явно.
+    dialog.setMinimumHeight(outer->totalHeightForWidth(kDialogWidth));
+
     dialog.exec();
     return resultIndex;
 }
@@ -136,6 +142,15 @@ void warning(QWidget* parent, const QString& title, const QString& text)
     runNotificationDialog(
         parent, title, text,
         QStyle::SP_MessageBoxWarning,
+        {QStringLiteral("ОК")},
+        0);
+}
+
+void information(QWidget* parent, const QString& title, const QString& text)
+{
+    runNotificationDialog(
+        parent, title, text,
+        QStyle::SP_MessageBoxInformation,
         {QStringLiteral("ОК")},
         0);
 }

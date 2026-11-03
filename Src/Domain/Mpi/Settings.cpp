@@ -47,6 +47,8 @@ namespace Domain::Mpi {
         }
 
         settings.endGroup();
+
+        m_lastPortName = settings.value("Uart/LastPort").toString();
     }
 
 
@@ -65,5 +67,20 @@ namespace Domain::Mpi {
     Settings::DAC Settings::dac() const
     {
         return m_dac;
+    }
+
+    QString Settings::lastPortName() const
+    {
+        return m_lastPortName;
+    }
+
+    void Settings::saveLastPortName(const QString &portName)
+    {
+        // Папка с exe может быть недоступна на запись (Program Files) —
+        // тогда QSettings молча не сохранит, и это не ошибка: следующее
+        // подключение просто переберёт порты по порядку.
+        QSettings settings(qApp->applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+        if (settings.value("Uart/LastPort").toString() != portName)
+            settings.setValue("Uart/LastPort", portName);
     }
 }

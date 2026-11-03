@@ -50,6 +50,11 @@ set(DOMAIN_CPP
     Storage/HistoryDb.cpp
     Storage/HistoryWriter.cpp
     Storage/HistoryReader.cpp
+    Storage/ValveSnapshotMapper.cpp
+    Storage/LegacyImport.cpp
+    Storage/SessionFolders.cpp
+    Storage/FieldOverrides.cpp
+    Storage/DataTransfer.cpp
     Storage/ChartImageStorage.cpp
     Storage/ChartSnapshotStorage.cpp
 
@@ -136,6 +141,11 @@ set(DOMAIN_HEADERS
     Storage/HistoryDb.h
     Storage/HistoryWriter.h
     Storage/HistoryReader.h
+    Storage/ValveSnapshotMapper.h
+    Storage/LegacyImport.h
+    Storage/SessionFolders.h
+    Storage/FieldOverrides.h
+    Storage/DataTransfer.h
     Storage/SettingsGroup.h
     Storage/Telemetry.h
     Storage/ChartImageStorage.h
@@ -242,6 +252,7 @@ set(GUI_CPP
     Gui/Setup/ValveWindow/Logic.cpp
     Gui/Setup/ValveWindow/Mapper.cpp
     Gui/Setup/ObjectWindow.cpp
+    Gui/WindowGeometry.cpp
     Gui/Setup/ValveWindow/ValveWindow.cpp
     Gui/Setup/SelectTests.cpp
     Gui/MainWindow/MainWindow.cpp
@@ -260,6 +271,7 @@ set(GUI_CPP
     Widgets/Combo/SearchableComboBox.cpp
     Widgets/ToleranceBar.cpp
     Widgets/Sparkline.cpp
+    Widgets/BackgroundRoleDelegate.cpp
     Widgets/Toast/ToastWidget.cpp
     Widgets/Toast/ToastManager.cpp
 )
@@ -279,6 +291,7 @@ set(GUI_HEADERS
     Gui/MainWindow/ReportGenerationWorker.h
     Gui/MainWindow/HistoryPresenter.h
     Gui/Setup/ObjectWindow.h
+    Gui/WindowGeometry.h
     Gui/Setup/ValveWindow/Logic.h
     Gui/Setup/ValveWindow/ValveEnums.h
     Gui/Setup/ValveWindow/ValveWindow.h
@@ -301,6 +314,7 @@ set(GUI_HEADERS
     Widgets/Combo/SearchableComboBox.h
     Widgets/ToleranceBar.h
     Widgets/Sparkline.h
+    Widgets/BackgroundRoleDelegate.h
     Widgets/Toast/ToastWidget.h
     Widgets/Toast/ToastManager.h
 )
@@ -315,6 +329,22 @@ set(GUI_UI
     Gui/TestSettings/StepTestSettings.ui
     Gui/TestSettings/CyclicTestSettings.ui
 )
+
+# ЭКСПЕРИМЕНТ: раскрывающаяся карточка линейности в Pass|Fail — сравнение способов расчёта
+# линейности характеристики (Domain/Tests/Main/Experimental,
+# Gui/MainWindow/Experimental). На официальный Pass|Fail, отчёт и базу не
+# влияет. Выключить: -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=OFF.
+option(MPIPLATFORM_EXPERIMENTAL_LINEARITY "Experimental linearity methods tab (main test)" ON)
+if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    list(APPEND DOMAIN_CPP Domain/Tests/Main/Experimental/LinearityLab.cpp)
+    list(APPEND DOMAIN_HEADERS Domain/Tests/Main/Experimental/LinearityLab.h)
+    list(APPEND GUI_CPP Gui/MainWindow/Experimental/LinearityLabPresenter.cpp
+                        Gui/MainWindow/Experimental/ExpandableCard.cpp)
+    list(APPEND GUI_HEADERS Gui/MainWindow/Experimental/LinearityLabPresenter.h
+                            Gui/MainWindow/Experimental/ExpandableCard.h)
+    list(APPEND GUI_UI Gui/MainWindow/Experimental/LinearityLabPanel.ui
+                       Gui/MainWindow/Experimental/LinearityInfoPopup.ui)
+endif()
 
 add_library(Domain STATIC
     ${DOMAIN_CPP}
@@ -355,6 +385,12 @@ endif()
 target_sources(Domain
   PRIVATE
 )
+
+# PUBLIC — Gui и сам исполняемый файл видят тот же флаг (#ifdef в MainWindow,
+# ImageService).
+if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    target_compile_definitions(Domain PUBLIC MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+endif()
 
 add_library(Report STATIC
     ${REPORT_CPP}
@@ -406,4 +442,4 @@ target_link_libraries(Gui
 target_compile_definitions(Gui
     PRIVATE
         MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-)
+)

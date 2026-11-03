@@ -45,3 +45,10 @@ QString ConclusionPresenter::summaryText() const
 {
     return m_ui->textEdit_conclusion_additionalNotes->toPlainText();
 }
+
+QString ConclusionPresenter::summaryTemplate() const
+{
+    auto* combo = m_ui->comboBox_conclusion_summaryTemplate;
+    const bool manual = (combo->currentIndex() == combo->count() - 1);
+    return manual ? QString() : combo->currentText();
+}

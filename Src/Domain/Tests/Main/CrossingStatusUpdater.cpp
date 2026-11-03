@@ -30,6 +30,7 @@ CrossingStatus::State stateFromMiss(double miss)
 
 }
 
+// [ОТ-15] Проверки Pass|Fail — docs/formulas/main_test.md
 void updateCrossingStatus(Telemetry& ts, const DeviceConfig& cfg)
 {
     const QString& valveStroke = cfg.valveStroke;

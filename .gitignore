@@ -8,6 +8,7 @@
 
 # Реальная БД (растёт данными тестов) — в git только Database/schema.sql
 Database/*.db
+Database/backup/
 
 
 ALL_BUILD*

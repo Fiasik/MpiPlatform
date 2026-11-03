@@ -2,6 +2,7 @@
 #include <QDateTime>
 
 namespace Domain::Tests::Main::Standard {
+// [ОТ-1] Шаги задания: прямой ход, затем обратный — docs/formulas/main_test.md
 void Algorithm::run()
 {
     const quint16 pointNumbers = m_params.pointNumbers;

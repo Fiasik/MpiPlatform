@@ -5,7 +5,6 @@
 #include "Domain/Mpi/Settings.h"
 
 #include <QEventLoop>
-#include <QThread>
 #include <QTimer>
 
 namespace Domain::Mpi {
@@ -25,148 +24,72 @@ constexpr quint8  kAll6Channels = 0x3F; // включить 6 каналов
 constexpr qreal kDacRange_mA = 24.0; // диапазон преобразования (0..24 мА)
 
 constexpr quint16 kDefaultAdcPollingMs = 50;
+
+constexpr qint64 kDoRefreshMs = 1000;
 }
 
 Device::Device(QObject *parent) : QObject{parent}
 {
     m_dac = new Domain::Measurement::Sensor(this);
 
-    m_uartReader = new Domain::Uart::Reader;
-    m_uartThread = new QThread(this);
-
-    connect(m_uartThread, &QThread::finished,
-            m_uartReader, &QObject::deleteLater);
-
-    m_uartReader->moveToThread(m_uartThread);
-    m_uartThread->start();
-
-    connect(this, &Domain::Mpi::Device::requestConnect,
-            m_uartReader, &Domain::Uart::Reader::autoConnect,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestVersion,
-            m_uartReader, &Domain::Uart::Reader::readVersion,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestSetDac,
-            m_uartReader, &Domain::Uart::Reader::setDacValue,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestSetAdcChannelMask,
-            m_uartReader, &Domain::Uart::Reader::setAdcChannels,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestSetAdcTimerArr,
-            m_uartReader, &Domain::Uart::Reader::setAdcTimerInterval,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestEnableAdc,
-            m_uartReader, &Domain::Uart::Reader::enableAdc,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestDisableAdc,
-            m_uartReader, &Domain::Uart::Reader::disableAdc,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestAdcRead,
-            m_uartReader, &Domain::Uart::Reader::readAdcValues,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestSetAdcPolling,
-            m_uartReader, &Domain::Uart::Reader::setAdcPolling,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::setDigitalOutput,
-            m_uartReader, &Domain::Uart::Reader::setDigitalOutput,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestDigitalOutputs,
-            m_uartReader, &Domain::Uart::Reader::readDigitalOutputs,
-            Qt::BlockingQueuedConnection);
-
-    connect(this, &Domain::Mpi::Device::requestDigitalInputs,
-            m_uartReader, &Domain::Uart::Reader::readDigitalInputs,
-            Qt::BlockingQueuedConnection);
+    m_uartReader = new Domain::Uart::Reader(this);
 
     connect(m_uartReader, &Domain::Uart::Reader::adcDataReady,
-            this, &Domain::Mpi::Device::onAdcData,
-            Qt::QueuedConnection);
-
-    connect(m_uartReader, &Domain::Uart::Reader::portOpened,
-            this, &Domain::Mpi::Device::onUartConnected,
-            Qt::QueuedConnection);
-
-    connect(m_uartReader, &Domain::Uart::Reader::portClosed,
-            this, &Domain::Mpi::Device::onUartDisconnected,
-            Qt::QueuedConnection);
+            this, &Domain::Mpi::Device::onAdcData);
 
     connect(m_uartReader, &Domain::Uart::Reader::portError,
-            this, &Domain::Mpi::Device::onUartError,
-            Qt::QueuedConnection);
+            this, &Domain::Mpi::Device::onUartError);
+
+    connect(m_uartReader, &Domain::Uart::Reader::deviceLost,
+            this, &Domain::Mpi::Device::onDeviceLost);
 
     // Reader::autoConnect() — единственный источник этого сигнала (готовое
     // текстовое сообщение, не код ошибки порта): один осмысленный тост
     // "устройство не найдено" после перебора всех портов, вместо потока
     // ошибок по каждому неудачному порту (см. onUartError/portError выше).
     connect(m_uartReader, &Domain::Uart::Reader::errorOccured,
-            this, &Domain::Mpi::Device::errorOccured,
-            Qt::QueuedConnection);
+            this, &Domain::Mpi::Device::errorOccured);
 }
 
-Device::~Device()
-{
-    m_uartThread->quit();
-    m_uartThread->wait();
-}
+Device::~Device() = default;
 
 bool Device::isConnect()
 {
-    emit requestConnect();
+    m_doCache.reset();
 
-    bool ok = false;
-    QString pn;
-
-    QMetaObject::invokeMethod(m_uartReader, "isConnected",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(bool, ok));
-
-    QMetaObject::invokeMethod(m_uartReader, "portName",
-                              Qt::BlockingQueuedConnection,
-                              Q_RETURN_ARG(QString, pn));
-
-    m_isConnected = ok;
-    if (ok) m_portName = pn;
-
+    const Domain::Mpi::Settings deviceSettings;
+    const bool ok = m_uartReader->autoConnect(deviceSettings.lastPortName());
+    if (ok) {
+        m_portName = m_uartReader->portName();
+        Domain::Mpi::Settings::saveLastPortName(m_portName);
+    }
     return ok;
 }
 
 quint8 Device::version()
 {
-    if (!m_isConnected)
+    if (!m_uartReader->isConnected())
         return 0;
-    quint8 version = 0;
-    emit requestVersion(version);
-    return version;
+    return m_uartReader->version();
 }
 
 quint8 Device::digitalOutputs() const
 {
-    if (!m_isConnected)
-        return 0;
+    // DO переключает само приложение, и тогда кэш сбрасывается (см.
+    // setDiscreteOutput), поэтому читать их из прибора на каждом сэмпле
+    // незачем. Раз в секунду — всё же сверка: вдруг прошивка переключит
+    // выход сама.
+    if (m_doCache && m_doCacheAge.isValid() && m_doCacheAge.elapsed() < kDoRefreshMs)
+        return *m_doCache;
 
-    quint8 DO = 0;
-    emit requestDigitalOutputs(DO);
-    return DO;
+    m_doCache = m_uartReader->readDigitalOutputs();
+    m_doCacheAge.start();
+    return m_doCache.value_or(0);
 }
 
 quint8 Device::digitalInputs() const
 {
-    if (!m_isConnected)
-        return 0;
-
-    quint8 DI = 0;
-    emit requestDigitalInputs(DI);
-    return DI;
+    return m_uartReader->readDigitalInputs().value_or(0);
 }
 
 Domain::Measurement::Sensor*
@@ -180,9 +103,9 @@ Device::sensorByAdc(quint8 adc) const
 
 bool Device::initialize()
 {
-    emit requestSetAdcPolling(false, kDefaultAdcPollingMs);
+    m_uartReader->setAdcPolling(false, kDefaultAdcPollingMs);
 
-    if (!m_isConnected) return false;
+    if (!m_uartReader->isConnected()) return false;
 
     qDeleteAll(m_sensors);
     m_sensors.clear();
@@ -195,12 +118,11 @@ bool Device::initialize()
     m_dacMin = kDacFullScale * (deviceSettings.dac().min - deviceSettings.dac().bias) / kDacRange_mA;
     m_dacMax = kDacFullScale * (deviceSettings.dac().max - deviceSettings.dac().bias) / kDacRange_mA;
 
-    emit requestSetAdcChannelMask(kAll6Channels);
-    emit requestEnableAdc();
+    m_uartReader->setAdcChannels(kAll6Channels);
+    m_uartReader->enableAdc();
 
-    QVector<quint16> adc;
     sleep(1000);
-    emit requestAdcRead(adc);
+    const QVector<quint16> adc = m_uartReader->readAdcValues().value_or(QVector<quint16>{});
 
     quint8 sensorNum = 0;
     quint8 channelMask = 0;
@@ -242,13 +164,13 @@ bool Device::initialize()
     }
 
     if (sensorNum == 0) {
-        emit requestDisableAdc();
+        m_uartReader->disableAdc();
         return true;
     }
 
-    emit requestSetAdcChannelMask(channelMask);
-    emit requestSetAdcTimerArr(40 / sensorNum);
-    emit requestSetAdcPolling(true, kDefaultAdcPollingMs);
+    m_uartReader->setAdcChannels(channelMask);
+    m_uartReader->setAdcTimerInterval(40 / sensorNum);
+    m_uartReader->setAdcPolling(true, kDefaultAdcPollingMs);
 
     return true;
 }
@@ -261,7 +183,7 @@ void Device::setDacRaw(quint16 value)
         value = m_dacMax;
 
     m_dac->setValue(value);
-    emit requestSetDac(m_dac->rawValue());
+    m_uartReader->setDacValue(m_dac->rawValue());
 }
 
 void Device::setDacValue(qreal value)
@@ -271,7 +193,7 @@ void Device::setDacValue(qreal value)
 
     if (newRaw != curRaw) {
         m_dac->setValue(newRaw);
-        emit requestSetDac(newRaw);
+        m_uartReader->setDacValue(newRaw);
     }
 }
 
@@ -311,10 +233,8 @@ Domain::Measurement::Sensor
 
 void Device::setDiscreteOutput(quint8 index, bool state)
 {
-    if (!m_isConnected)
-        return;
-
-    emit setDigitalOutput(index, state);
+    m_uartReader->setDigitalOutput(index, state);
+    m_doCache.reset();
 }
 
 void Device::sleep(quint16 msecs)
@@ -335,15 +255,10 @@ void Device::onAdcData(const QVector<quint16>& adc)
     }
 }
 
-void Device::onUartConnected(const QString portName)
+void Device::onDeviceLost()
 {
-    m_isConnected = true;
-    m_portName = portName;
-}
-
-void Device::onUartDisconnected()
-{
-    m_isConnected = false;
+    emit errorOccured("Нет связи с устройством");
+    emit connectionLost();
 }
 
 void Device::onUartError(QSerialPort::SerialPortError err)
@@ -354,7 +269,6 @@ void Device::onUartError(QSerialPort::SerialPortError err)
     case QSerialPort::PermissionError:
     case QSerialPort::WriteError:
     case QSerialPort::ReadError:
-        m_isConnected = false;
         emit errorOccured("Порт отключён");
         emit connectionLost();
         break;

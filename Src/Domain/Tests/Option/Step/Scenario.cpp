@@ -30,6 +30,7 @@ std::unique_ptr<BaseRunner> Scenario::createRunner()
         m_context.device,
         invertTask,
         m_params,
+        m_context.config.positionerScale,   // <-- изменено (новый аргумент)
         this
     );
 }

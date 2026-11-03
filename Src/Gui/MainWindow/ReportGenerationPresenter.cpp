@@ -9,6 +9,7 @@
 #include "Report/Saver.h"
 #include "Storage/ChartImageStorage.h"
 #include "Storage/ChartSnapshotStorage.h"
+#include "Storage/HistoryWriter.h"
 #include "Storage/Registry.h"
 #include "Storage/Telemetry.h"
 #include "Utils/NumberUtils.h"
@@ -55,44 +56,85 @@ void ReportGenerationPresenter::setPatternType(SelectTests::PatternType pattern)
     m_patternType = pattern;
 }
 
-void ReportGenerationPresenter::collectReportOverrides()
+void ReportGenerationPresenter::collectReportOverrides(Telemetry& telemetry,
+                                                      QVector<FieldOverrides::Record>& overrides) const
 {
+    using namespace FieldOverrides;
+
+    // Правка определяется ДО подстановки: сравнивается посчитанное значение
+    // с текстом в поле (см. FieldOverrides::detectNumber()).
+    const auto take = [&overrides](const std::optional<Record>& record) {
+        if (record)
+            overrides.append(*record);
+    };
+
     // MainTestRecord
-    if (m_telemetry.testMain) {
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionForceValue,
-                                m_telemetry.testMain->frictionForce);
+    if (telemetry.testMain) {
+        auto& main = *telemetry.testMain;
 
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionPercentValue,
-                                m_telemetry.testMain->frictionPercent);
+        take(detectNumber(kFrictionForce, main.frictionForce, 3,
+                          m_ui->lineEdit_resultsTable_frictionForceValue->text()));
+        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionForceValue, main.frictionForce);
 
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_dynamicErrorReal,
-                                m_telemetry.testMain->dynamicErrorReal);
+        take(detectNumber(kFrictionPercent, main.frictionPercent, 2,
+                          m_ui->lineEdit_resultsTable_frictionPercentValue->text()));
+        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionPercentValue, main.frictionPercent);
 
+        take(detectNumber(kDynamicErrorReal, main.dynamicErrorReal, 2,
+                          m_ui->lineEdit_resultsTable_dynamicErrorReal->text()));
+        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_dynamicErrorReal, main.dynamicErrorReal);
+
+        overrides += detectRange(kPressureLow, kPressureHigh, main.lowLimitPressure, main.highLimitPressure, 2,
+                                 m_ui->lineEdit_resultsTable_rangePressure->text());
         NumberUtils::readRange(m_ui->lineEdit_resultsTable_rangePressure,
-                               m_telemetry.testMain->lowLimitPressure,
-                               m_telemetry.testMain->highLimitPressure);
+                               main.lowLimitPressure, main.highLimitPressure);
 
-        NumberUtils::readRange(m_ui->lineEdit_resultsTable_driveRangeReal,
-                               m_telemetry.testMain->springLow,
-                               m_telemetry.testMain->springHigh);
+        overrides += detectRange(kSpringLow, kSpringHigh, main.springLow, main.springHigh, 2,
+                                 m_ui->lineEdit_resultsTable_driveRangeReal->text());
+        NumberUtils::readRange(m_ui->lineEdit_resultsTable_driveRangeReal, main.springLow, main.springHigh);
     }
 
     // Stroke
-    NumberUtils::readDouble(m_ui->lineEdit_resultsTable_strokeReal,
-               m_telemetry.valveStrokeRecord.real);
+    take(detectNumber(kValveStrokeReal, telemetry.valveStrokeRecord.real, 2,
+                      m_ui->lineEdit_resultsTable_strokeReal->text()));
+    NumberUtils::readDouble(m_ui->lineEdit_resultsTable_strokeReal, telemetry.valveStrokeRecord.real);
 
     // Stroke test
-    if (m_telemetry.testStroke) {
-        m_telemetry.testStroke->forwardTimeMs =
+    if (telemetry.testStroke) {
+        take(detectDuration(kStrokeForwardMs, telemetry.testStroke->forwardTimeMs,
+                            m_ui->lineEdit_resultsTable_strokeTest_forwardTime->text()));
+        telemetry.testStroke->forwardTimeMs =
             TimeUtils::textToMs(m_ui->lineEdit_resultsTable_strokeTest_forwardTime->text());
 
-        m_telemetry.testStroke->backwardTimeMs =
+        take(detectDuration(kStrokeBackwardMs, telemetry.testStroke->backwardTimeMs,
+                            m_ui->lineEdit_resultsTable_strokeTest_backwardTime->text()));
+        telemetry.testStroke->backwardTimeMs =
             TimeUtils::textToMs(m_ui->lineEdit_resultsTable_strokeTest_backwardTime->text());
     }
+}
 
-    // SupplyRecord
-    m_telemetry.supplyRecord.pressure_bar =
-        QString(m_ui->lineEdit_supplyPressure->text()).toDouble();
+void ReportGenerationPresenter::saveReportExtrasToHistory(qint64 sessionId)
+{
+    using Report::Html::ConclusionField;
+
+    const auto answers = m_conclusionPresenter->fieldAnswers();
+    ConclusionRecord conclusion;
+    conclusion.seatingZone = answers.value(ConclusionField::SeatingZone);
+    conclusion.positionerAdaptation = answers.value(ConclusionField::PositionerAdaptation);
+    conclusion.auxiliaryEquipment = answers.value(ConclusionField::AuxiliaryEquipment);
+    conclusion.frictionGraph = answers.value(ConclusionField::FrictionGraph);
+    conclusion.glandLeak = answers.value(ConclusionField::GlandLeak);
+    conclusion.summaryTemplate = m_conclusionPresenter->summaryTemplate();
+    conclusion.additionalNotes = m_conclusionPresenter->summaryText();
+
+    QVector<SparePartRecord> parts;
+    for (const QString& text : m_sparePartsPresenter->selectedParts()) {
+        // Позиция, которой нет в каталоге комбобокса, набрана оператором вручную.
+        const bool freeText = m_ui->comboBox_spareParts_search->findText(text, Qt::MatchExactly) < 0;
+        parts.append({text, freeText});
+    }
+
+    HistoryWriter::writeReportExtras(sessionId, conclusion, parts, m_lastOverrides);
 }
 
 void ReportGenerationPresenter::collectRegistryOverrides(
@@ -211,7 +253,14 @@ void ReportGenerationPresenter::saveCommentsPdfIfNeeded()
 
 std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareReportGeneration()
 {
-    collectReportOverrides();
+    // Давление питания в отчёт идёт из поля, а не из устройства — оно, как и
+    // раньше, заносится прямо в m_telemetry.
+    m_telemetry.supplyRecord.pressure_bar =
+        QString(m_ui->lineEdit_supplyPressure->text()).toDouble();
+
+    Telemetry reportTelemetry = m_telemetry;
+    m_lastOverrides.clear();
+    collectReportOverrides(reportTelemetry, m_lastOverrides);
 
     ReportGenerationWorker::Input input;
 
@@ -221,7 +270,7 @@ std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareR
 
     collectRegistryOverrides(input.object, input.valve, input.params);
 
-    input.telemetry = m_telemetry;
+    input.telemetry = reportTelemetry;
     input.materials = m_registry->materialsOfComponentParts();
     input.chartImages = m_chartImageStorage;
     input.chartData = m_chartSnapshotStorage;

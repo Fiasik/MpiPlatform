@@ -60,11 +60,11 @@ namespace Domain::Uart {
         close();
     }
 
-    void Port::open(const QString &portName)
+    bool Port::open(const QString &portName)
     {
         if (m_serialPort->isOpen()) {
             if (m_serialPort->portName() == portName)
-                return;
+                return true;
             close();
         }
 
@@ -73,12 +73,11 @@ namespace Domain::Uart {
         if (!m_serialPort->open(QSerialPort::ReadWrite)) {
             qWarning() << "[Port] open failed:" << portName << m_serialPort->errorString();
             emit errorOccurred(m_serialPort->error());
-            return;
+            return false;
         }
 
         m_serialPort->clear(QSerialPort::AllDirections);
-
-        emit portOpened(portName);
+        return true;
     }
 
     void Port::close()
@@ -91,6 +90,16 @@ namespace Domain::Uart {
         emit portClosed();
     }
 
+    bool Port::isOpen() const
+    {
+        return m_serialPort->isOpen();
+    }
+
+    QString Port::portName() const
+    {
+        return m_serialPort->portName();
+    }
+
     static bool readOneFrame(QSerialPort* sp, QByteArray& out, int totalTimeoutMs)
     {
         out.clear();
@@ -101,7 +110,10 @@ namespace Domain::Uart {
         t.start();
 
         while (t.elapsed() < totalTimeoutMs) {
-            if (!sp->waitForReadyRead(50))
+            // Ждём ровно остаток срока: тайм-аут теперь короткий, и шаг
+            // ожидания в 50 мс съедал бы заметную его часть сверх дедлайна.
+            const int leftMs = int(totalTimeoutMs - t.elapsed());
+            if (!sp->waitForReadyRead(qMax(1, leftMs)))
                 continue;
 
             buf += sp->readAll();
@@ -127,22 +139,20 @@ namespace Domain::Uart {
         return false;
     }
 
-    void Port::writeAndRead(const QByteArray &dataToWrite, QByteArray &readData)
+    std::optional<QByteArray> Port::transact(const QByteArray &request, int responseTimeoutMs)
     {
-        readData.clear();
-
         if (!m_serialPort || !m_serialPort->isOpen()) {
-            qWarning() << "[Port] writeAndRead while port is closed";
-            return;
+            qWarning() << "[Port] transact while port is closed";
+            return std::nullopt;
         }
 
         m_serialPort->clear(QSerialPort::Input);
 
-        const qint64 written = m_serialPort->write(dataToWrite);
+        const qint64 written = m_serialPort->write(request);
 
-        if (written != dataToWrite.size()) {
+        if (written != request.size()) {
             qWarning() << "[Port] write failed/partial:"
-                       << written << "/" << dataToWrite.size()
+                       << written << "/" << request.size()
                        << m_serialPort->errorString();
 
             // Отложенный close() той же причине, что и в errorOccurred выше —
@@ -151,7 +161,7 @@ namespace Domain::Uart {
             if (m_serialPort->error() == QSerialPort::ResourceError)
                 QMetaObject::invokeMethod(this, &Port::close, Qt::QueuedConnection);
 
-            return;
+            return std::nullopt;
         }
 
         if (!m_serialPort->waitForBytesWritten(100)) {
@@ -161,16 +171,18 @@ namespace Domain::Uart {
             if (m_serialPort->error() == QSerialPort::ResourceError)
                 QMetaObject::invokeMethod(this, &Port::close, Qt::QueuedConnection);
 
-            return;
+            return std::nullopt;
         }
 
         if (!m_serialPort->isOpen())
-            return;
+            return std::nullopt;
 
-        if (!readOneFrame(m_serialPort, readData, 500)) {
-            readData.clear();
+        QByteArray frame;
+        if (!readOneFrame(m_serialPort, frame, responseTimeoutMs)) {
             qWarning() << "[Port] response timeout";
-            return;
+            return std::nullopt;
         }
+
+        return frame;
     }
 }

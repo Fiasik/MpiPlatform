@@ -33,6 +33,12 @@ public:
         Widgets::Chart::ChartView* chartView);
     bool ensureDirectory();
 
+    // Забывает текущую папку сессии: следующий ensureDirectory() создаст
+    // новую по актуальному basePath. Нужен, когда по "Назад" сменилась
+    // позиция/объект — графики новой сессии не должны попасть в папку
+    // прежней. Пустая (ничего не сохранившая) папка убирается.
+    void resetDirectory();
+
     bool saveReport(const Excel::ReportData& report, const QString& templatePath);
 
     // Report::Pdf::Builder сам пишет PDF по пути (QtRPT::printPDF), в
@@ -57,6 +63,10 @@ private:
     QHash<QString, quint16> m_chartCounter;
 
 signals:
+    // Папка сессии создана (или выбрана вручную) — по ней сессию привязывают
+    // к sessions.folder_path.
+    void directoryCreated(const QString& absolutePath);
+
     bool question(const QString& title, const QString& text);
     void setDirectoryToSave(const QString& currentPath, QString& result);
 };

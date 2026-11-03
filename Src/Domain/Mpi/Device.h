@@ -1,9 +1,12 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QString>
 #include <QVector>
 #include <QSerialPort>
+
+#include <optional>
 
 namespace Domain::Measurement {
 class Sensor;
@@ -13,8 +16,6 @@ namespace Domain::Uart {
 class Reader;
 }
 
-
-class QThread;
 
 namespace Domain::Mpi {
 
@@ -49,48 +50,36 @@ public:
 
     void setDiscreteOutput(quint8 index, bool state);
 
-public slots:
-    void onAdcData(const QVector<quint16>& adc);
-    void onUartConnected(QString portName);
-    void onUartDisconnected();
-    void onUartError(QSerialPort::SerialPortError err);
-
 signals:
     void errorOccured(const QString& message);
 
     // Отдельно от errorOccured(QString): только для "настоящего" обрыва
     // связи (ResourceError/DeviceNotFoundError/PermissionError/WriteError/
-    // ReadError в onUartError), не для таймаута/прочих кодов. Program
+    // ReadError в onUartError) или когда прибор перестал отвечать на
+    // несколько команд подряд (onDeviceLost), не для разовых сбоев. Program
     // слушает это, чтобы прервать выполняющийся тест и заблокировать
     // запуск новых до повторной инициализации — errorOccured остаётся
     // просто текстом для тоста и само по себе никаких действий не влечёт.
     void connectionLost();
 
-    void requestConnect();
-    void requestVersion(quint8& version);
-    void requestSetDac(quint16 value);
-
-    void requestSetAdcPolling(bool enable, quint16 interval);
-    void requestSetAdcChannelMask(quint8 channels);
-    void requestSetAdcTimerArr(quint16 timer);
-    void requestAdcRead(QVector<quint16>& adc);
-    void requestEnableAdc();
-    void requestDisableAdc();
-
-    void setDigitalOutput(quint8 index, bool state);
-    void requestDigitalOutputs(quint8& DO) const;
-    void requestDigitalInputs(quint8& DI) const;
-
 private:
+    void onAdcData(const QVector<quint16>& adc);
+    void onUartError(QSerialPort::SerialPortError err);
+    void onDeviceLost();
+
     std::array<Domain::Measurement::Sensor*, 6> m_sensorByAdc {
         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr
     };
 
+    // Дочерний объект: живёт в потоке владельца Device и переезжает вместе
+    // с ним при moveToThread(), поэтому порт открывается уже в нужном потоке.
     Domain::Uart::Reader* m_uartReader = nullptr;
-    QThread* m_uartThread = nullptr;
 
-    bool m_isConnected = false;
     QString m_portName;
+
+    // Последнее прочитанное состояние DO и его возраст, см. digitalOutputs().
+    mutable std::optional<quint8> m_doCache;
+    mutable QElapsedTimer m_doCacheAge;
 
     QVector<Domain::Measurement::Sensor*> m_sensors;
     Domain::Measurement::Sensor* m_dac = nullptr;

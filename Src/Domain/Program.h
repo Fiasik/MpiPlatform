@@ -156,6 +156,7 @@ private:
 
     // init
     void waitForDacCycle();
+    bool initializationAborted();
     void finalizeInitialization();
     quint16 safeParkRaw() const;
 
@@ -189,8 +190,10 @@ private:
     bool m_isInitialized = false;
     bool m_isTestRunning = false;
     bool m_isChartDataPaused = false;
-    bool m_isDacStopRequested;
+    bool m_isDacStopRequested = false;
     bool m_shouldWaitForButton = false;
+    // Связь потеряна с начала текущей инициализации — см. initializationAborted().
+    bool m_connectionLost = false;
     QVector<bool> m_initialDoStates;
     QVector<bool> m_savedInitialDoStates;
 

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/Database">
+        <file alias="migrations/001_baseline.sql">Database/migrations/001_baseline.sql</file>
+        <file alias="migrations/002_valve_card_and_passfail.sql">Database/migrations/002_valve_card_and_passfail.sql</file>
+        <file alias="migrations/003_legacy_source_and_app_state.sql">Database/migrations/003_legacy_source_and_app_state.sql</file>
+    </qresource>
+</RCC>

@@ -1,6 +1,7 @@
 #include "OtherTestSettings.h"
 #include "ui_OtherTestSettings.h"
 
+#include "Domain/BuildVariant.h"
 #include "Storage/Registry.h"
 #include "Gui/Style/RoleStyler.h"
 
@@ -30,7 +31,18 @@ void OtherTestSettings::initUi()
 
 void OtherTestSettings::initDefaults()
 {
-    m_sequence = {25.0, 50.0, 75.0};
+    // У Ilim свои точки и шаги (взяты из отдельной сборки Ilim); у Standard и
+    // Ski — общие. Точки задаются здесь, шаги лежат списком в .ui и для Ilim
+    // подменяются ниже.
+    if constexpr (Domain::kIlimVariant) {
+        m_sequence = {50.0};
+
+        ui->listWidget_step->clear();
+        for (const char* step : {"5.0", "2.0", "1.0", "0.5"})
+            ui->listWidget_step->addItem(QString::fromLatin1(step));
+    } else {
+        m_sequence = {25.0, 50.0, 75.0};
+    }
 
     fillNumericList(ui->listWidget_value, m_sequence);
 

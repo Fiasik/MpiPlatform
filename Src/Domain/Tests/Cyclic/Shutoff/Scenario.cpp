@@ -37,7 +37,9 @@ void Scenario::onSample(const Measurement::Sample& sample)
     if (!m_context.telemetry.testCyclicShutoff)
         return;
 
-    const quint8 di = m_context.device.digitalInputs();
+    // DI уже прочитаны для этого сэмпла (Program::makeSample) — второй
+    // обмен с прибором ради того же байта не нужен.
+    const quint8 di = sample.diMask;
     if (di == m_lastDiStatus)
         return;
 

@@ -39,9 +39,15 @@ private:
     void reloadManufactories();
     void reloadDepartments();
 
+    // Пересобирает списки объект/цех/отделение из БД и выставляет значения.
+    void repopulate(const QString &object, const QString &manufactory,
+                    const QString &department);
+
     void refreshHistoryPanel();
     void showPositionCard(const QString &position);
 
 private slots:
     void ButtonClick();
+    void exportData();
+    void importData();
 };

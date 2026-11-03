@@ -61,9 +61,8 @@ void Runner::wireSpecificSignals(AbstractTestAlgorithm& base) {
 
     // GetDO(quint8&) — запрос-ответ через ссылку между потоком алгоритма
     // (см. BaseRunner::start()) и потоком Runner/Scenario. Обычный
-    // QueuedConnection тут не заполнил бы ссылку до возврата из emit —
-    // тот же приём, что и в Domain::Mpi::Device для чтения через Reader
-    // (Qt::BlockingQueuedConnection), а не как в оригинале MpiSki.
+    // QueuedConnection тут не заполнил бы ссылку до возврата из emit,
+    // поэтому Qt::BlockingQueuedConnection (а не как в оригинале MpiSki).
     connect(&t, &Algorithm::GetDO,
             this, &Runner::GetDO,
             Qt::BlockingQueuedConnection);

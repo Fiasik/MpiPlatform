@@ -3,12 +3,15 @@
 
 #include <QCalendarWidget>
 #include <QComboBox>
+#include <QFileDialog>
+#include <QGuiApplication>
 #include <QFormLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QShowEvent>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QTextCharFormat>
 #include <QTimer>
@@ -16,6 +19,8 @@
 #include "Domain/ValveEnums.h"
 #include "Gui/Style/Palette.h"
 #include "Gui/Style/RoleStyler.h"
+#include "Gui/WindowGeometry.h"
+#include "Storage/DataTransfer.h"
 #include "Storage/HistoryReader.h"
 #include "Storage/Registry.h"
 #include "Utils/StyledMessageBox.h"
@@ -85,6 +90,10 @@ ObjectWindow::ObjectWindow(QWidget *parent)
 
     connect(ui->pushButton_start, &QPushButton::clicked,
             this, &ObjectWindow::ButtonClick);
+    connect(ui->pushButton_exportData, &QPushButton::clicked,
+            this, &ObjectWindow::exportData);
+    connect(ui->pushButton_importData, &QPushButton::clicked,
+            this, &ObjectWindow::importData);
 }
 
 ObjectWindow::~ObjectWindow()
@@ -106,18 +115,20 @@ void ObjectWindow::showEvent(QShowEvent *event)
     // SW_MAXIMIZE) в Win32, а у QDialog по умолчанию нет флага
     // Qt::WindowMaximizeButtonHint (нет кнопки максимизации на рамке) —
     // Windows такой запрос на диалог тихо игнорирует, окно остаётся
-    // прежнего размера. showFullScreen() — другой режим (Qt::WindowFullScreen,
-    // сам меняет стиль окна и растягивает поверх экрана), от наличия
-    // maximize-box не зависит, работает и для QDialog.
+    // прежнего размера. showFullScreen(), которым это было заменено, на
+    // Windows оставляет панель задач ПОВЕРХ окна (на экране 1000x700 она
+    // закрывала нижнюю строку кнопок и справа сверху оставалась полоса), поэтому
+    // окно растягивается на рабочую область экрана вручную — см.
+    // Gui::fitToWorkArea() (то же, что делает ValveWindow).
     //
     // Отложено на singleShot(0), а не вызвано прямо тут же — тем же
     // приёмом, что MainWindow уже применяет в main.cpp: смена
-    // window state прямо в первом showEvent() на части платформ
+    // геометрии прямо в первом showEvent() на части платформ
     // применяется не всегда корректно, со следующей итерации цикла
     // событий — уже проверенно рабочий вариант.
     if (!m_fullScreenOnce) {
         m_fullScreenOnce = true;
-        QTimer::singleShot(0, this, [this] { showFullScreen(); });
+        QTimer::singleShot(0, this, [this] { Gui::fitToWorkArea(this); });
     }
 }
 
@@ -291,6 +302,32 @@ void ObjectWindow::reloadDepartments()
     m_repopulating = false;
 }
 
+void ObjectWindow::repopulate(const QString &object, const QString &manufactory,
+                              const QString &department)
+{
+    // Списки собираем из истории в БД (Database/mpiplatform.db, общая на
+    // все стенды — см. HistoryReader), текущее значение выставляем поверх —
+    // оно может быть и новым, которого в истории ещё нет.
+    m_repopulating = true;
+
+    ui->comboBox_object->clear();
+    ui->comboBox_object->addItems(HistoryReader::objects());
+    ui->comboBox_object->setCurrentText(object);
+
+    ui->comboBox_manufactory->clear();
+    ui->comboBox_manufactory->addItems(HistoryReader::manufactories(object));
+    ui->comboBox_manufactory->setCurrentText(manufactory);
+
+    ui->comboBox_department->clear();
+    ui->comboBox_department->addItems(
+        HistoryReader::departments(object, manufactory));
+    ui->comboBox_department->setCurrentText(department);
+
+    m_repopulating = false;
+
+    refreshHistoryPanel();
+}
+
 void ObjectWindow::LoadFromReg(Registry *registry)
 {
     m_registry = registry;
@@ -299,29 +336,67 @@ void ObjectWindow::LoadFromReg(Registry *registry)
 
     const auto& o = m_registry->objectInfo();
 
-    // Списки собираем из истории в БД (Database/mpiplatform.db, общая на
-    // все стенды — см. HistoryReader), текущее значение выставляем поверх —
-    // оно может быть и новым, которого в истории ещё нет.
-    m_repopulating = true;
-
-    ui->comboBox_object->clear();
-    ui->comboBox_object->addItems(HistoryReader::objects());
-    ui->comboBox_object->setCurrentText(o.object);
-
-    ui->comboBox_manufactory->clear();
-    ui->comboBox_manufactory->addItems(HistoryReader::manufactories(o.object));
-    ui->comboBox_manufactory->setCurrentText(o.manufactory);
-
-    ui->comboBox_department->clear();
-    ui->comboBox_department->addItems(
-        HistoryReader::departments(o.object, o.manufactory));
-    ui->comboBox_department->setCurrentText(o.department);
-
-    m_repopulating = false;
-
     ui->lineEdit_FIO->setText(o.FIO);
 
-    refreshHistoryPanel();
+    repopulate(o.object, o.manufactory, o.department);
+}
+
+void ObjectWindow::exportData()
+{
+    const QString start =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString dir = QFileDialog::getExistingDirectory(
+        this, tr("Куда сохранить экспорт данных"), start, QFileDialog::ShowDirsOnly);
+    if (dir.isEmpty())
+        return;
+
+    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+    const DataTransfer::ExportResult result = DataTransfer::exportAll(dir);
+    QGuiApplication::restoreOverrideCursor();
+
+    if (result.ok)
+        StyledMessageBox::information(this, tr("Экспорт данных"), result.summary());
+    else
+        StyledMessageBox::warning(this, tr("Экспорт данных"), result.summary());
+}
+
+void ObjectWindow::importData()
+{
+    const QString start =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString dir = QFileDialog::getExistingDirectory(
+        this,
+        tr("Папка экспорта или папка другой установки приложения (с подпапкой Database)"),
+        start, QFileDialog::ShowDirsOnly);
+    if (dir.isEmpty())
+        return;
+
+    if (StyledMessageBox::question(
+            this, tr("Импорт данных"),
+            tr("Данные из выбранной папки будут добавлены в вашу базу. Уже имеющиеся "
+               "данные не удаляются и не перезаписываются; перед импортом будет "
+               "сохранена копия вашей базы.\n\nПродолжить?"),
+            QMessageBox::Yes) != QMessageBox::Yes)
+        return;
+
+    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+    const DataTransfer::ImportResult result = DataTransfer::importFrom(dir);
+    QGuiApplication::restoreOverrideCursor();
+
+    if (!result.ok) {
+        StyledMessageBox::warning(this, tr("Импорт данных"), result.summary());
+        return;
+    }
+
+    StyledMessageBox::information(this, tr("Импорт данных"), result.summary());
+
+    // Списки объектов/цехов/позиций могли пополниться — обновляем, не теряя
+    // того, что оператор уже ввёл в форму.
+    if (result.sessionsAdded > 0 && m_registry) {
+        repopulate(ui->comboBox_object->currentText(),
+                   ui->comboBox_manufactory->currentText(),
+                   ui->comboBox_department->currentText());
+    }
 }
 
 void ObjectWindow::saveToRegistry()

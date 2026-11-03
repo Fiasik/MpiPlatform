@@ -26,6 +26,9 @@ public:
     QMap<Report::Html::ConclusionField, QString> fieldAnswers() const;
     QString summaryText() const;
 
+    // Текст выбранного шаблона заключения; пусто — выбран "Ручной ввод".
+    QString summaryTemplate() const;
+
 private:
     Ui::MainWindow* m_ui;
 };

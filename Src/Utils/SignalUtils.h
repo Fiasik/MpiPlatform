@@ -6,7 +6,11 @@
 
 namespace SignalUtils
 {
-
+inline qreal
+farCurrent(PositionerScale scale)
+{
+    return scale == PositionerScale::Reverse ? 4.0 : 20.0;
+}
 // invert для calcPercent()/calcCurrent() ниже — это два независимых повода
 // поменять направление мА->%, которые надо совместить, а не два имени одной
 // и той же вещи:

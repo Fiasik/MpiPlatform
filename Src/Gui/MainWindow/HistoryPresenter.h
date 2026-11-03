@@ -42,10 +42,29 @@ public:
 
     void setRegistry(Registry* registry);
 
+    // Сессия, которая идёт ПРЯМО СЕЙЧАС (создана при старте приложения или
+    // после "Назад" при смене позиции): её удалять нельзя — в неё ещё пишутся
+    // результаты тестов.
+    void setCurrentSessionId(qint64 sessionId);
+
+    // Выделение в списке изменилось — обновляет доступность "Удалить выбранные".
+    void onSelectionChanged();
+
+    // "Удалить выбранные…": подтверждение, безвозвратное удаление сессий с
+    // результатами (HistoryWriter::deleteSessions()), затем — отдельным
+    // вопросом — удаление папок с графиками/отчётами, на которые больше никто
+    // не ссылается.
+    void deleteSelectedSessions();
+
     // Перечитывает sessions текущей позиции из БД и перестраивает список.
     void refresh();
 
     void onSessionItemClicked(QListWidgetItem* item);
+
+    // Кнопка "Сравнить две последние": отмечает галочками две самые новые
+    // сессии позиции (и снимает остальные) и обновляет сравнение. Ничего не
+    // делает, если сессий меньше двух.
+    void compareLatestTwo();
 
     // changedItem — элемент, чья галочка только что переключилась (см.
     // MainWindow::setThemeManager()/конструктор — сигнатура itemChanged).
@@ -128,6 +147,10 @@ private:
     // несёт ещё позиции на графике живого теста/метки времени, здесь не
     // нужные). См. stepRowsFor()/responseRowsFor()/resolutionRowsFor().
     struct StepCompareRow {
+        // from/to — те же, что в step_result_rows: по ним определяется
+        // направление шага (to > from — восходящее, to < from — нисходящее).
+        // Ключ сравнения внутри направления — toPct.
+        double fromPct = qQNaN();
         double toPct = qQNaN();
         double tValueMs = qQNaN();
         double overshootPct = qQNaN();
@@ -136,6 +159,26 @@ private:
         double selectedPercent = qQNaN();
         double actualPercent = qQNaN();
         double errorPercent = qQNaN();
+        // Допустимая ошибка на шаг (у Чувствительности есть, у Разрешающей
+        // способности в БД пусто) и вердикт сессии по этому шагу (-1 —
+        // неизвестно, 0 — не пройден, 1 — пройден).
+        double allowedPercent = qQNaN();
+        int isOk = -1;
+    };
+    // Одна точка для блока "график+таблица" (см. updateOverlayBlock()): x —
+    // ключ сравнения между сессиями, y — значение на графике и в колонке
+    // "Δ", allowed/ok — только для таблицы (ok: -1 неизвестно, 0 не пройден,
+    // 1 пройден).
+    // Как красить колонку "Δ" в таблицах сравнения: LowerIsBetter — меньше
+    // лучше (время, ошибка): уменьшение зелёным, рост красным; CloserToZero —
+    // лучше то, что ближе к нулю по модулю (перерегулирование: и "перелёт", и
+    // "недоход" — отклонение от цели); None — не красить.
+    enum class DeltaColoring { None, LowerIsBetter, CloserToZero };
+    struct OverlayRow {
+        double x = qQNaN();
+        double y = qQNaN();
+        double allowed = qQNaN();
+        int ok = -1;
     };
 
     void loadSessions();
@@ -146,25 +189,45 @@ private:
     // полной пересборки списка).
     QString sessionListItemText(const SessionEntry& e) const;
     void setActiveSession(qint64 sessionId);
+    // Заключение, ЗИП и ручные правки значений АКТИВНОЙ сессии (то, что
+    // оператор сделал на вкладке отчёта, см. HistoryWriter::writeReportExtras()).
+    // Рамка скрыта, если по сессии ничего не сохранено.
+    void updateReportExtras();
+    void updateDeleteButton();
     void updateCards();
     void updateChipsAndTitle();
     void updateCompareTable();
+    // Всё, что имеет смысл только при двух отмеченных сессиях: блоки
+    // сравнения на вкладках "Основной" и "Тест полного хода" прячутся,
+    // вкладки Шаговый/Чувствительность/Разрешающая способность
+    // блокируются (с подсказкой на вкладке), а вместо содержимого
+    // остаётся текст-подсказка. Зовётся из updateCompareTable().
+    void applyCompareAvailability(bool ready);
     // direction: "up"/"down" — см. CHECK-констрейнт столбца direction в
     // response_result_rows/resolution_result_rows (Database/schema.sql).
     QVector<StepCompareRow> stepRowsFor(qint64 sessionId) const;
     QVector<PercentErrorRow> responseRowsFor(qint64 sessionId, const QString& direction) const;
     QVector<PercentErrorRow> resolutionRowsFor(qint64 sessionId, const QString& direction) const;
-    // Общий код для всех 6 блоков "график+таблица" (Шаговый x2,
+    // Общий код для всех 8 блоков "график+таблица" (Шаговый x4 —
+    // перерегулирование и время по восходящему/нисходящему движению,
     // Чувствительность x2, Разрешающая способность x2) — см. .cpp, строит
     // объединение X-ключей обеих сессий, заполняет ChartView (2 серии,
     // addPoint) и QTableWidget (код сам задаёт заголовки колонок — они
     // зависят от дат сессий, см. tableWidget_stepResults).
     void updateOverlayBlock(Widgets::Chart::ChartView* chart, QTableWidget* table,
                             const QString& xLabel, const QString& yLabel, const QString& yUnit,
-                            const QVector<QPair<double, double>>& rowsA,
-                            const QVector<QPair<double, double>>& rowsB,
-                            const QString& dateA, const QString& dateB) const;
+                            const QVector<OverlayRow>& rowsA,
+                            const QVector<OverlayRow>& rowsB,
+                            const QString& dateA, const QString& dateB,
+                            const QString& yLabelB = QString(),
+                            DeltaColoring coloring = DeltaColoring::None) const;
     void updateStepComparison();
+    // T (в процентах хода), по которому шаговый тест считал время
+    // переключения — разное у разных сессий (по умолчанию 86 %, раньше 63 %),
+    // и сравнивать времена при разном T нельзя. NaN — нет в БД.
+    double stepTestValueFor(qint64 sessionId) const;
+    // Гистерезис ТЧР (response_results.hysteresis), NaN — нет в БД.
+    double responseHysteresisFor(qint64 sessionId) const;
     // Общее тело updateResponseComparison()/updateResolutionComparison() —
     // отличаются только парой виджетов (Up/Down) и тем, откуда брать строки
     // (responseRowsFor/resolutionRowsFor), остальная логика (даты сессий,
@@ -219,6 +282,7 @@ private:
     // старое-новое) — список слева показывается в обратном порядке.
     QVector<SessionEntry> m_sessions;
     qint64 m_activeSessionId = -1;
+    qint64 m_currentSessionId = -1;
 
     // Ссылки на .ui-виджеты одной тренд-карточки — заголовок и единица
     // измерения в их число не входят, это статичный текст прямо в .ui (role=
@@ -234,7 +298,7 @@ private:
     };
     QVector<TrendWidgets> m_trendCards;
 
-    // Все 6 графиков сравнения (Шаговый x2, Чувствительность x2, Разрешающая
+    // Все 8 графиков сравнения (Шаговый x4, Чувствительность x2, Разрешающая
     // способность x2) — только для applyPalette(), сами графики настраиваются
     // один раз в конструкторе (addAxis/addSeries), см. updateOverlayBlock().
     QVector<Widgets::Chart::ChartView*> m_compareCharts;

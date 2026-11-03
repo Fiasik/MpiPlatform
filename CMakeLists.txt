@@ -128,6 +128,7 @@ qt_add_executable(${PROJECT_NAME}
     fonts.qrc
     translations.qrc
     style.qrc
+    database.qrc
     ${MPIPLATFORM_WIN32_RESOURCES}
 )
 
@@ -242,6 +243,14 @@ option(MPIPLATFORM_BUILD_VERIFY_THEME "Build throwaway MainWindow styling diagno
 
 if(MPIPLATFORM_BUILD_VERIFY_THEME)
     add_subdirectory(experiments/verify-theme)
+endif()
+
+# ЭКСПЕРИМЕНТ: превью раскрывающейся карточки линейности на настоящем
+# MainWindow без устройства (нужен MPIPLATFORM_EXPERIMENTAL_LINEARITY=ON).
+option(MPIPLATFORM_BUILD_LINEARITY_PREVIEW "Build experimental linearity card preview on synthetic/archive data (experiments/linearity-preview)" OFF)
+
+if(MPIPLATFORM_BUILD_LINEARITY_PREVIEW AND MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    add_subdirectory(experiments/linearity-preview)
 endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

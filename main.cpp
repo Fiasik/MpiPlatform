@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QFontDatabase>
 #include <QIcon>
+#include <QMessageBox>
 #include <QStyleFactory>
 #include <QTimer>
 #include <QtPlugin>
@@ -12,7 +13,9 @@
 #include "Src/Gui/Setup/ObjectWindow.h"
 #include "Src/Gui/Style/ThemeManager.h"
 #include "Src/Storage/Registry.h"
+#include "Src/Storage/HistoryDb.h"
 #include "Src/Storage/HistoryWriter.h"
+#include "Src/Storage/LegacyImport.h"
 #include "Src/Gui/Setup/ValveWindow/ValveWindow.h"
 #include "Src/Domain/BuildVariant.h"
 #include "Src/Storage/AppSettings.h"
@@ -53,23 +56,6 @@ void loadApplicationFonts()
         if (QFontDatabase::addApplicationFont(path) == -1)
             qWarning() << "Не удалось загрузить шрифт:" << path;
     }
-}
-
-// SelectTests::PatternType — перечисление GUI-диалога выбора теста, а
-// HistoryWriter (Storage/Domain) не должен от него зависеть — поэтому
-// стрингификация тут, на стороне вызывающего кода, а не внутри самого
-// HistoryWriter (см. HistoryWriter.h).
-QString patternTypeToString(SelectTests::PatternType pattern)
-{
-    switch (pattern) {
-    case SelectTests::Pattern_C_SOVT: return QStringLiteral("C_SOVT");
-    case SelectTests::Pattern_B_SACVT: return QStringLiteral("B_SACVT");
-    case SelectTests::Pattern_C_SACVT: return QStringLiteral("C_SACVT");
-    case SelectTests::Pattern_B_CVT: return QStringLiteral("B_CVT");
-    case SelectTests::Pattern_C_CVT: return QStringLiteral("C_CVT");
-    case SelectTests::Pattern_None: return QStringLiteral("None");
-    }
-    return QStringLiteral("None");
 }
 
 }
@@ -120,6 +106,24 @@ int main(int argc, char *argv[])
     if (qtTranslator.load("qt_ru.qm", ":/translations"))
         a.installTranslator(&qtTranslator);
 
+    // Схема БД истории создаётся/обновляется здесь, до первого окна: если
+    // база создана более новой версией приложения или не открылась, причину
+    // нужно показать пользователю, а не только записать в лог — карточка
+    // клапана теперь живёт в БД, без неё окна ввода работать не могут.
+    const HistoryDb::SchemaResult& schema = HistoryDb::ensureSchema();
+    if (!HistoryDb::isUsable(schema.status)) {
+        QMessageBox::critical(nullptr, QObject::tr("База данных"), schema.message);
+        return 1;
+    }
+
+    // Старые карточки из QSettings/реестра -> БД (один раз на базу). Ошибка не
+    // фатальна: флаг не выставится и следующий запуск повторит попытку.
+    const LegacyImport::Result legacy = LegacyImport::runOnce();
+    if (!legacy.error.isEmpty())
+        qWarning().noquote() << "Перенос старых карточек не удался:" << legacy.error;
+    else if (legacy.ran)
+        qInfo().noquote() << "Перенесено старых карточек в БД:" << legacy.imported;
+
     Registry registry;
 
     ObjectWindow objectWindow;
@@ -150,7 +154,7 @@ int main(int argc, char *argv[])
     // логируется, тест обязан продолжаться в любом случае (-1 тут просто
     // означает "в этой сессии допуски в историю не запишутся").
     const qint64 sessionId = HistoryWriter::beginSession(
-        registry, Domain::VariantToString(Domain::kVariant), patternTypeToString(selectedPattern));
+        registry, Domain::VariantToString(Domain::kVariant), SelectTests::patternKey(selectedPattern));
 
     MainWindow mainWindow;
     mainWindow.setPatternType(selectedPattern);

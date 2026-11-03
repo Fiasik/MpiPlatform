@@ -1,5 +1,6 @@
 #include "HistoryReader.h"
 #include "HistoryDb.h"
+#include "ValveSnapshotMapper.h"
 
 #include <QDebug>
 #include <QSqlDatabase>
@@ -15,51 +16,6 @@ namespace {
 // отдельную обёртку только ради префикса лога не стали — не настолько
 // ценная информация, чтобы ради неё держать лишний слой.
 using HistoryDb::withConnection;
-
-// Обратные к strokeMovementKey()/safePositionKey()/driveTypeKey() из
-// HistoryWriter.cpp — эти три поля под CHECK-констрейнтом в схеме, ключи
-// стабильны. positioner_type/material_stuffing_box_seal в БД — свободный
-// человекочитаемый TEXT (см. комментарий в схеме), поэтому ниже для них
-// только приближённый обратный подбор по известным ToString()-текстам —
-// для read-only предпросмотра карточки точнее не требуется.
-StrokeMovement strokeMovementFromKey(const QString& key)
-{
-    return key == QStringLiteral("rotary") ? StrokeMovement::Rotary : StrokeMovement::Linear;
-}
-
-SafePosition safePositionFromKey(const QString& key)
-{
-    return key == QStringLiteral("normally_open")
-        ? SafePosition::NormallyOpen
-        : SafePosition::NormallyClosed;
-}
-
-DriveType driveTypeFromKey(const QString& key)
-{
-    if (key == QStringLiteral("single_sided"))
-        return DriveType::SingleSided;
-    if (key == QStringLiteral("double_acting"))
-        return DriveType::DoubleActing;
-    return DriveType::SpringDiaphragm;
-}
-
-PositionerType positionerTypeFromText(const QString& text)
-{
-    if (text == ValveEnums::PositionerTypeToString(PositionerType::EPP))
-        return PositionerType::EPP;
-    if (text == ValveEnums::PositionerTypeToString(PositionerType::PP))
-        return PositionerType::PP;
-    if (text == ValveEnums::PositionerTypeToString(PositionerType::IPConverter))
-        return PositionerType::IPConverter;
-    return PositionerType::Intelligent;
-}
-
-StuffingBoxSeal stuffingBoxSealFromText(const QString& text)
-{
-    return text == ValveEnums::StuffingBoxSealToString(StuffingBoxSeal::Graphite)
-        ? StuffingBoxSeal::Graphite
-        : StuffingBoxSeal::PTFE;
-}
 
 // site_id самой свежей сессии этой позиции — общий первый шаг для
 // valveInfoAt()/materialsAt() (обеим нужен один и тот же session_id).
@@ -225,53 +181,8 @@ bool HistoryReader::valveInfoAt(const QString& object, const QString& manufactor
             return;
         }
 
+        ValveSnapshotMapper::read(q, out);
         out.positionNumber = position;
-        out.manufacturer = q.value(QStringLiteral("manufacturer")).toString();
-        out.valveModel = q.value(QStringLiteral("valve_model")).toString();
-        out.serialNumber = q.value(QStringLiteral("serial_number")).toString();
-        if (!q.value(QStringLiteral("dn_mm")).isNull())
-            out.DN = QString::number(q.value(QStringLiteral("dn_mm")).toDouble());
-        if (!q.value(QStringLiteral("pn_bar")).isNull())
-            out.PN = QString::number(q.value(QStringLiteral("pn_bar")).toDouble());
-        out.positionerModel = q.value(QStringLiteral("positioner_model")).toString();
-        out.solenoidValveModel = q.value(QStringLiteral("solenoid_valve_model")).toString();
-        out.limitSwitchModel = q.value(QStringLiteral("limit_switch_model")).toString();
-        out.positionSensorModel = q.value(QStringLiteral("position_sensor_model")).toString();
-        out.strokeMovement =
-            strokeMovementFromKey(q.value(QStringLiteral("stroke_movement")).toString());
-        out.valveStroke = q.value(QStringLiteral("valve_stroke")).toString();
-        out.driveModel = q.value(QStringLiteral("drive_model")).toString();
-        out.safePosition = safePositionFromKey(q.value(QStringLiteral("safe_position")).toString());
-        out.driveType = driveTypeFromKey(q.value(QStringLiteral("drive_type")).toString());
-        out.positionerType =
-            positionerTypeFromText(q.value(QStringLiteral("positioner_type")).toString());
-        out.driveRangeLow = q.value(QStringLiteral("drive_range_low")).toDouble();
-        out.driveRangeHigh = q.value(QStringLiteral("drive_range_high")).toDouble();
-        out.driveDiameter = q.value(QStringLiteral("drive_diameter")).toDouble();
-        out.diameterPulley = q.value(QStringLiteral("diameter_pulley")).toDouble();
-        out.materialStuffingBoxSeal = stuffingBoxSealFromText(
-            q.value(QStringLiteral("material_stuffing_box_seal")).toString());
-
-        out.crossingLimits.frictionEnabled =
-            q.value(QStringLiteral("crossing_friction_enabled")).toInt() != 0;
-        out.crossingLimits.frictionCoefLower =
-            q.value(QStringLiteral("crossing_friction_lower")).toDouble();
-        out.crossingLimits.frictionCoefUpper =
-            q.value(QStringLiteral("crossing_friction_upper")).toDouble();
-        out.crossingLimits.linearCharacteristicEnabled =
-            q.value(QStringLiteral("crossing_linear_characteristic_enabled")).toInt() != 0;
-        out.crossingLimits.linearCharacteristic =
-            q.value(QStringLiteral("crossing_linear_characteristic")).toDouble();
-        out.crossingLimits.valveStrokeEnabled =
-            q.value(QStringLiteral("crossing_valve_stroke_enabled")).toInt() != 0;
-        out.crossingLimits.valveStroke =
-            q.value(QStringLiteral("crossing_valve_stroke")).toDouble();
-        out.crossingLimits.springEnabled =
-            q.value(QStringLiteral("crossing_spring_enabled")).toInt() != 0;
-        out.crossingLimits.springLower =
-            q.value(QStringLiteral("crossing_spring_lower")).toDouble();
-        out.crossingLimits.springUpper =
-            q.value(QStringLiteral("crossing_spring_upper")).toDouble();
 
         found = true;
     });

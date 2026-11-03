@@ -5,6 +5,7 @@
 #include "ui_ValveWindow.h"
 #include "Gui/Style/RoleStyler.h"
 #include "Gui/Style/Palette.h"
+#include "Gui/WindowGeometry.h"
 #include "ValidatorFactory/ValidatorFactory.h"
 #include "Utils/Shortcuts/TabBinder.h"
 #include "Utils/StyledMessageBox.h"
@@ -240,15 +241,10 @@ QStringList ValveWindow::missingCriticalFields() const
 
 void ValveWindow::setupWindowGeometry()
 {
-    QTimer::singleShot(0, this, [this]{
-        auto *scr = screen();
-        if (!scr)
-            scr = QGuiApplication::primaryScreen();
-
-        const QRect r = scr->availableGeometry();
-        setWindowState(Qt::WindowNoState);
-        setGeometry(r);
-    });
+    // Gui::fitToWorkArea() учитывает заголовок/рамку окна: прежний
+    // setGeometry(рабочая область) задавал размер клиентской части, из-за чего
+    // окно съезжало вниз и кнопки внизу оказывались под панелью задач.
+    QTimer::singleShot(0, this, [this]{ Gui::fitToWorkArea(this); });
 }
 
 void ValveWindow::bindTabShortcut(int key, QWidget* tab)
@@ -500,7 +496,6 @@ void ValveWindow::readMaterialsFromUi(MaterialsOfComponentParts& m)
     m.stuffingBoxSeal = ui->comboBox_materialStuffingBoxSeal->currentText();
 
     m_registry->materialsOfComponentParts() = m;
-    m_registry->saveMaterialsOfComponentParts();
 }
 
 void ValveWindow::loadMaterialsToUi(const MaterialsOfComponentParts& m)
@@ -531,9 +526,11 @@ void ValveWindow::loadMaterialsToUi(const MaterialsOfComponentParts& m)
 
 void ValveWindow::saveValveInfo()
 {
+    // Карточка и материалы живут в БД истории (HistoryWriter), а не в
+    // QSettings: туда их пишет main.cpp (первая сессия) и MainWindow::
+    // backClicked() (правка по "Назад"), здесь только рабочая копия.
     m_local = Mapper::read(*this);
     m_registry->valveInfo() = m_local;
-    m_registry->saveValveInfo();
 }
 
 void ValveWindow::positionChanged(const QString &position)

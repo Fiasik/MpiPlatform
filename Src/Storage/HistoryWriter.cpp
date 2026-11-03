@@ -1,5 +1,7 @@
 #include "HistoryWriter.h"
 #include "HistoryDb.h"
+#include "ValveSnapshotMapper.h"
+#include "SessionFolders.h"
 #include "Registry.h"
 #include "Telemetry.h"
 #include "Domain/Tests/Stroke/Result.h"
@@ -18,45 +20,6 @@
 namespace {
 
 using HistoryDb::withConnection;
-
-// Значения колонок valve_snapshots заданы CHECK-констрейнтом в схеме
-// (см. Database/schema.sql) — латиница/snake_case, а не те же строки, что
-// ValveEnums::...ToString() отдаёт для интерфейса (там русский текст для
-// человека). Три enum'а ниже под CHECK, остальные (positioner_type,
-// material_stuffing_box_seal) свободный TEXT — для них человекочитаемый
-// ToString() из ValveEnums.h вполне подходит как есть.
-QString strokeMovementKey(StrokeMovement v)
-{
-    return v == StrokeMovement::Rotary ? QStringLiteral("rotary") : QStringLiteral("linear");
-}
-
-QString safePositionKey(SafePosition v)
-{
-    return v == SafePosition::NormallyOpen
-        ? QStringLiteral("normally_open")
-        : QStringLiteral("normally_closed");
-}
-
-QString driveTypeKey(DriveType v)
-{
-    switch (v) {
-    case DriveType::SingleSided: return QStringLiteral("single_sided");
-    case DriveType::DoubleActing: return QStringLiteral("double_acting");
-    case DriveType::SpringDiaphragm: return QStringLiteral("spring_diaphragm");
-    }
-    return QStringLiteral("spring_diaphragm");
-}
-
-// DN/PN в ValveInfo — свободный QString (не всегда чистое число, см.
-// находки по историческому архиву в соседнем ML-проекте: "50 / 40",
-// "NPS 3" и т.п.). Нераспознанное — SQL NULL, а не 0 — 0 здесь означало бы
-// "нулевой диаметр", а не "не удалось разобрать/не указано".
-QVariant parseOptionalDouble(const QString& s)
-{
-    bool ok = false;
-    const double v = s.toDouble(&ok);
-    return ok ? QVariant(v) : QVariant();
-}
 
 qint64 findOrInsertSite(QSqlDatabase& db, const ObjectInfo& info)
 {
@@ -122,6 +85,37 @@ qint64 findOrInsertPosition(QSqlDatabase& db, qint64 siteId, const QString& posi
     return insert.lastInsertId().toLongLong();
 }
 
+// OR REPLACE — у сессии материалов может ещё не быть (старые строки) либо
+// они уже есть и их надо перезаписать (правка карточки по "Назад").
+bool upsertMaterials(QSqlDatabase& db, qint64 sessionId, const MaterialsOfComponentParts& m,
+                     QString* error)
+{
+    QSqlQuery q(db);
+    q.prepare(QStringLiteral(
+        "INSERT OR REPLACE INTO valve_snapshot_materials("
+        "session_id, plunger, saddle, cap, corpus, ball, disk, shaft, stock, "
+        "guide_sleeve, stuffing_box_seal, cv"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"));
+
+    q.addBindValue(sessionId);
+    q.addBindValue(m.plunger);
+    q.addBindValue(m.saddle);
+    q.addBindValue(m.cap);
+    q.addBindValue(m.corpus);
+    q.addBindValue(m.ball);
+    q.addBindValue(m.disk);
+    q.addBindValue(m.shaft);
+    q.addBindValue(m.stock);
+    q.addBindValue(m.guideSleeve);
+    q.addBindValue(m.stuffingBoxSeal);
+    q.addBindValue(m.CV);
+
+    if (q.exec())
+        return true;
+    *error = q.lastError().text();
+    return false;
+}
+
 }
 
 qint64 HistoryWriter::beginSession(const Registry& registry, const QString& variant, const QString& pattern)
@@ -132,7 +126,6 @@ qint64 HistoryWriter::beginSession(const Registry& registry, const QString& vari
             if (db.transaction()) {
                 const ObjectInfo& objectInfo = registry.objectInfo();
                 const ValveInfo& valveInfo = registry.valveInfo();
-                const CrossingLimits& limits = valveInfo.crossingLimits;
 
                 const qint64 siteId = findOrInsertSite(db, objectInfo);
                 const qint64 positionId = siteId >= 0
@@ -143,12 +136,13 @@ qint64 HistoryWriter::beginSession(const Registry& registry, const QString& vari
                     QSqlQuery insertSession(db);
                     insertSession.prepare(QStringLiteral(
                         "INSERT INTO sessions(position_id, ts, variant, pattern, operator, schema_version, source) "
-                        "VALUES (?, ?, ?, ?, ?, 1, 'live')"));
+                        "VALUES (?, ?, ?, ?, ?, ?, 'live')"));
                     insertSession.addBindValue(positionId);
                     insertSession.addBindValue(QDateTime::currentDateTime().toString(Qt::ISODate));
                     insertSession.addBindValue(variant);
                     insertSession.addBindValue(pattern);
                     insertSession.addBindValue(objectInfo.FIO);
+                    insertSession.addBindValue(HistoryDb::latestSchemaVersion());
 
                     if (insertSession.exec())
                         sessionId = insertSession.lastInsertId().toLongLong();
@@ -158,91 +152,17 @@ qint64 HistoryWriter::beginSession(const Registry& registry, const QString& vari
                 }
 
                 if (sessionId >= 0) {
-                    QSqlQuery insertSnapshot(db);
-                    insertSnapshot.prepare(QStringLiteral(
-                        "INSERT INTO valve_snapshots("
-                        "session_id, manufacturer, valve_model, serial_number, dn_mm, pn_bar, "
-                        "positioner_model, solenoid_valve_model, limit_switch_model, position_sensor_model, "
-                        "stroke_movement, valve_stroke, drive_model, safe_position, drive_type, positioner_type, "
-                        "drive_range_low, drive_range_high, drive_diameter, tool_number, diameter_pulley, "
-                        "material_stuffing_box_seal, "
-                        "crossing_friction_enabled, crossing_friction_lower, crossing_friction_upper, "
-                        "crossing_linear_characteristic_enabled, crossing_linear_characteristic, "
-                        "crossing_valve_stroke_enabled, crossing_valve_stroke, "
-                        "crossing_spring_enabled, crossing_spring_lower, crossing_spring_upper, "
-                        "crossing_dynamic_error_enabled"
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"));
-
-                    insertSnapshot.addBindValue(sessionId);
-                    insertSnapshot.addBindValue(valveInfo.manufacturer);
-                    insertSnapshot.addBindValue(valveInfo.valveModel);
-                    insertSnapshot.addBindValue(valveInfo.serialNumber);
-                    insertSnapshot.addBindValue(parseOptionalDouble(valveInfo.DN));
-                    insertSnapshot.addBindValue(parseOptionalDouble(valveInfo.PN));
-                    insertSnapshot.addBindValue(valveInfo.positionerModel);
-                    insertSnapshot.addBindValue(valveInfo.solenoidValveModel);
-                    insertSnapshot.addBindValue(valveInfo.limitSwitchModel);
-                    insertSnapshot.addBindValue(valveInfo.positionSensorModel);
-                    insertSnapshot.addBindValue(strokeMovementKey(valveInfo.strokeMovement));
-                    insertSnapshot.addBindValue(valveInfo.valveStroke);
-                    insertSnapshot.addBindValue(valveInfo.driveModel);
-                    insertSnapshot.addBindValue(safePositionKey(valveInfo.safePosition));
-                    insertSnapshot.addBindValue(driveTypeKey(valveInfo.driveType));
-                    insertSnapshot.addBindValue(ValveEnums::PositionerTypeToString(valveInfo.positionerType));
-                    insertSnapshot.addBindValue(valveInfo.driveRangeLow);
-                    insertSnapshot.addBindValue(valveInfo.driveRangeHigh);
-                    insertSnapshot.addBindValue(valveInfo.driveDiameter);
-                    insertSnapshot.addBindValue(static_cast<int>(valveInfo.toolNumber));
-                    insertSnapshot.addBindValue(valveInfo.diameterPulley);
-                    insertSnapshot.addBindValue(
-                        ValveEnums::StuffingBoxSealToString(valveInfo.materialStuffingBoxSeal));
-                    insertSnapshot.addBindValue(limits.frictionEnabled ? 1 : 0);
-                    insertSnapshot.addBindValue(limits.frictionCoefLower);
-                    insertSnapshot.addBindValue(limits.frictionCoefUpper);
-                    insertSnapshot.addBindValue(limits.linearCharacteristicEnabled ? 1 : 0);
-                    insertSnapshot.addBindValue(limits.linearCharacteristic);
-                    insertSnapshot.addBindValue(limits.valveStrokeEnabled ? 1 : 0);
-                    insertSnapshot.addBindValue(limits.valveStroke);
-                    insertSnapshot.addBindValue(limits.springEnabled ? 1 : 0);
-                    insertSnapshot.addBindValue(limits.springLower);
-                    insertSnapshot.addBindValue(limits.springUpper);
-                    insertSnapshot.addBindValue(limits.dynamicErrorEnabled ? 1 : 0);
-
-                    if (!insertSnapshot.exec()) {
-                        qWarning() << "[HistoryWriter] Не удалось сохранить карточку клапана:"
-                                   << insertSnapshot.lastError().text();
+                    QString error;
+                    if (!ValveSnapshotMapper::insert(db, sessionId, valveInfo, &error)) {
+                        qWarning() << "[HistoryWriter] Не удалось сохранить карточку клапана:" << error;
                         sessionId = -1;
                     }
                 }
 
                 if (sessionId >= 0) {
-                    const MaterialsOfComponentParts& materials =
-                        registry.materialsOfComponentParts();
-
-                    QSqlQuery insertMaterials(db);
-                    insertMaterials.prepare(QStringLiteral(
-                        "INSERT INTO valve_snapshot_materials("
-                        "session_id, plunger, saddle, cap, corpus, ball, disk, shaft, stock, "
-                        "guide_sleeve, stuffing_box_seal, cv"
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"));
-
-                    insertMaterials.addBindValue(sessionId);
-                    insertMaterials.addBindValue(materials.plunger);
-                    insertMaterials.addBindValue(materials.saddle);
-                    insertMaterials.addBindValue(materials.cap);
-                    insertMaterials.addBindValue(materials.corpus);
-                    insertMaterials.addBindValue(materials.ball);
-                    insertMaterials.addBindValue(materials.disk);
-                    insertMaterials.addBindValue(materials.shaft);
-                    insertMaterials.addBindValue(materials.stock);
-                    insertMaterials.addBindValue(materials.guideSleeve);
-                    insertMaterials.addBindValue(materials.stuffingBoxSeal);
-                    insertMaterials.addBindValue(materials.CV);
-
-                    if (!insertMaterials.exec()) {
-                        qWarning() << "[HistoryWriter] Не удалось сохранить материалы:"
-                                   << insertMaterials.lastError().text();
+                    QString error;
+                    if (!upsertMaterials(db, sessionId, registry.materialsOfComponentParts(), &error)) {
+                        qWarning() << "[HistoryWriter] Не удалось сохранить материалы:" << error;
                         sessionId = -1;
                     }
                 }
@@ -262,7 +182,375 @@ qint64 HistoryWriter::beginSession(const Registry& registry, const QString& vari
     return sessionId;
 }
 
-bool HistoryWriter::writeCrossingResults(qint64 sessionId, const CrossingStatus& status)
+bool HistoryWriter::writeReportExtras(qint64 sessionId, const ConclusionRecord& conclusion,
+                                      const QVector<SparePartRecord>& spareParts,
+                                      const QVector<FieldOverrides::Record>& overrides)
+{
+    if (sessionId < 0)
+        return false;
+
+    bool ok = false;
+    withConnection(QStringLiteral("mpiplatform_history_writer_extras"), [&](QSqlDatabase& db) {
+        const auto fail = [&](const QString& what, const QSqlQuery& q) {
+            qWarning() << "[HistoryWriter] Не удалось записать данные отчёта (" << what << "):"
+                       << q.lastError().text();
+            db.rollback();
+        };
+
+        QSqlQuery exists(db);
+        exists.prepare(QStringLiteral("SELECT 1 FROM sessions WHERE id = ?"));
+        exists.addBindValue(sessionId);
+        if (!exists.exec() || !exists.next()) {
+            qWarning() << "[HistoryWriter] Сессии" << sessionId << "нет в БД — данные отчёта не записаны";
+            return;
+        }
+        exists.finish();
+
+        if (!db.transaction())
+            return;
+
+        const auto textOrNull = [](const QString& v) { return v.isEmpty() ? QVariant() : QVariant(v); };
+
+        QSqlQuery q(db);
+        q.prepare(QStringLiteral(
+            "INSERT OR REPLACE INTO conclusions(session_id, seating_zone_key, positioner_adaptation_key, "
+            "auxiliary_equipment_key, friction_graph_key, gland_leak_key, summary_template_key, "
+            "summary_addendum, additional_notes) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)"));
+        q.addBindValue(sessionId);
+        q.addBindValue(textOrNull(conclusion.seatingZone));
+        q.addBindValue(textOrNull(conclusion.positionerAdaptation));
+        q.addBindValue(textOrNull(conclusion.auxiliaryEquipment));
+        q.addBindValue(textOrNull(conclusion.frictionGraph));
+        q.addBindValue(textOrNull(conclusion.glandLeak));
+        q.addBindValue(textOrNull(conclusion.summaryTemplate));
+        q.addBindValue(textOrNull(conclusion.additionalNotes));
+        if (!q.exec())
+            return fail(QStringLiteral("заключение"), q);
+
+        QSqlQuery clear(db);
+        clear.prepare(QStringLiteral("DELETE FROM session_spare_parts WHERE session_id = ?"));
+        clear.addBindValue(sessionId);
+        if (!clear.exec())
+            return fail(QStringLiteral("очистка ЗИП"), clear);
+
+        for (const SparePartRecord& part : spareParts) {
+            QSqlQuery insert(db);
+            insert.prepare(QStringLiteral(
+                "INSERT INTO session_spare_parts(session_id, part_code, is_free_text, free_text) "
+                "VALUES (?, ?, ?, ?)"));
+            insert.addBindValue(sessionId);
+            insert.addBindValue(part.freeText ? QVariant() : QVariant(part.text));
+            insert.addBindValue(part.freeText ? 1 : 0);
+            insert.addBindValue(part.freeText ? QVariant(part.text) : QVariant());
+            if (!insert.exec())
+                return fail(QStringLiteral("ЗИП"), insert);
+        }
+
+        QSqlQuery clearOverrides(db);
+        clearOverrides.prepare(QStringLiteral("DELETE FROM field_overrides WHERE session_id = ?"));
+        clearOverrides.addBindValue(sessionId);
+        if (!clearOverrides.exec())
+            return fail(QStringLiteral("очистка правок"), clearOverrides);
+
+        for (const FieldOverrides::Record& record : overrides) {
+            QSqlQuery insert(db);
+            insert.prepare(QStringLiteral(
+                "INSERT OR REPLACE INTO field_overrides(session_id, field_name, computed_value, corrected_value) "
+                "VALUES (?, ?, ?, ?)"));
+            insert.addBindValue(sessionId);
+            insert.addBindValue(record.field);
+            insert.addBindValue(record.computed);
+            insert.addBindValue(record.corrected);
+            if (!insert.exec())
+                return fail(QStringLiteral("правки"), insert);
+        }
+
+        if (!db.commit()) {
+            qWarning() << "[HistoryWriter] commit данных отчёта:" << db.lastError().text();
+            db.rollback();
+            return;
+        }
+        ok = true;
+    });
+    return ok;
+}
+
+HistoryWriter::DeleteResult HistoryWriter::deleteSessions(const QVector<qint64>& sessionIds)
+{
+    DeleteResult result;
+    if (sessionIds.isEmpty()) {
+        result.ok = true;
+        return result;
+    }
+
+    const bool opened = withConnection(
+        QStringLiteral("mpiplatform_history_writer_delete"), [&](QSqlDatabase& db) {
+            if (!db.transaction()) {
+                result.error = db.lastError().text();
+                return;
+            }
+            const auto fail = [&](const QString& error) {
+                result.error = error;
+                db.rollback();
+            };
+
+            const QString marks = QStringList(sessionIds.size(), QStringLiteral("?")).join(QStringLiteral(", "));
+            const auto bindIds = [&](QSqlQuery& q) {
+                for (const qint64 id : sessionIds)
+                    q.addBindValue(id);
+            };
+
+            // Папки — до удаления строк: после него путей уже не узнать.
+            QStringList candidateFolders;
+            {
+                QSqlQuery q(db);
+                q.prepare(QStringLiteral(
+                    "SELECT DISTINCT folder_path FROM sessions WHERE id IN (%1) "
+                    "AND folder_path IS NOT NULL AND folder_path <> ''").arg(marks));
+                bindIds(q);
+                if (!q.exec())
+                    return fail(q.lastError().text());
+                while (q.next())
+                    candidateFolders << q.value(0).toString();
+            }
+
+            // Всё, что висит на session_id, находим по схеме: таблица, добавленная
+            // будущей миграцией, удаляется без правок этого кода.
+            QStringList tables;
+            {
+                QSqlQuery q(db);
+                if (!q.exec(QStringLiteral(
+                        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")))
+                    return fail(q.lastError().text());
+                while (q.next())
+                    tables << q.value(0).toString();
+            }
+            for (const QString& table : tables) {
+                if (table == QLatin1String("sessions"))
+                    continue;
+
+                bool hasSessionId = false;
+                QSqlQuery info(db);
+                if (!info.exec(QStringLiteral("PRAGMA table_info(\"%1\")").arg(table)))
+                    return fail(info.lastError().text());
+                while (info.next())
+                    hasSessionId = hasSessionId || info.value(1).toString() == QLatin1String("session_id");
+                if (!hasSessionId)
+                    continue;
+
+                QSqlQuery del(db);
+                del.prepare(QStringLiteral("DELETE FROM \"%1\" WHERE session_id IN (%2)").arg(table, marks));
+                bindIds(del);
+                if (!del.exec())
+                    return fail(del.lastError().text());
+            }
+
+            QSqlQuery delSessions(db);
+            delSessions.prepare(QStringLiteral("DELETE FROM sessions WHERE id IN (%1)").arg(marks));
+            bindIds(delSessions);
+            if (!delSessions.exec())
+                return fail(delSessions.lastError().text());
+            result.deleted = delSessions.numRowsAffected();
+
+            // Позиции и связки без единой сессии.
+            QSqlQuery sweep(db);
+            if (!sweep.exec(QStringLiteral(
+                    "DELETE FROM positions WHERE id NOT IN (SELECT position_id FROM sessions)"))
+                || !sweep.exec(QStringLiteral(
+                    "DELETE FROM sites WHERE id NOT IN (SELECT site_id FROM positions)")))
+                return fail(sweep.lastError().text());
+
+            // Папки, на которые больше никто не ссылается.
+            for (const QString& folder : std::as_const(candidateFolders)) {
+                QSqlQuery used(db);
+                used.prepare(QStringLiteral("SELECT 1 FROM sessions WHERE folder_path = ? LIMIT 1"));
+                used.addBindValue(folder);
+                if (!used.exec())
+                    return fail(used.lastError().text());
+                if (!used.next())
+                    result.orphanFolders << SessionFolders::resolve(folder);
+            }
+
+            if (!db.commit()) {
+                fail(db.lastError().text());
+                return;
+            }
+            result.ok = true;
+        });
+
+    if (!opened && result.error.isEmpty())
+        result.error = QStringLiteral("БД истории недоступна");
+    return result;
+}
+
+bool HistoryWriter::setSessionFolder(qint64 sessionId, const QString& absoluteDir)
+{
+    if (sessionId < 0 || absoluteDir.isEmpty())
+        return false;
+
+    bool ok = false;
+    withConnection(QStringLiteral("mpiplatform_history_writer_folder"), [&](QSqlDatabase& db) {
+        QSqlQuery q(db);
+        q.prepare(QStringLiteral("UPDATE sessions SET folder_path = ? WHERE id = ?"));
+        q.addBindValue(SessionFolders::toStored(absoluteDir));
+        q.addBindValue(sessionId);
+        ok = q.exec() && q.numRowsAffected() == 1;
+        if (!ok)
+            qWarning() << "[HistoryWriter] Не удалось записать папку сессии:" << q.lastError().text();
+    });
+    return ok;
+}
+
+int HistoryWriter::importLegacyCards(const QVector<LegacyCard>& cards, QString* errorOut)
+{
+    int imported = -1;
+    QString local;
+    QString* error = &local;
+
+    const bool opened = withConnection(
+        QStringLiteral("mpiplatform_history_writer_legacy"), [&](QSqlDatabase& db) {
+            if (!db.transaction()) {
+                *error = db.lastError().text();
+                return;
+            }
+
+            int count = 0;
+            bool ok = true;
+
+            for (const LegacyCard& card : cards) {
+                const qint64 siteId = findOrInsertSite(db, card.site);
+                const qint64 positionId = siteId >= 0
+                    ? findOrInsertPosition(db, siteId, card.valve.positionNumber)
+                    : -1;
+                if (positionId < 0) {
+                    *error = QStringLiteral("не удалось создать позицию %1").arg(card.valve.positionNumber);
+                    ok = false;
+                    break;
+                }
+
+                QString ts = QDateTime::currentDateTime().toString(Qt::ISODate);
+                QSqlQuery oldestLive(db);
+                oldestLive.prepare(QStringLiteral(
+                    "SELECT MIN(ts) FROM sessions WHERE position_id = ? AND source = 'live'"));
+                oldestLive.addBindValue(positionId);
+                if (oldestLive.exec() && oldestLive.next() && !oldestLive.value(0).isNull()) {
+                    const QDateTime t = QDateTime::fromString(oldestLive.value(0).toString(), Qt::ISODate);
+                    if (t.isValid())
+                        ts = t.addSecs(-1).toString(Qt::ISODate);
+                }
+
+                QSqlQuery insertSession(db);
+                insertSession.prepare(QStringLiteral(
+                    "INSERT INTO sessions(position_id, ts, schema_version, source) "
+                    "VALUES (?, ?, ?, 'legacy')"));
+                insertSession.addBindValue(positionId);
+                insertSession.addBindValue(ts);
+                insertSession.addBindValue(HistoryDb::latestSchemaVersion());
+                if (!insertSession.exec()) {
+                    *error = insertSession.lastError().text();
+                    ok = false;
+                    break;
+                }
+                const qint64 sessionId = insertSession.lastInsertId().toLongLong();
+
+                if (!ValveSnapshotMapper::insert(db, sessionId, card.valve, error)) {
+                    ok = false;
+                    break;
+                }
+                if (card.hasMaterials && !upsertMaterials(db, sessionId, card.materials, error)) {
+                    ok = false;
+                    break;
+                }
+                ++count;
+            }
+
+            if (ok) {
+                QSqlQuery flag(db);
+                flag.prepare(QStringLiteral(
+                    "INSERT OR REPLACE INTO app_state(key, value) VALUES ('legacy_import_done', ?)"));
+                flag.addBindValue(QStringLiteral("%1 %2")
+                                      .arg(count)
+                                      .arg(QDateTime::currentDateTime().toString(Qt::ISODate)));
+                if (!flag.exec()) {
+                    *error = flag.lastError().text();
+                    ok = false;
+                }
+            }
+
+            if (ok && db.commit()) {
+                imported = count;
+                return;
+            }
+            if (ok)
+                *error = db.lastError().text();
+            db.rollback();
+        });
+
+    if (!opened && local.isEmpty())
+        local = QStringLiteral("БД истории недоступна");
+    if (errorOut)
+        *errorOut = local;
+    return imported;
+}
+
+qint64 HistoryWriter::saveCard(qint64 sessionId, const Registry& registry,
+                               const QString& variant, const QString& pattern)
+{
+    if (sessionId < 0)
+        return beginSession(registry, variant, pattern);
+
+    const ObjectInfo& objectInfo = registry.objectInfo();
+    const ValveInfo& valveInfo = registry.valveInfo();
+
+    bool sameIdentity = false;
+
+    withConnection(QStringLiteral("mpiplatform_history_writer_card"), [&](QSqlDatabase& db) {
+        QSqlQuery identity(db);
+        identity.prepare(QStringLiteral(
+            "SELECT si.object, si.manufactory, si.department, p.position_number "
+            "FROM sessions s "
+            "JOIN positions p ON p.id = s.position_id "
+            "JOIN sites si ON si.id = p.site_id "
+            "WHERE s.id = ?"));
+        identity.addBindValue(sessionId);
+        if (!identity.exec() || !identity.next())
+            return;
+
+        sameIdentity =
+            identity.value(0).toString() == objectInfo.object
+            && identity.value(1).toString() == objectInfo.manufactory
+            && identity.value(2).toString() == objectInfo.department
+            && identity.value(3).toString() == valveInfo.positionNumber;
+        if (!sameIdentity)
+            return;
+
+        if (!db.transaction()) {
+            qWarning() << "[HistoryWriter] Не удалось начать транзакцию:" << db.lastError().text();
+            return;
+        }
+
+        QString error;
+        const bool ok = ValveSnapshotMapper::update(db, sessionId, valveInfo, &error)
+            && upsertMaterials(db, sessionId, registry.materialsOfComponentParts(), &error);
+
+        if (ok && db.commit())
+            return;
+
+        qWarning() << "[HistoryWriter] Не удалось обновить карточку сессии" << sessionId << ":"
+                   << (ok ? db.lastError().text() : error);
+        db.rollback();
+    });
+
+    // Сменились объект/позиция: результаты уже прошедших тестов этой сессии
+    // принадлежат прежней позиции, поэтому правка — это новая сессия.
+    if (!sameIdentity)
+        return beginSession(registry, variant, pattern);
+
+    return sessionId;
+}
+
+bool HistoryWriter::writeCrossingResults(qint64 sessionId, const CrossingStatus& status,
+                                         const CrossingLimits& limits)
 {
     if (sessionId < 0)
         return false;
@@ -284,8 +572,11 @@ bool HistoryWriter::writeCrossingResults(qint64 sessionId, const CrossingStatus&
                 "linear_characteristic_state, linear_characteristic_value, linear_characteristic_lower, "
                 "linear_characteristic_upper, linear_characteristic_miss, "
                 "spring_state, spring_low_value, spring_low_lower, spring_low_upper, spring_low_miss, "
-                "spring_high_value, spring_high_lower, spring_high_upper, spring_high_miss"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"));
+                "spring_high_value, spring_high_lower, spring_high_upper, spring_high_miss, "
+                "friction_enabled, valve_stroke_enabled, dynamic_error_enabled, "
+                "linear_characteristic_enabled, spring_enabled"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+                "?, ?, ?, ?, ?)"));
 
             insert.addBindValue(sessionId);
 
@@ -322,6 +613,14 @@ bool HistoryWriter::writeCrossingResults(qint64 sessionId, const CrossingStatus&
             insert.addBindValue(optionalReal(status.springHighLower));
             insert.addBindValue(optionalReal(status.springHighUpper));
             insert.addBindValue(optionalReal(status.springHighMiss));
+
+            // Какие проверки были включены в момент расчёта — карточку
+            // оператор может поправить позже, результат остаётся прежним.
+            insert.addBindValue(limits.frictionEnabled ? 1 : 0);
+            insert.addBindValue(limits.valveStrokeEnabled ? 1 : 0);
+            insert.addBindValue(limits.dynamicErrorEnabled ? 1 : 0);
+            insert.addBindValue(limits.linearCharacteristicEnabled ? 1 : 0);
+            insert.addBindValue(limits.springEnabled ? 1 : 0);
 
             if (insert.exec())
                 ok = true;

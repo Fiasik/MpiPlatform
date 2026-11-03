@@ -52,10 +52,20 @@ bool Saver::ensureDirectory()
     if (m_isDirectoryCreated)
         return true;
 
-    if (createAutoDirectory())
+    if (createAutoDirectory() || chooseDirectoryManually()) {
+        emit directoryCreated(m_dir.absolutePath());
         return true;
+    }
 
-    return chooseDirectoryManually();
+    return false;
+}
+
+void Saver::resetDirectory()
+{
+    cleanupEmptyDirectory();
+    m_isDirectoryCreated = false;
+    m_dir = QDir();
+    m_chartCounter.clear();
 }
 
 bool Saver::createAutoDirectory()

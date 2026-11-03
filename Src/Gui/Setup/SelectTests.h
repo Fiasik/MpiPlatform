@@ -49,6 +49,10 @@ public:
     BlockCTS getCTS() const;
     PatternType currentPattern() const;
 
+    // Стабильный ключ шаблона для БД истории (HistoryWriter не должен
+    // зависеть от этого перечисления — стрингификация на стороне Gui).
+    static QString patternKey(PatternType pattern);
+
 private slots:
     void onCheckBoxChanged();
     bool isValidPattern();

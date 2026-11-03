@@ -77,6 +77,18 @@ QWidget {
     border: none;
 }
 
+/* ValveWindow: вкладки "Данные о ЗРА" и "Материалы деталей" лежат в QScrollArea
+ * (на экране 1000x700 форма в ~740 px по высоте не помещается, а кнопки внизу
+ * должны оставаться на виду) — как и у истории, прозрачными должны быть
+ * и сама область, и её контент-виджет. */
+#scrollArea_valveData,
+#scrollAreaWidgetContents_valveData,
+#scrollArea_valveMaterials,
+#scrollAreaWidgetContents_valveMaterials {
+    background: transparent;
+    border: none;
+}
+
 QStatusBar {
     background: @{bgRecessed};
 }
@@ -207,7 +219,16 @@ QFrame[role="section"] {
 #Chart_response,
 #Chart_step,
 #Chart_stroke,
-#Chart_cyclicTests {
+#Chart_cyclicTests,
+#chartView_linearityProfile,
+#chartView_historyCompare_stepTimeUp,
+#chartView_historyCompare_stepTimeDown,
+#chartView_historyCompare_stepOvershootUp,
+#chartView_historyCompare_stepOvershootDown,
+#chartView_historyCompare_responseUp,
+#chartView_historyCompare_responseDown,
+#chartView_historyCompare_resolutionUp,
+#chartView_historyCompare_resolutionDown {
     background: @{bgSurface};
     border-radius: 6px;
 }

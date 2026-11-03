@@ -1,6 +1,7 @@
 #include "Analyzer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <QDebug>
 #include <QVector>
 #include <QPointF>
@@ -73,6 +74,7 @@ void Analyzer::onSample(const Domain::Measurement::Sample& s)
     }
 }
 
+// [ОТ-2] Границы хода — docs/formulas/main_test.md
 Analyzer::Limits Analyzer::computePressureLimits(
     const QVector<PressurePoint>& forward,
     const QVector<PressurePoint>& backward) const
@@ -129,6 +131,7 @@ Analyzer::Limits Analyzer::computeTaskLimits(
     return result;
 }
 
+// [ОТ-3] Рабочее окно 10–90 % и [ОТ-4] прямая МНК — docs/formulas/main_test.md
 Analyzer::Regression Analyzer::calculateRegression(
     const QVector<PressurePoint>& points,
     const Limits& limits) const
@@ -181,6 +184,7 @@ Analyzer::Regression Analyzer::calculateRegression(
     return result;
 }
 
+// [ОТ-6] Линейность, интегральная (для сравнения) — docs/formulas/main_test.md
 double Analyzer::computeLinearityError(
     const QVector<PressurePoint>& points,
     const Regression& regression,
@@ -218,6 +222,90 @@ double Analyzer::computeLinearityError(
     return (maxDiff / pRange) * 100.0;
 }
 
+// [ОТ-7] Линейность, дифференциальная (Pass|Fail) — docs/formulas/main_test.md
+double Analyzer::computeDifferentialLinearityError(
+    const QVector<PressurePoint>& points,
+    const Regression& regression,
+    const Limits& limits) const
+{
+    if (!regression.valid || qFuzzyIsNull(regression.k) || points.isEmpty())
+        return 0.0;
+
+    // Тот же рабочий диапазон, что и у регрессии: средние 80 % хода, края
+    // (разгон и упоры) не участвуют.
+    const double frac = 0.10;
+    const double pMin = limits.minY + (limits.maxY - limits.minY) * frac;
+    const double pMax = limits.maxY - (limits.maxY - limits.minY) * frac;
+    if (pMax - pMin <= 0.0)
+        return 0.0;
+
+    // Точки окна в порядке записи (по времени): производная берётся вдоль
+    // хода, а не по отсортированному давлению.
+    QVector<PressurePoint> window;
+    window.reserve(points.size());
+    double xMin = 0.0, xMax = 0.0;
+    for (const PressurePoint& p : points) {
+        if (p.position < pMin || p.position > pMax)
+            continue;
+        if (window.isEmpty()) {
+            xMin = xMax = p.pressure;
+        } else {
+            xMin = qMin(xMin, p.pressure);
+            xMax = qMax(xMax, p.pressure);
+        }
+        window.push_back(p);
+    }
+
+    const int n = window.size();
+    // Окно скользящего МНК — 10 % точек (не меньше 8): производная усиливает
+    // шум, и на 2-3 соседних отсчётах наклон ничего не значит.
+    const int w = qMax(8, n / 10);
+    if (n < 2 * w)
+        return 0.0;
+
+    const double xSpan = xMax - xMin;
+    if (xSpan <= 0.0)
+        return 0.0;
+
+    // Префиксные суммы: наклон любого окна за O(1).
+    QVector<double> sx(n + 1, 0.0), sy(n + 1, 0.0), sxy(n + 1, 0.0), sxx(n + 1, 0.0);
+    for (int i = 0; i < n; ++i) {
+        const double x = window[i].pressure;
+        const double y = window[i].position;
+        sx[i + 1] = sx[i] + x;
+        sy[i + 1] = sy[i] + y;
+        sxy[i + 1] = sxy[i] + x * y;
+        sxx[i + 1] = sxx[i] + x * x;
+    }
+
+    double maxDeviation = 0.0;
+    const int step = qMax(1, w / 2);
+    for (int start = 0; start + w <= n; start += step) {
+        const int end = start + w;
+        const double cx = sx[end] - sx[start];
+        const double cy = sy[end] - sy[start];
+        const double cxy = sxy[end] - sxy[start];
+        const double cxx = sxx[end] - sxx[start];
+
+        const double denominator = w * cxx - cx * cx;
+        // Окно, в котором давление почти не менялось, наклон не определяет
+        // (стоп/реверс хода) — пропускаем: иначе деление на ~0 даёт выброс.
+        const double windowSpan = std::sqrt(qMax(0.0, denominator)) / w * std::sqrt(12.0);
+        if (windowSpan < 0.10 * xSpan)
+            continue;
+
+        const double kLocal = (w * cxy - cx * cy) / denominator;
+        if (!std::isfinite(kLocal))
+            continue;
+
+        const double deviation = qAbs(kLocal - regression.k) / qAbs(regression.k) * 100.0;
+        maxDeviation = qMax(maxDeviation, deviation);
+    }
+
+    return maxDeviation;
+}
+
+// [ОТ-8] Разность давлений ходов на середине хода — docs/formulas/main_test.md
 double Analyzer::computePressureDiff(
     const Regression& regressionForward,
     const Regression& regressionBackward,
@@ -246,6 +334,7 @@ double Analyzer::computePressureDiff(
     return qAbs(xForward - xBackward);
 }
 
+// [ОТ-10] Коэффициент трения — docs/formulas/main_test.md
 double Analyzer::computeFrictionPercent(
     const Regression& regressionForward,
     const Limits& limits,
@@ -269,6 +358,7 @@ double Analyzer::computeFrictionPercent(
     return 50.0 * pressureDiff / range;
 }
 
+// [ОТ-14] Динамическая ошибка — docs/formulas/main_test.md
 QPair<double, double> Analyzer::computeDynamicErrorMeanMax(
     const QVector<LinearPoint>& forward,
     const QVector<LinearPoint>& backward) const
@@ -351,6 +441,7 @@ QPair<double, double> Analyzer::computeDynamicErrorMeanMax(
     return qMakePair(double(sum / num), double(max));
 }
 
+// [ОТ-12] Полный диапазон давлений — docs/formulas/main_test.md
 QPair<double, double> Analyzer::computeRangeLimits(
     const Regression& regressionForward,
     const Regression& regressionBackward,
@@ -385,6 +476,7 @@ QPair<double, double> Analyzer::computeRangeLimits(
     return qMakePair(minX, maxX);
 }
 
+// [ОТ-13] Диапазон пружины — docs/formulas/main_test.md
 QPair<double, double> Analyzer::computeSpringLimits(
     const Regression& regressionForward,
     const Regression& regressionBackward,
@@ -432,6 +524,7 @@ QVector<QPointF> Analyzer::toPressureQPoints(
     return result;
 }
 
+// [ОТ-5] Линии регрессии на графике — docs/formulas/main_test.md
 QVector<QPointF> Analyzer::buildRegressionLinePoints(
     const Regression& regression,
     const Limits& limits) const
@@ -485,6 +578,7 @@ QVector<QPointF> Analyzer::buildRegressionLinePoints(
     return { candidates.first(), candidates.last() };
 }
 
+// [ОТ-11] График трения по ходу — docs/formulas/main_test.md
 QVector<QPointF> Analyzer::buildFrictionChartPoints(
     const QVector<PressurePoint>& first,
     const QVector<PressurePoint>& second,
@@ -604,27 +698,43 @@ void Analyzer::applyRegressions(
     const double linearityBackward =
         computeLinearityError(m_pressureSeriesSecond, regressionSecond, pressureLimits);
 
-    m_result.linearityError =
+    // [ОТ-6] — docs/formulas/main_test.md
+    m_result.linearityErrorIntegral =
         qMax(linearityForward, linearityBackward);
+
+    // Допуск проверяется по дифференциальной линейности (см. Result::linearityError).
+    const double differentialForward =
+        computeDifferentialLinearityError(m_pressureSeriesFirst, regressionFirst, pressureLimits);
+
+    const double differentialBackward =
+        computeDifferentialLinearityError(m_pressureSeriesSecond, regressionSecond, pressureLimits);
+
+    // [ОТ-7] — docs/formulas/main_test.md
+    m_result.linearityError =
+        qMax(differentialForward, differentialBackward);
 
     m_result.linearity =
         100.0 - m_result.linearityError;
 
+    // [ОТ-8] — docs/formulas/main_test.md
     m_result.pressureDiff =
         computePressureDiff(regressionFirst, regressionSecond, pressureLimits);
 
+    // [ОТ-9] Сила трения — docs/formulas/main_test.md
     const double forceCoef =
         5.0 * M_PI * m_cfg.driveDiameter * m_cfg.driveDiameter / 4.0;
 
     m_result.frictionForce =
         m_result.pressureDiff * forceCoef;
 
+    // [ОТ-10] — docs/formulas/main_test.md
     m_result.frictionPercent =
         computeFrictionPercent(
             regressionFirst,
             pressureLimits,
             m_result.pressureDiff);
 
+    // [ОТ-12] — docs/formulas/main_test.md
     const QPair<double, double> range =
         computeRangeLimits(
             regressionFirst,
@@ -637,6 +747,7 @@ void Analyzer::applyRegressions(
     m_result.highLimitPressure =
         range.second;
 
+    // [ОТ-13] — docs/formulas/main_test.md
     const QPair<double, double> spring =
         computeSpringLimits(
             regressionFirst,
@@ -650,6 +761,7 @@ void Analyzer::applyRegressions(
         spring.second;
 
     // onSample() пишет прямой ход во "Second", обратный — в "First"
+    // [ОТ-5] Линии регрессии на графике — docs/formulas/main_test.md
     m_regressionChartPointsForward =
         buildRegressionLinePoints(regressionSecond, pressureLimits);
 
@@ -663,6 +775,7 @@ void Analyzer::applyRegressions(
             pressureLimits);
 }
 
+// [ОТ-4] Прямая МНК по точкам перетащенной линии — docs/formulas/main_test.md
 bool Analyzer::regressionFromLine(
     const QVector<QPointF>& linePoints,
     Regression& out) const
@@ -696,6 +809,7 @@ bool Analyzer::regressionFromLine(
     return out.valid;
 }
 
+// [ОТ-4] Пересчёт по перетащенным линиям регрессии — docs/formulas/main_test.md
 bool Analyzer::recalculateFromManualRegression(
     const QVector<QPointF>& forwardLine,
     const QVector<QPointF>& backwardLine)
@@ -750,6 +864,7 @@ void Analyzer::finish()
 
     applyRegressions(regressionFirst, regressionSecond, pressureLimits);
 
+    // [ОТ-14] Динамическая ошибка — docs/formulas/main_test.md
     const QPair<double, double> dynamic =
         computeDynamicErrorMeanMax(m_linearSeriesFirst, m_linearSeriesSecond);
 
