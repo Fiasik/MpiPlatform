@@ -88,6 +88,23 @@ public:
     // applyPalette() при смене темы, см. MainWindow::setThemeManager().
     void applyPalette(const Gui::Style::Palette& palette);
 
+    // Активная (выбранная кликом) сессия — для кнопки «Открыть графики»:
+    // папка как в БД (sessions.folder_path: относительно папки приложения
+    // или абсолютная; пусто — не записана), дата для подписей и измеренный
+    // ход (crossing_results.valve_stroke_value, NaN — нет).
+    struct ActiveSessionInfo {
+        qint64 id = -1;
+        QString folderPath;
+        QString title;
+        double valveStroke = qQNaN();
+    };
+    ActiveSessionInfo activeSessionInfo() const;
+
+    // Главное окно показывает графики архивной сессии: кнопка «Открыть
+    // графики» становится «Закрыть просмотр» (что делать по клику, решает
+    // MainWindow).
+    void setArchiveViewActive(bool active);
+
 private:
     struct SessionEntry {
         qint64 id = -1;
@@ -139,6 +156,9 @@ private:
 
         // checkBox_history_needsRepair — см. onNeedsRepairToggled().
         bool needsRepair = false;
+
+        // sessions.folder_path — см. activeSessionInfo().
+        QString folderPath;
     };
 
     // Облегчённые строки для сравнения табличных тестов (Шаговый/
@@ -194,6 +214,7 @@ private:
     // Рамка скрыта, если по сессии ничего не сохранено.
     void updateReportExtras();
     void updateDeleteButton();
+    void updateOpenChartsButton();
     void updateCards();
     void updateChipsAndTitle();
     void updateCompareTable();
@@ -283,6 +304,7 @@ private:
     QVector<SessionEntry> m_sessions;
     qint64 m_activeSessionId = -1;
     qint64 m_currentSessionId = -1;
+    bool m_archiveViewActive = false;
 
     // Ссылки на .ui-виджеты одной тренд-карточки — заголовок и единица
     // измерения в их число не входят, это статичный текст прямо в .ui (role=

@@ -8,6 +8,8 @@
 #include <QElapsedTimer>
 #include <QVector>
 
+#include <optional>
+
 #include "Utils/Shortcuts/TabActionRouter.h"
 
 #include "Gui/MainWindow/TelemetryUiMapper.h"
@@ -15,6 +17,7 @@
 #include "Gui/MainWindow/ConclusionPresenter.h"
 #include "Gui/MainWindow/SparePartsPresenter.h"
 #include "Gui/MainWindow/BalanceSeesawWidget.h"
+#include "Gui/MainWindow/ArchivedTest.h"
 #include "Widgets/Toast/ToastManager.h"
 #include "Gui/TestSettings/MainTestSettings.h"
 #include "Gui/TestSettings/OtherTestSettings.h"
@@ -45,15 +48,15 @@ namespace Ui { class MainWindow; }
 namespace Gui::Style { class ThemeManager; struct Palette; }
 
 class StatusBarPresenter;
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-class LinearityLabPresenter; // ЭКСПЕРИМЕНТ: подробности линейности в карточке Pass|Fail
+class LinearityMethodsPresenter; // способы расчёта линейности в карточке Pass|Fail
 class ExpandableCard;
-#endif
 class ReportGenerationPresenter;
 class ReportGenerationWorker;
+class ReportPreviewPresenter;
 class HistoryPresenter;
 class QToolButton;
 class QCloseEvent;
+class QLineEdit;
 
 class MainWindow : public QMainWindow
 {
@@ -207,6 +210,8 @@ private:
     bool m_chartsInitialized = false;
 
     bool saveChart(Widgets::Chart::ChartType chart);
+    // Давление питания из поля вкладки отчёта — в историю текущей сессии.
+    void saveSupplyPressureToHistory();
     QLabel* previewLabelForChart(Widgets::Chart::ChartType chart) const;
 
     // Общий хвост для всех "Сохранить график" по кнопкам — сохранить +
@@ -289,14 +294,42 @@ private:
     ChartSnapshotStorage m_chartSnapshotStorage;
 
     std::unique_ptr<ReportGenerationPresenter> m_reportPresenter;
+    // Вкладка «Предпросмотр» в «Формировании отчёта».
+    std::unique_ptr<ReportPreviewPresenter> m_reportPreview;
     std::unique_ptr<HistoryPresenter> m_historyPresenter;
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    // ЭКСПЕРИМЕНТ: создаются в setRegistry() после initCharts(); тема —
-    // через m_labThemeManager (setThemeManager() зовётся раньше).
-    std::unique_ptr<LinearityLabPresenter> m_linearityLab;
+    // Способы линейности: создаются в setRegistry() после initCharts(); тема —
+    // через m_linearityThemeManager (setThemeManager() зовётся раньше).
+    std::unique_ptr<LinearityMethodsPresenter> m_linearityMethods;
     std::unique_ptr<ExpandableCard> m_linearityCard;
-    Gui::Style::ThemeManager* m_labThemeManager = nullptr;
-#endif
+    Gui::Style::ThemeManager* m_linearityThemeManager = nullptr;
+
+    // Просмотр сессии из «Истории» (кнопка «Открыть графики»): графики
+    // основного теста из её папки и результат, пересчитанный тем же
+    // Analyzer'ом. Только просмотр: m_telemetry не трогается (endTest() пишет
+    // её в БД), сохранение графиков, пересчёт регрессии и отчёт закрыты.
+    // Живой тест (точки графиков, тексты результатов) откладывается и
+    // возвращается при закрытии — перед любым тестом или живыми данными.
+    struct ArchiveView {
+        QString title; // дата сессии
+        Domain::Tests::Main::Result result;
+        CrossingStatus status;
+        ValveStrokeRecord stroke;
+        ArchivedTest::ChartBackup pressure, task, friction;
+        QVector<QPair<QLabel*, QString>> labels;       // тексты до просмотра,
+        QVector<QPair<QLineEdit*, QString>> lineEdits; // только изменённые
+        bool regressionEnabled = false;
+        Qt::CheckState regressionState = Qt::Unchecked;
+    };
+    std::optional<ArchiveView> m_archiveView;
+    Domain::DeviceConfig m_deviceConfig; // то же, что ушло в Program::setConfig()
+
+    void openArchiveView();
+    void closeArchiveView();
+    // Сохранение основного теста, отчёт и пересчёт регрессии — закрыты на
+    // время просмотра (и на время формирования отчёта, см.
+    // setReportGenerationInProgress()).
+    void applyArchiveViewLocks();
+    void showArchivedResult();
 
     void syncTaskChartSeriesVisibility(quint8 sensorCount);
     void displayDependingPattern();

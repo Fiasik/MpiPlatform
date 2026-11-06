@@ -6159,6 +6159,19 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pushButton_history_openCharts">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Показать графики основного теста выбранной сессии на вкладке «Основной тест» (только просмотр)</string>
+              </property>
+              <property name="text">
+               <string>Открыть графики</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pushButton_history_deleteSessions">
               <property name="toolTip">
                <string>Удалить выделенные сессии (Ctrl/Shift — несколько) вместе с их результатами</string>
@@ -6309,7 +6322,7 @@
                  <item>
                   <widget class="QLabel" name="label_history_report_Title">
                    <property name="text">
-                    <string>Заключение и ЗИП</string>
+                    <string>Данные отчёта</string>
                    </property>
                   </widget>
                  </item>

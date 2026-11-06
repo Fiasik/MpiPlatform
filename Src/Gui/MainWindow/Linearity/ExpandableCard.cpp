@@ -1,5 +1,3 @@
-// ЭКСПЕРИМЕНТ — см. ExpandableCard.h.
-
 #include "ExpandableCard.h"
 
 #include <QEasingCurve>

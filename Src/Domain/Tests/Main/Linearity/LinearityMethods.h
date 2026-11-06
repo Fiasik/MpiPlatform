@@ -1,36 +1,35 @@
 #pragma once
 
-// ЭКСПЕРИМЕНТ — сравнение способов расчёта линейности характеристики
-// «давление -> положение» (лекция 12 «Линейность характеристики: без
-// дифференциала, с дифференциалом и как сделать лучше»).
+// Способы расчёта линейности характеристики «давление -> положение» для
+// сравнения (лекции 12–13 в ~/Documents/Work/Mpi/Лекции).
 //
-// Только для раскрывающейся карточки линейности в блоке Pass|Fail
-// (Gui/MainWindow/Experimental/).
-// НЕ влияет на Result::linearityError, Pass|Fail, отчёт и базу: официальный
-// расчёт остаётся в Analyzer. Собирается только при
-// MPIPLATFORM_EXPERIMENTAL_LINEARITY=ON (Src/CMakeLists.txt). Когда способ
-// будет выбран — удалить папку Experimental целиком.
+// Нужны раскрывающейся карточке линейности в блоке Pass|Fail
+// (Gui/MainWindow/Linearity/). НЕ влияют на Result::linearityError,
+// Pass|Fail, отчёт и базу: официальный расчёт — Analyzer.
 
 #include <QPointF>
 #include <QtNumeric>
 #include <QString>
 #include <QVector>
 
-namespace Domain::Tests::Main::Experimental {
+namespace Domain::Tests::Main::Linearity {
 
-// Формулы [ЭЛ-1]…[ЭЛ-6] — docs/formulas/main_test.md, раздел «Экспериментальные способы линейности»
+// Формулы [ЭЛ-1]…[ЭЛ-6] — docs/formulas/main_test.md, раздел «Способы линейности для сравнения»
 enum class LinearityMethod {
     IntegralLeastSquares, // [ЭЛ-1] 1. без дифференциала, прямая МНК (как считалось раньше)
-    IntegralMinimax,      // [ЭЛ-2] 2. без дифференциала, прямая минимакс (ISA-51.1 «независимая линейность» — сверить)
+    IntegralMinimax,      // [ЭЛ-2] 2. без дифференциала, прямая минимакс (как ISA-51.1 «independent linearity», см. [ЭЛ-6])
     DifferentialCurrent,  // [ЭЛ-3] 3. с дифференциалом — копия Analyzer::computeDifferentialLinearityError()
     DifferentialByStroke, // [ЭЛ-4] 4. с дифференциалом, окно = 10 % хода, а не 10 % точек
     SlopeVariation        // [ЭЛ-5] 5. коэффициент вариации наклона по тем же окнам, что в 4
 };
 
 // По какому ходу считать. Официальный расчёт (Analyzer) — худший из двух.
-// Средняя кривая — среднее прямого и обратного хода по положению: так
-// определяют независимую линейность IEC 61987 (источник IEC 61298-2) и
-// ISA-51.1 — гистерезис в линейность не попадает.
+// Средняя кривая — по средней кривой двух ходов определяют независимую
+// линейность IEC 61987 (источник IEC 61298-2) и ISA-51.1 (определение
+// «linearity, independent», с. 38; порядок проверки — п. 5.5.5, с. 63–64):
+// гистерезис и мёртвая зона в линейность не попадают. Отличие: ISA усредняет
+// выход (положение) при одном входе (давлении), здесь — давление при одном
+// положении; для почти прямой кривой разница мала.
 // [ЭЛ-6] средняя кривая — docs/formulas/main_test.md
 enum class StrokeBasis {
     WorstOfTwo,
@@ -84,7 +83,7 @@ struct StrokeLinearity {
     double binnedValue = qQNaN();
 };
 
-struct LinearityLabResult {
+struct LinearityMethodsResult {
     LinearityMethod method = LinearityMethod::IntegralLeastSquares;
     StrokeBasis basis = StrokeBasis::WorstOfTwo;
     bool valid = false;
@@ -101,7 +100,7 @@ struct LinearityLabResult {
 // forward / backward — точки графика «Перемещение от давления»
 // (x = давление, y = положение) в порядке записи. Пустой ход пропускается;
 // средняя кривая строится, только если есть оба хода.
-LinearityLabResult computeLinearity(LinearityMethod method,
+LinearityMethodsResult computeLinearity(LinearityMethod method,
                                     const QVector<QPointF>& forward,
                                     const QVector<QPointF>& backward,
                                     StrokeBasis basis = StrokeBasis::WorstOfTwo);
@@ -117,7 +116,7 @@ QVector<QPointF> averageCurve(const QVector<QPointF>& forward,
                               const QVector<QPointF>& backward);
 
 // Положение -> % хода (0 % = strokeMin, 100 % = strokeMax).
-double strokePercent(const LinearityLabResult& result, double position);
+double strokePercent(const LinearityMethodsResult& result, double position);
 
 QString strokeName(int index); // 0 — прямой ход, 1 — обратный, 2 — средняя кривая
 

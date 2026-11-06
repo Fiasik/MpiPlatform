@@ -237,11 +237,11 @@ int main(int argc, char* argv[])
     const QString actPath = saver.directory().filePath(QStringLiteral("verify_act.pdf"));
     const QString tshrPath = saver.directory().filePath(QStringLiteral("verify_tshr.pdf"));
 
-    const bool actOk = pdfBuilder.buildTechnicalInspection(ctx, actPath);
-    qDebug() << "Report::Pdf::Builder::buildTechnicalInspection ok:" << actOk << "->" << actPath;
+    const bool actOk = pdfBuilder.build(Report::Pdf::Act::TechnicalInspection, ctx, actPath);
+    qDebug() << "Report::Pdf::Builder::build(TechnicalInspection) ok:" << actOk << "->" << actPath;
 
-    const bool tshrOk = pdfBuilder.buildStepReaction(ctx, tshrPath);
-    qDebug() << "Report::Pdf::Builder::buildStepReaction ok:" << tshrOk << "->" << tshrPath;
+    const bool tshrOk = pdfBuilder.build(Report::Pdf::Act::StepReaction, ctx, tshrPath);
+    qDebug() << "Report::Pdf::Builder::build(StepReaction) ok:" << tshrOk << "->" << tshrPath;
 
     // CSV — полная копия ChartSnapshot, без curated-фильтра (в отличие от
     // PDF/Excel выше) — тут специально экспортируем ChartType::Pressure:

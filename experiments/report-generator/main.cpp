@@ -1,52 +1,264 @@
-// Синтетика — тот же приём, что и в experiments/verify-report/main.cpp
-// (реальные структуры данных, без реального железа/анализаторов). Генерим
-// лист "ТО" для Standard/Ilim/Ski одним запуском одного бинарника — не
-// три сборки с разным MPIPLATFORM_VARIANT, а один прогон с runtime-параметром
-// variant, см. комментарий в Generator.cpp про рантайм- vs compile-time
-// ветвление.
-#include "Generator.h"
-
-#include <QGuiApplication>
+// Превью report.xlsx без железа: синтетические данные (те же структуры, что
+// у приложения) -> боевой Report::Excel::generate(), все варианты из одной
+// сборки:
+//  full.xlsx          — Ilim, все тесты (ТО, ТШР, ТЧР, ТРС) и длинные тексты:
+//                       перенос строк, каждый акт влезает в свои страницы;
+//  minimal.xlsx       — Standard, ни одного теста, пустые поля и списки:
+//                       только лист ТО, без скрытого "Списки";
+//  ski_<паттерн>.xlsx — Ski, те же данные + циклические тесты;
+//  ski_B_CVT_empty    — Ski без данных: пустые таблицы ЦТ, подписи в конце.
 #include <QDir>
+#include <QGuiApplication>
 #include <QImage>
 #include <QMap>
 #include <QPainter>
 #include <QDebug>
 #include <QtMath>
-#include <QVector>
+
+#include <iterator>
+
+#include "Domain/Tests/Option/Response/Limits.h"
+#include "Report/Context.h"
+#include "Report/Excel/Generator.h"
+#include "Storage/ChartImageStorage.h"
+#include "Storage/ChartSnapshotStorage.h"
+#include "Widgets/Chart/ChartType.h"
 
 namespace {
 
-// Плейсхолдер вместо реального ChartView::grab() — эксперимент нарочно не
-// тянет за собой Gui/Widgets::Chart (это "без вспомогательных файлов", то
-// есть и без зависимости от живого UI тоже, не только без .xlsx-шаблона).
+// Заглушка вместо ChartView::grab() — превью не тянет за собой живой UI.
 QImage placeholderChart(const QString& title, const QColor& lineColor)
 {
-    QImage img(1280, 720, QImage::Format_ARGB32);
+    QImage img(1280, 640, QImage::Format_ARGB32);
     img.fill(Qt::white);
 
     QPainter p(&img);
     p.setRenderHint(QPainter::Antialiasing, true);
-
     p.setPen(QPen(QColor("#B9C0CB"), 1));
     p.drawRect(0, 0, img.width() - 1, img.height() - 1);
 
     p.setPen(QPen(lineColor, 3));
     QPolygon poly;
-    for (int i = 0; i <= 20; ++i) {
-        const int x = i * img.width() / 20;
-        const int y = img.height() - 60 - int(200 * qSin(i * 0.4) + 200);
-        poly << QPoint(x, y);
-    }
+    for (int i = 0; i <= 40; ++i)
+        poly << QPoint(i * img.width() / 40,
+                       img.height() / 2 - int(180 * qSin(i * 0.3)));
     p.drawPolyline(poly);
 
     p.setPen(Qt::black);
     QFont f = p.font();
-    f.setPointSize(16);
+    f.setPointSize(20);
     p.setFont(f);
     p.drawText(QRect(20, 20, img.width() - 40, 40), Qt::AlignLeft, title);
-
     return img;
+}
+
+struct Session {
+    Telemetry telemetry;
+    ObjectInfo object;
+    ValveInfo valve;
+    MaterialsOfComponentParts materials;
+    OtherParameters params;
+    ChartImageStorage chartImages;
+    ChartSnapshotStorage chartData;
+    QMap<Report::Html::ConclusionField, QString> conclusionAnswers;
+    QString conclusionSummary;
+    QMap<Report::Html::CommentSlot, QString> testComments;
+    QStringList spareParts;
+    SelectTests::PatternType pattern = SelectTests::Pattern_None;
+    Report::EditChoices editChoices;
+
+    bool save(const QString& path, Domain::Variant variant) const
+    {
+        const Report::Context ctx{
+            telemetry, object, valve, materials, params, chartImages, chartData,
+            conclusionAnswers, conclusionSummary, testComments, spareParts,
+            pattern, editChoices,
+        };
+        const bool ok = Report::Excel::generate(ctx, variant, path);
+        qInfo().noquote() << (ok ? "OK  " : "FAIL") << path;
+        return ok;
+    }
+};
+
+void fillFull(Session& s)
+{
+    s.object.object = "Установка первичной переработки нефти ЭЛОУ-АВТ-6, блок атмосферной перегонки";
+    s.object.manufactory = "Цех №3";
+    s.object.department = "Компрессорная станция";
+    s.object.FIO = "Иванов И. И.";
+
+    s.valve.positionNumber = "12-FV-034";
+    s.valve.manufacturer = "Valtek";
+    s.valve.valveModel = "V200";
+    s.valve.serialNumber = "SN-2024-1187";
+    s.valve.DN = "DN50";
+    s.valve.PN = "PN40";
+    s.valve.positionerModel = "SVI II AP";
+    s.valve.dinamicErrorRecomend = "2.0";
+    s.valve.valveStroke = "25.0";
+    s.valve.driveModel = "39-71361";
+    s.valve.driveRangeLow = 0.4;
+    s.valve.driveRangeHigh = 1.2;
+    s.valve.driveType = DriveType::SpringDiaphragm;
+
+    s.materials.corpus = "Сталь 20";
+    s.materials.cap = "Сталь 20";
+    s.materials.saddle = "12Х18Н10Т";
+    s.materials.CV = "12.4/15.5";
+    s.materials.ball = "-";
+    s.materials.disk = "-";
+    s.materials.plunger = "12Х18Н10Т";
+    s.materials.shaft = "-";
+    s.materials.stock = "14Х17Н2";
+    s.materials.guideSleeve = "PTFE";
+
+    s.params.date = "04.11.2026";
+    s.params.safePosition = "НО";
+    s.params.strokeMovement = "Линейное";
+
+    auto& t = s.telemetry;
+    t.valveStrokeRecord.real = 24.8;
+    t.supplyRecord.pressure_bar = 4.5;
+    t.crossingStatus.dynamicError = CrossingStatus::State::Ok;
+    t.crossingStatus.valveStroke = CrossingStatus::State::Fail;
+    t.crossingStatus.spring = CrossingStatus::State::Ok;
+    t.crossingStatus.frictionPercent = CrossingStatus::State::Fail;
+
+    Domain::Tests::Main::Result main;
+    main.dynamicErrorReal = 1.2;
+    main.lowLimitPressure = 0.6;
+    main.highLimitPressure = 3.8;
+    main.springLow = 0.41;
+    main.springHigh = 1.18;
+    main.frictionPercent = 14.1;
+    main.frictionForce = 186.0;
+    t.testMain = main;
+
+    Domain::Tests::Stroke::Result stroke;
+    stroke.forwardTimeMs = 3200;
+    stroke.backwardTimeMs = 3400;
+    t.testStroke = stroke;
+
+    Domain::Tests::Option::Step::Result step;
+    step.testValue = 86;
+    const int levels[] = {0, 25, 50, 75, 100, 75, 50, 25, 0};
+    for (int i = 0; i + 1 < int(std::size(levels)); ++i) {
+        Domain::Tests::Option::Step::StepResult r;
+        r.from = quint16(levels[i]);
+        r.to = quint16(levels[i + 1]);
+        r.T_value = i == 7 ? 0 : quint32(1800 + 120 * i);
+        r.overshoot = 0.35 * i;
+        step.steps << r;
+    }
+    t.testStep = step;
+
+    using Domain::Tests::Option::Response::allowedErrorForStep;
+    Domain::Tests::Option::Response::Result response;
+    response.baseTask = 50;
+    response.baseActual = 50.1;
+    response.baseActualTwo = 49.9;
+    response.gis = 0.35;
+    const double steps[] = {5, 2, 1, 0.5};
+    double up = response.baseTask;
+    double down = response.baseTask;
+    for (int i = 0; i < 4; ++i) {
+        up += steps[i];
+        down -= steps[i];
+        const double err = 3.0 + 9.0 * i;
+        response.upward << Domain::Tests::Option::Response::ResultItem{
+            up, up - steps[i] * err / 100, err, allowedErrorForStep(i), err <= allowedErrorForStep(i)};
+        response.downward << Domain::Tests::Option::Response::ResultItem{
+            down, down + steps[i] * err / 100, err, allowedErrorForStep(i), i != 3};
+    }
+    t.testResponse = response;
+
+    Domain::Tests::Option::Resolution::Result resolution;
+    resolution.baseTask = 50;
+    resolution.baseActual = 50.05;
+    for (int i = 1; i <= 4; ++i) {
+        resolution.upward << Domain::Tests::Option::Resolution::ResultItem{
+            50 + 0.25 * i, 50 + 0.25 * i - 0.02 * i, 8.0 * i};
+        resolution.downward << Domain::Tests::Option::Resolution::ResultItem{
+            50 - 0.25 * i, 50 - 0.25 * i + 0.03 * i, 12.0 * i};
+    }
+    t.testResolution = resolution;
+
+    // Регулировочный цикл: 100 циклов по 5 точкам, почти 2 часа — проверка
+    // часов в "Общее время теста". По два замера на диапазон — проверка
+    // выбора максимума/минимума.
+    Domain::Tests::Cyclic::Regulatory::Result regulatory;
+    regulatory.numCycles = 100;
+    regulatory.sequence = "0-25-50-75-100";
+    regulatory.totalTimeSec = 5 * 100 * 14.0;
+    for (const qint16 percent : {0, 25, 50, 75, 100}) {
+        for (int k = 0; k < 2; ++k) {
+            Domain::Tests::Cyclic::Regulatory::Range r;
+            r.rangePercent = percent;
+            r.maxForwardPosition = percent + 0.3 + 0.2 * k;
+            r.maxForwardCycle = 10 + 30 * k + percent / 25;
+            r.maxBackwardPosition = percent - 0.4 - 0.1 * k;
+            r.maxBackwardCycle = 70 - 20 * k + percent / 25;
+            regulatory.ranges << r;
+        }
+    }
+    t.testCyclicRegulatory = regulatory;
+
+    Domain::Tests::Cyclic::Shutoff::Result shutoff;
+    shutoff.numCycles = 50;
+    shutoff.sequence = "0-100";
+    shutoff.totalTimeSec = 2 * 50 * 20.0;
+    shutoff.doOnCounts = {50, 49};
+    shutoff.doOffCounts = {50, 50};
+    shutoff.switch3to0Count = 50;
+    shutoff.switch0to3Count = 1;
+    t.testCyclicShutoff = shutoff;
+
+    using Widgets::Chart::ChartType;
+    s.chartImages.set(ChartType::Task, placeholderChart("Задание", QColor("#2A689F")));
+    s.chartImages.set(ChartType::Pressure, placeholderChart("Давление", QColor("#D62828")));
+    s.chartImages.set(ChartType::Friction, placeholderChart("Трение", QColor("#457448")));
+    s.chartImages.set(ChartType::Step, placeholderChart("Шаговая реакция", QColor("#7B4FA0")));
+    s.chartImages.set(ChartType::Response, placeholderChart("Чувствительность", QColor("#C77700")));
+    s.chartImages.set(ChartType::Resolution, placeholderChart("Разрешающая способность", QColor("#00838F")));
+
+    using Report::Html::ConclusionField;
+    s.conclusionAnswers = {
+        {ConclusionField::SeatingZone, "без видимых дефектов"},
+        {ConclusionField::PositionerAdaptation, "удовлетворительно"},
+        {ConclusionField::AuxiliaryEquipment,
+         "перечень неисправного навесного оборудования указан в \"Рекомендуемый ЗИП\""},
+        {ConclusionField::FrictionGraph, "высокое трение при выходе плунжера/диска из седла"},
+        {ConclusionField::GlandLeak, "видимая течь не наблюдается"},
+    };
+    s.conclusionSummary =
+        "Работа позиционера неудовлетворительная. Произвести ремонт/замену позиционера/запчастей "
+        "позиционера, калибровку позиционера. Работа механической части неудовлетворительная. "
+        "Произвести ревизию клапана: выполнить разборку, чистку, мойку внутренних деталей, "
+        "проверка рабочей поверхности плунжер/седло/шар, проверка штока/вала (при необходимости "
+        "заменить). Произвести замену сальниковой набивки, уплотнений. Произвести ревизию привода. "
+        "После ремонта произвести настройку позиционера.";
+    // Образцы из листов "Заключение"/"ЗИП" старого Report.xlsx — в
+    // приложении они приходят из комбобоксов MainWindow.ui.
+    s.editChoices.conclusionFields = {
+        {ConclusionField::SeatingZone, {"без видимых дефектов", "резкий отрыв плунжера от седла",
+                                        "низкое значение зоны посадки плунжер/седло"}},
+        {ConclusionField::PositionerAdaptation, {"удовлетворительно", "люфты адаптации/обратной связи"}},
+        {ConclusionField::AuxiliaryEquipment, {"удовлетворительно", "позиционер неработоспособен"}},
+        {ConclusionField::FrictionGraph, {"зоны повышенного трения отсутствуют",
+                                          "высокое трение при выходе плунжера/диска из седла"}},
+        {ConclusionField::GlandLeak, {"видимая течь не наблюдается", "наблюдается видимая течь"}},
+    };
+    s.editChoices.spareParts = {
+        "сальниковое уплотнение (согласно исполнению)", "плунжер (при необходимости)",
+        "диск/уплотнение диска", "комплект мягких уплотнений", "мембрана привода", "манометр",
+    };
+
+    s.spareParts = {
+        "сальниковое уплотнение (согласно исполнению)",
+        "комплект Metso модель ZX (cальниковое уплотнение (согласно исполнению), уплотнения седла)",
+        "диск/уплотнение диска",
+        "кольцо внутреннее/внешнее втулки сальника (для Камфлекс)",
+    };
 }
 
 }
@@ -55,128 +267,33 @@ int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
 
-    ObjectInfo object;
-    object.object = "Установка первичной переработки нефти";
-    object.manufactory = "Цех №3";
-    object.department = "Компрессорная станция";
-    object.FIO = "Иванов И. И.";
-
-    ValveInfo valve;
-    valve.positionNumber = "12-FV-034";
-    valve.manufacturer = "Valtek";
-    valve.valveModel = "V200";
-    valve.serialNumber = "SN-2024-1187";
-    valve.DN = "DN50";
-    valve.PN = "PN40";
-    valve.positionerModel = "SVI II AP";
-    valve.dinamicErrorRecomend = "2.0";
-    valve.valveStroke = "25.0";
-    valve.driveModel = "39-71361";
-    valve.driveRangeLow = 0.4;
-    valve.driveRangeHigh = 1.2;
-    valve.solenoidValveModel = "СЭП-101";
-    valve.limitSwitchModel = "КВ-24";
-    valve.positionSensorModel = "ДП-12";
-    valve.driveType = DriveType::SpringDiaphragm;
-
-    MaterialsOfComponentParts materials;
-    materials.corpus = "Сталь";
-    materials.cap = "Сталь";
-    materials.saddle = "Сталь";
-    materials.CV = "12.4/15.5";
-    materials.ball = "Сталь нержавеющая";
-    materials.disk = "-";
-    materials.plunger = "Сталь нержавеющая";
-    materials.shaft = "-";
-    materials.stock = "Сталь нержавеющая";
-    materials.guideSleeve = "PTFE";
-
-    OtherParameters params;
-    params.date = "02.09.2026";
-    params.safePosition = "Открыт";
-    params.strokeMovement = "линейное";
-
-    Telemetry telemetry;
-    telemetry.valveStrokeRecord.real = 24.8;
-    telemetry.supplyRecord.pressure_bar = 4.5;
-    telemetry.crossingStatus.dynamicError = CrossingStatus::State::Ok;
-    telemetry.crossingStatus.valveStroke = CrossingStatus::State::Fail;
-    telemetry.crossingStatus.spring = CrossingStatus::State::Ok;
-    telemetry.crossingStatus.frictionPercent = CrossingStatus::State::Ok;
-
-    Domain::Tests::Main::Result mainResult;
-    mainResult.dynamicErrorReal = 1.2;
-    mainResult.lowLimitPressure = 0.6;
-    mainResult.highLimitPressure = 3.8;
-    mainResult.springLow = 0.4;
-    mainResult.springHigh = 1.2;
-    mainResult.frictionPercent = 4.1;
-    mainResult.frictionForce = 186.0;
-    telemetry.testMain = mainResult;
-
-    Domain::Tests::Stroke::Result strokeResult;
-    strokeResult.forwardTimeMs = 3200;
-    strokeResult.backwardTimeMs = 3400;
-    telemetry.testStroke = strokeResult;
-
-    using Report::Html::ConclusionField;
-    const QMap<ConclusionField, QString> conclusionAnswers = {
-        { ConclusionField::SeatingZone, "без видимых дефектов" },
-        { ConclusionField::PositionerAdaptation, "удовлетворительно" },
-        { ConclusionField::AuxiliaryEquipment, "удовлетворительно" },
-        { ConclusionField::FrictionGraph, "зоны повышенного трения отсутствуют" },
-        { ConclusionField::GlandLeak, "видимая течь не наблюдается" },
-    };
-    const QString conclusionSummary =
-        "Работа позиционера неудовлетворительная. Произвести ремонт/замену позиционера/запчастей "
-        "позиционера, калибровку позиционера. Работа механической части неудовлетворительная. "
-        "Произвести ревизию клапана: выполнить разборку, чистку, мойку внутренних деталей, "
-        "проверка рабочей поверхности плунжер/седло/шар, проверка штока/вала (при необходимости "
-        "заменить). Произвести замену сальниковой набивки, уплотнений. Произвести ревизию привода. "
-        "После ремонта произвести настройку позиционера.";
-    const QStringList spareParts = {
-        "сальниковое уплотнение (согласно исполнению)",
-        "комплект мягких уплотнений",
-        "диск/уплотнение диска",
-    };
-
-    ReportGen::TechnicalInspectionData data{
-        object, valve, materials, params, telemetry,
-        /*positionerModel=*/true,
-        /*includeSolenoid=*/false,
-        conclusionAnswers,
-        conclusionSummary,
-        spareParts,
-        placeholderChart("Задание", QColor("#2A689F")),
-        placeholderChart("Давление от перемещения", QColor("#D62828")),
-        placeholderChart("Сила трения от перемещения", QColor("#457448")),
-    };
-
-    const QString outDir = QStringLiteral(MPIPLATFORM_SOURCE_DIR
-                                          "/experiments/report-generator/out");
+    const QString outDir = QStringLiteral(MPIPLATFORM_SOURCE_DIR "/experiments/report-generator/out");
     QDir().mkpath(outDir);
 
-    struct Case { Domain::Variant variant; QString name; bool solenoid; };
-    const QVector<Case> cases = {
-        {Domain::Variant::Standard, "Standard", false},
-        {Domain::Variant::Ilim, "Ilim", false},
-        {Domain::Variant::Ski, "Ski", false},
-        // Ski C_SACVT реально включает соленоидные поля в ТО (см. Builder::
-        // buildSki()) — отдельный кейс, чтобы проверить, что параметр
-        // includeSolenoid действительно работает, а не просто существует.
-        {Domain::Variant::Ski, "Ski_SACVT", true},
+    using Domain::Variant;
+
+    Session full;
+    fillFull(full);
+
+    bool ok = full.save(outDir + "/full.xlsx", Variant::Ilim);
+    ok &= Session().save(outDir + "/minimal.xlsx", Variant::Standard);
+
+    const std::pair<SelectTests::PatternType, const char*> skiPatterns[] = {
+        {SelectTests::Pattern_B_CVT, "B_CVT"},
+        {SelectTests::Pattern_B_SACVT, "B_SACVT"},
+        {SelectTests::Pattern_C_CVT, "C_CVT"},
+        {SelectTests::Pattern_C_SACVT, "C_SACVT"},
+        {SelectTests::Pattern_C_SOVT, "C_SOVT"},
     };
-
-    bool allOk = true;
-    for (const auto& c : cases) {
-        ReportGen::TechnicalInspectionData caseData = data;
-        caseData.includeSolenoid = c.solenoid;
-
-        const QString path = outDir + "/TO_" + c.name + ".xlsx";
-        const bool ok = ReportGen::generateTechnicalInspection(caseData, c.variant, "ТО", path);
-        qInfo().noquote() << (ok ? "OK  " : "FAIL") << path;
-        allOk = allOk && ok;
+    for (const auto& [pattern, name] : skiPatterns) {
+        Session ski = full;
+        ski.pattern = pattern;
+        ok &= ski.save(outDir + "/ski_" + name + ".xlsx", Variant::Ski);
     }
 
-    return allOk ? 0 : 1;
+    Session skiEmpty;
+    skiEmpty.pattern = SelectTests::Pattern_B_CVT;
+    ok &= skiEmpty.save(outDir + "/ski_B_CVT_empty.xlsx", Variant::Ski);
+
+    return ok ? 0 : 1;
 }

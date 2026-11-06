@@ -56,7 +56,12 @@ Styles::Styles(CreateFlag flag)
 
     if (flag == CreateFlag::F_NewFromScratch) {
         //Add default Format
+        // Локальная правка (см. LOCAL_PATCHES.md, раздел 6): без явного
+        // размера font 0 ("Обычный") пишется без <sz>, а от него Excel/
+        // LibreOffice считают ширину столбцов в пикселях — каждая
+        // программа подставляла свой размер, и столбцы "плыли".
         Format defaultFmt;
+        defaultFmt.setFontSize(11);
         addXfFormat(defaultFmt);
 
         //Add another fill format

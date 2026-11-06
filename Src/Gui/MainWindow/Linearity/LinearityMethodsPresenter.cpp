@@ -1,7 +1,7 @@
-// ЭКСПЕРИМЕНТ — см. LinearityLabPresenter.h.
+// Способы расчёта линейности в карточке Pass|Fail — см. LinearityMethodsPresenter.h.
 
-#include "LinearityLabPresenter.h"
-#include "ui_LinearityLabPanel.h"
+#include "LinearityMethodsPresenter.h"
+#include "ui_LinearityMethodsPanel.h"
 #include "ui_LinearityInfoPopup.h"
 
 #include <QEvent>
@@ -21,7 +21,7 @@
 #include "Widgets/Chart/Manager.h"
 #include "Widgets/ToleranceBar.h"
 
-using namespace Domain::Tests::Main::Experimental;
+using namespace Domain::Tests::Main::Linearity;
 using Widgets::Chart::ChartType;
 using Widgets::Chart::ChartView;
 
@@ -70,9 +70,9 @@ double slopeDeviation(const StrokeLinearity& s, double slope)
 
 } // namespace
 
-LinearityLabPresenter::LinearityLabPresenter(Widgets::Chart::Manager* charts, QObject* parent)
+LinearityMethodsPresenter::LinearityMethodsPresenter(Widgets::Chart::Manager* charts, QObject* parent)
     : QObject(parent)
-    , m_ui(std::make_unique<Ui::LinearityLabPanel>())
+    , m_ui(std::make_unique<Ui::LinearityMethodsPanel>())
     , m_popupUi(std::make_unique<Ui::LinearityInfoPopup>())
     , m_charts(charts)
 {
@@ -88,7 +88,7 @@ LinearityLabPresenter::LinearityLabPresenter(Widgets::Chart::Manager* charts, QO
         m_ui->comboBox_linearityStroke->addItem(strokeBasisTitle(basis), int(basis));
 
     ChartView* profile = m_ui->chartView_linearityProfile;
-    profile->setName(QStringLiteral("LinearityLab"));
+    profile->setName(QStringLiteral("LinearityMethods"));
     profile->useTimeaxis(false);
     profile->setLabelXformat(QStringLiteral("%.1f mm"));
     profile->addAxis(QStringLiteral("%.1f"));
@@ -114,29 +114,29 @@ LinearityLabPresenter::LinearityLabPresenter(Widgets::Chart::Manager* charts, QO
 
     m_popupTimer.setSingleShot(true);
     m_popupTimer.setInterval(350);
-    connect(&m_popupTimer, &QTimer::timeout, this, &LinearityLabPresenter::showInfoPopup);
+    connect(&m_popupTimer, &QTimer::timeout, this, &LinearityMethodsPresenter::showInfoPopup);
     m_ui->label_linearityInfo->installEventFilter(this);
 
     connect(m_ui->comboBox_linearityMethod, &QComboBox::currentIndexChanged,
-            this, &LinearityLabPresenter::refresh);
+            this, &LinearityMethodsPresenter::refresh);
     connect(m_ui->comboBox_linearityStroke, &QComboBox::currentIndexChanged,
-            this, &LinearityLabPresenter::refresh);
+            this, &LinearityMethodsPresenter::refresh);
     connect(m_ui->checkBox_linearityShowOnCharts, &QCheckBox::toggled,
-            this, &LinearityLabPresenter::refresh);
+            this, &LinearityMethodsPresenter::refresh);
     connect(m_ui->pushButton_linearityRecalculate, &QPushButton::clicked,
-            this, &LinearityLabPresenter::refresh);
+            this, &LinearityMethodsPresenter::refresh);
 
     refresh();
 }
 
-LinearityLabPresenter::~LinearityLabPresenter() = default;
+LinearityMethodsPresenter::~LinearityMethodsPresenter() = default;
 
-void LinearityLabPresenter::setRegistry(Registry* registry)
+void LinearityMethodsPresenter::setRegistry(Registry* registry)
 {
     m_registry = registry;
 }
 
-void LinearityLabPresenter::applyPalette(const Gui::Style::Palette& palette)
+void LinearityMethodsPresenter::applyPalette(const Gui::Style::Palette& palette)
 {
     m_ui->chartView_linearityProfile->applyPalette(palette);
     // ⓘ — приглушённым цветом темы, как подписи role="title".
@@ -144,23 +144,23 @@ void LinearityLabPresenter::applyPalette(const Gui::Style::Palette& palette)
         QStringLiteral("font-size: 14pt; color: %1;").arg(palette.textMuted));
 }
 
-void LinearityLabPresenter::setCardTargets(CardTargets targets, std::function<void()> restoreOfficial)
+void LinearityMethodsPresenter::setCardTargets(CardTargets targets, std::function<void()> restoreOfficial)
 {
     m_card = targets;
     m_restoreOfficial = std::move(restoreOfficial);
 }
 
-LinearityMethod LinearityLabPresenter::currentMethod() const
+LinearityMethod LinearityMethodsPresenter::currentMethod() const
 {
     return LinearityMethod(m_ui->comboBox_linearityMethod->currentData().toInt());
 }
 
-StrokeBasis LinearityLabPresenter::currentBasis() const
+StrokeBasis LinearityMethodsPresenter::currentBasis() const
 {
     return StrokeBasis(m_ui->comboBox_linearityStroke->currentData().toInt());
 }
 
-void LinearityLabPresenter::refresh()
+void LinearityMethodsPresenter::refresh()
 {
     const LinearityMethod method = currentMethod();
     m_ui->label_linearityMethodDescription_Title->setText(linearityMethodDescription(method));
@@ -178,7 +178,7 @@ void LinearityLabPresenter::refresh()
     render();
 }
 
-void LinearityLabPresenter::setActive(bool active)
+void LinearityMethodsPresenter::setActive(bool active)
 {
     m_active = active;
     if (active) {
@@ -190,7 +190,7 @@ void LinearityLabPresenter::setActive(bool active)
     }
 }
 
-void LinearityLabPresenter::render()
+void LinearityMethodsPresenter::render()
 {
     const bool valid = m_result.valid;
     const bool integral = isPercentOfStroke(m_result.method);
@@ -249,7 +249,7 @@ void LinearityLabPresenter::render()
     reapplyCardOverride();
 }
 
-void LinearityLabPresenter::reapplyCardOverride()
+void LinearityMethodsPresenter::reapplyCardOverride()
 {
     // Официальный = текущий способ по худшему из двух ходов.
     const bool official = m_result.method == LinearityMethod::DifferentialCurrent
@@ -282,7 +282,7 @@ void LinearityLabPresenter::reapplyCardOverride()
     m_overrideShown = true;
 }
 
-void LinearityLabPresenter::fillInfoPopup()
+void LinearityMethodsPresenter::fillInfoPopup()
 {
     Ui::LinearityInfoPopup& ui = *m_popupUi;
     const bool integral = isPercentOfStroke(m_result.method);
@@ -334,7 +334,7 @@ void LinearityLabPresenter::fillInfoPopup()
     m_popup->adjustSize();
 }
 
-void LinearityLabPresenter::updateProfileChart()
+void LinearityMethodsPresenter::updateProfileChart()
 {
     ChartView* chart = m_ui->chartView_linearityProfile;
     const int selected = m_result.worstStroke;
@@ -376,7 +376,7 @@ void LinearityLabPresenter::updateProfileChart()
     chart->rescanRange();
 }
 
-void LinearityLabPresenter::updateMainChartMarks()
+void LinearityMethodsPresenter::updateMainChartMarks()
 {
     const StrokeLinearity& s = m_result.strokes[m_result.worstStroke];
     const bool integral = isPercentOfStroke(m_result.method);
@@ -419,7 +419,7 @@ void LinearityLabPresenter::updateMainChartMarks()
     m_marksShown = true;
 }
 
-void LinearityLabPresenter::clearMainChartMarks()
+void LinearityMethodsPresenter::clearMainChartMarks()
 {
     if (!m_marksShown)
         return;
@@ -432,7 +432,7 @@ void LinearityLabPresenter::clearMainChartMarks()
     m_marksShown = false;
 }
 
-bool LinearityLabPresenter::eventFilter(QObject* watched, QEvent* event)
+bool LinearityMethodsPresenter::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_ui->label_linearityInfo) {
         if (event->type() == QEvent::Enter) {
@@ -445,7 +445,7 @@ bool LinearityLabPresenter::eventFilter(QObject* watched, QEvent* event)
     return QObject::eventFilter(watched, event);
 }
 
-void LinearityLabPresenter::showInfoPopup()
+void LinearityMethodsPresenter::showInfoPopup()
 {
     if (!m_result.valid)
         return;

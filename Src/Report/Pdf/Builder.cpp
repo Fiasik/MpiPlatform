@@ -3,6 +3,9 @@
 #include <QDebug>
 #include <QDomDocument>
 #include <QFile>
+#include <QPainter>
+
+#include <functional>
 
 #include "qtrpt.h"
 
@@ -34,9 +37,11 @@ QDomDocument loadTemplate(const QString& resourcePath)
     return doc;
 }
 
-}
+// Акт целиком, кроме вывода: шаблон + данные. print получает готовый QtRPT и
+// решает, куда его отдать — в PDF-файл или в принтер предпросмотра.
+using Print = std::function<void(QtRPT&)>;
 
-bool Builder::buildTechnicalInspection(const Report::Context& ctx, const QString& outputPath)
+bool buildTechnicalInspection(const Report::Context& ctx, const Print& print)
 {
     using Widgets::Chart::ChartType;
 
@@ -61,11 +66,11 @@ bool Builder::buildTechnicalInspection(const Report::Context& ctx, const QString
     QObject::connect(&report, &QtRPT::setValue, &dataSource, &TechnicalInspectionSource::onSetValue);
     QObject::connect(&report, &QtRPT::setDSInfo, &dataSource, &TechnicalInspectionSource::onSetDSInfo);
 
-    report.printPDF(outputPath, false);
+    print(report);
     return true;
 }
 
-bool Builder::buildStepReaction(const Report::Context& ctx, const QString& outputPath)
+bool buildStepReaction(const Report::Context& ctx, const Print& print)
 {
     using Widgets::Chart::ChartType;
 
@@ -85,11 +90,11 @@ bool Builder::buildStepReaction(const Report::Context& ctx, const QString& outpu
     StepReactionSource dataSource(ctx);
     QObject::connect(&report, &QtRPT::setValue, &dataSource, &StepReactionSource::onSetValue);
 
-    report.printPDF(outputPath, false);
+    print(report);
     return true;
 }
 
-bool Builder::buildResponse(const Report::Context& ctx, const QString& outputPath)
+bool buildResponse(const Report::Context& ctx, const Print& print)
 {
     using Widgets::Chart::ChartType;
 
@@ -110,11 +115,11 @@ bool Builder::buildResponse(const Report::Context& ctx, const QString& outputPat
     QObject::connect(&report, &QtRPT::setValue, &dataSource, &ResponseSource::onSetValue);
     QObject::connect(&report, &QtRPT::setDSInfo, &dataSource, &ResponseSource::onSetDSInfo);
 
-    report.printPDF(outputPath, false);
+    print(report);
     return true;
 }
 
-bool Builder::buildResolution(const Report::Context& ctx, const QString& outputPath)
+bool buildResolution(const Report::Context& ctx, const Print& print)
 {
     using Widgets::Chart::ChartType;
 
@@ -135,11 +140,11 @@ bool Builder::buildResolution(const Report::Context& ctx, const QString& outputP
     QObject::connect(&report, &QtRPT::setValue, &dataSource, &ResolutionSource::onSetValue);
     QObject::connect(&report, &QtRPT::setDSInfo, &dataSource, &ResolutionSource::onSetDSInfo);
 
-    report.printPDF(outputPath, false);
+    print(report);
     return true;
 }
 
-bool Builder::buildComments(const Report::Context& ctx, const QString& outputPath)
+bool buildComments(const Report::Context& ctx, const Print& print)
 {
     QDomDocument doc = loadTemplate(":/pdf/Reports/Comments.xml");
     if (doc.isNull())
@@ -155,8 +160,55 @@ bool Builder::buildComments(const Report::Context& ctx, const QString& outputPat
     QObject::connect(&report, &QtRPT::setValue, &dataSource, &CommentsSource::onSetValue);
     QObject::connect(&report, &QtRPT::setDSInfo, &dataSource, &CommentsSource::onSetDSInfo);
 
-    report.printPDF(outputPath, false);
+    print(report);
     return true;
+}
+
+bool render(Act act, const Report::Context& ctx, const Print& print)
+{
+    switch (act) {
+    case Act::TechnicalInspection: return buildTechnicalInspection(ctx, print);
+    case Act::StepReaction:        return buildStepReaction(ctx, print);
+    case Act::Response:            return buildResponse(ctx, print);
+    case Act::Resolution:          return buildResolution(ctx, print);
+    case Act::Comments:            return buildComments(ctx, print);
+    }
+    return false;
+}
+
+}
+
+QString actTitle(Act act)
+{
+    switch (act) {
+    case Act::TechnicalInspection: return QObject::tr("Акт ТО");
+    case Act::StepReaction:        return QObject::tr("Акт ТШР");
+    case Act::Response:            return QObject::tr("Акт ТЧР");
+    case Act::Resolution:          return QObject::tr("Акт ТРС");
+    case Act::Comments:            return QObject::tr("Комментарии");
+    }
+    return QString();
+}
+
+bool Builder::build(Act act, const Report::Context& ctx, const QString& outputPath)
+{
+    return render(act, ctx, [&outputPath](QtRPT& report) {
+        report.printPDF(outputPath, false);
+    });
+}
+
+bool Builder::preview(Act act, const Report::Context& ctx, QPrinter* printer)
+{
+    return render(act, ctx, [printer](QtRPT& report) {
+        // Свой QPainter — QtRPT сам заведённый через new не удаляет, а
+        // предпросмотр пересобирается при каждом обновлении. Принтер отдаём
+        // и как «свой» принтер отчёта: drawFields() при переносе высокого
+        // поля на новую страницу берёт именно его, а не параметр.
+        QPainter painter;
+        report.setPainter(&painter);
+        report.setPrinter(printer);
+        report.printPreview(printer);
+    });
 }
 
 }

@@ -37,6 +37,16 @@ ThemePreference AppSettings::themePreference() const
     return ThemePreference::System;
 }
 
+QString AppSettings::historyArchiveRoot() const
+{
+    return m_settings.value("History/archiveRoot").toString();
+}
+
+void AppSettings::setHistoryArchiveRoot(const QString& path)
+{
+    setValue("History/archiveRoot", path);
+}
+
 void AppSettings::setThemePreference(ThemePreference pref)
 {
     const char* value = "System";

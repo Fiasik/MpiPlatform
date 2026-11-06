@@ -190,8 +190,7 @@ bool Saver::saveReport(const Excel::ReportData& report, const QString& templateP
     if (!ensureDirectory())
         return false;
 
-    const QString reportPath =
-        m_dir.filePath(QStringLiteral("report.xlsx"));
+    const QString reportPath = reportXlsxPath();
 
     Document xlsx(templatePath);
 
@@ -351,6 +350,11 @@ bool Saver::saveReport(const Excel::ReportData& report, const QString& templateP
     }
 
     return ok && QFile::exists(reportPath);
+}
+
+QString Saver::reportXlsxPath() const
+{
+    return m_dir.filePath(QStringLiteral("report.xlsx"));
 }
 
 QString Saver::reportPdfPath(const QString& fileName) const

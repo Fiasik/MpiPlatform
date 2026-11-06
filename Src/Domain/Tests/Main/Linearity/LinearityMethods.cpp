@@ -1,6 +1,7 @@
-// ЭКСПЕРИМЕНТ — см. LinearityLab.h. Официальный расчёт не трогает.
+// Способы расчёта линейности для сравнения — см. LinearityMethods.h.
+// Официальный расчёт (Analyzer) не трогает.
 
-#include "LinearityLab.h"
+#include "LinearityMethods.h"
 
 #include <QLocale>
 #include <QObject>
@@ -10,7 +11,7 @@
 #include <cmath>
 #include <limits>
 
-namespace Domain::Tests::Main::Experimental {
+namespace Domain::Tests::Main::Linearity {
 
 namespace {
 
@@ -399,7 +400,7 @@ QString strokeName(int index)
     }
 }
 
-double strokePercent(const LinearityLabResult& result, double position)
+double strokePercent(const LinearityMethodsResult& result, double position)
 {
     const double stroke = result.strokeMax - result.strokeMin;
     if (stroke <= 0.0)
@@ -407,12 +408,12 @@ double strokePercent(const LinearityLabResult& result, double position)
     return (position - result.strokeMin) / stroke * 100.0;
 }
 
-LinearityLabResult computeLinearity(LinearityMethod method,
+LinearityMethodsResult computeLinearity(LinearityMethod method,
                                     const QVector<QPointF>& forward,
                                     const QVector<QPointF>& backward,
                                     StrokeBasis basis)
 {
-    LinearityLabResult result;
+    LinearityMethodsResult result;
     result.method = method;
     result.basis = basis;
 

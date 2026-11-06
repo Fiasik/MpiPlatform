@@ -140,7 +140,7 @@ void ReportGenerationPresenter::saveReportExtrasToHistory(qint64 sessionId)
 void ReportGenerationPresenter::collectRegistryOverrides(
     ObjectInfo& objectInfo,
     ValveInfo& valveInfo,
-    OtherParameters& otherParameters)
+    OtherParameters& otherParameters) const
 {
     NumberUtils::readRange(m_ui->lineEdit_resultsTable_driveRangeRecomend,
               valveInfo.driveRangeLow,
@@ -208,7 +208,8 @@ QString ReportGenerationPresenter::commentsPdfPath() const
     if (!m_reportSaver)
         return QString();
 
-    return m_reportSaver->directory().filePath(QObject::tr("Комментарии.pdf"));
+    return m_reportSaver->directory().filePath(
+        Report::Pdf::actTitle(Report::Pdf::Act::Comments) + QStringLiteral(".pdf"));
 }
 
 void ReportGenerationPresenter::saveCommentsPdfIfNeeded()
@@ -248,21 +249,25 @@ void ReportGenerationPresenter::saveCommentsPdfIfNeeded()
         m_patternType
     };
 
-    Report::Pdf::Builder().buildComments(ctx, path);
+    Report::Pdf::Builder().build(Report::Pdf::Act::Comments, ctx, path);
 }
 
-std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareReportGeneration()
+std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::collectInput(
+    QVector<FieldOverrides::Record>* overrides) const
 {
-    // Давление питания в отчёт идёт из поля, а не из устройства — оно, как и
-    // раньше, заносится прямо в m_telemetry.
-    m_telemetry.supplyRecord.pressure_bar =
-        QString(m_ui->lineEdit_supplyPressure->text()).toDouble();
-
-    Telemetry reportTelemetry = m_telemetry;
-    m_lastOverrides.clear();
-    collectReportOverrides(reportTelemetry, m_lastOverrides);
+    if (!m_registry)
+        return std::nullopt;
 
     ReportGenerationWorker::Input input;
+
+    // Давление питания в отчёт идёт из поля, а не из устройства.
+    input.telemetry = m_telemetry;
+    input.telemetry.supplyRecord.pressure_bar = supplyPressure().value_or(0.0);
+
+    QVector<FieldOverrides::Record> found;
+    collectReportOverrides(input.telemetry, found);
+    if (overrides)
+        *overrides = found;
 
     input.object = m_registry->objectInfo();
     input.valve = m_registry->valveInfo();
@@ -270,7 +275,6 @@ std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareR
 
     collectRegistryOverrides(input.object, input.valve, input.params);
 
-    input.telemetry = reportTelemetry;
     input.materials = m_registry->materialsOfComponentParts();
     input.chartImages = m_chartImageStorage;
     input.chartData = m_chartSnapshotStorage;
@@ -279,7 +283,23 @@ std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareR
     input.testComments = m_testComments;
     input.spareParts = m_sparePartsPresenter->selectedParts();
     input.pattern = m_patternType;
+    input.editChoices = {m_conclusionPresenter->fieldChoices(),
+                         m_sparePartsPresenter->catalog()};
     input.buildTechnicalInspectionPdf = m_ui->checkBox_report_TO->isChecked();
+
+    return input;
+}
+
+std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareReportGeneration()
+{
+    // Давление питания из поля, как и раньше, заносится и прямо в m_telemetry
+    // (в отчёт оно попадает через collectInput()).
+    m_telemetry.supplyRecord.pressure_bar = supplyPressure().value_or(0.0);
+
+    m_lastOverrides.clear();
+    std::optional<ReportGenerationWorker::Input> input = collectInput(&m_lastOverrides);
+    if (!input)
+        return std::nullopt;
 
     // Резолвим папку сохранения здесь и только здесь — Saver может в
     // ответ интерактивно спросить пользователя (диалог выбора папки),
@@ -293,9 +313,16 @@ std::optional<ReportGenerationWorker::Input> ReportGenerationPresenter::prepareR
     return input;
 }
 
+std::optional<double> ReportGenerationPresenter::supplyPressure() const
+{
+    bool ok = false;
+    const double value = NumberUtils::toDouble(m_ui->lineEdit_supplyPressure->text(), &ok);
+    return ok ? std::optional<double>(value) : std::nullopt;
+}
+
 bool ReportGenerationPresenter::openReport()
 {
-    const QString path = m_reportSaver->directory().filePath(QStringLiteral("report.xlsx"));
+    const QString path = m_reportSaver->reportXlsxPath();
 
     if (!QFile::exists(path))
         return false;

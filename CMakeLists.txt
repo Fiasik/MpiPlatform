@@ -233,7 +233,7 @@ if(MPIPLATFORM_BUILD_VERIFY_REPORT)
     add_subdirectory(experiments/verify-report)
 endif()
 
-option(MPIPLATFORM_BUILD_REPORT_GENERATOR_SPIKE "Build throwaway template-free report generator spike (experiments/report-generator)" OFF)
+option(MPIPLATFORM_BUILD_REPORT_GENERATOR_SPIKE "Build report.xlsx preview of Report::Excel::generate() on synthetic data (experiments/report-generator)" OFF)
 
 if(MPIPLATFORM_BUILD_REPORT_GENERATOR_SPIKE)
     add_subdirectory(experiments/report-generator)
@@ -245,12 +245,13 @@ if(MPIPLATFORM_BUILD_VERIFY_THEME)
     add_subdirectory(experiments/verify-theme)
 endif()
 
-# ЭКСПЕРИМЕНТ: превью раскрывающейся карточки линейности на настоящем
-# MainWindow без устройства (нужен MPIPLATFORM_EXPERIMENTAL_LINEARITY=ON).
-option(MPIPLATFORM_BUILD_LINEARITY_PREVIEW "Build experimental linearity card preview on synthetic/archive data (experiments/linearity-preview)" OFF)
+# Превьюер на настоящем MainWindow без устройства: новые и экспериментальные
+# функции (карточка линейности, предпросмотр отчёта, ...) на синтетике,
+# архивной папке испытания или сессии из рабочей базы.
+option(MPIPLATFORM_BUILD_PREVIEW "Build MpiPreview: real MainWindow on synthetic/archive/session data (experiments/preview)" OFF)
 
-if(MPIPLATFORM_BUILD_LINEARITY_PREVIEW AND MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-    add_subdirectory(experiments/linearity-preview)
+if(MPIPLATFORM_BUILD_PREVIEW)
+    add_subdirectory(experiments/preview)
 endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

@@ -1,12 +1,7 @@
-# Спайк "отчёт без шаблона": лист "ТО" собирается программно через QXlsx —
-# без копирования/заполнения готового .xlsx (см. комментарий в Generator.h).
-# Report:: тут только ради Report::Html::ConclusionField — крошечный
-# автономный enum+2 switch-функции без единой зависимости от Writer/
-# Document/шаблонной инфраструктуры, дублировать его текст ради "не
-# завязываться на Report::" смысла не было.
+# Превью report.xlsx: боевой Report::Excel::generate() (книга без шаблона,
+# Src/Report/Excel/Generator.h) на синтетических данных — посмотреть вёрстку
+# актов без железа. Результат — в out/ рядом с этим файлом.
 qt_add_executable(ReportGeneratorSpike
-    Generator.h
-    Generator.cpp
     main.cpp
 )
 

@@ -31,17 +31,15 @@ QImage ImageService::captureChart(ChartType chart)
     if (!ch)
         return {};
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    // ЭКСПЕРИМЕНТ: на графиках задания и давления своей разметки нет — всё,
-    // что там есть, поставила карточка линейности (эксперимент). В отчёт она
-    // попадать не должна: снимаем на время снимка и возвращаем.
-    QVector<ChartView::ChartAnnotation> experimentalMarks;
+    // На графиках задания и давления своей разметки нет — всё, что там
+    // есть, поставила карточка способов линейности. В отчёт она попадать не
+    // должна: снимаем на время снимка и возвращаем.
+    QVector<ChartView::ChartAnnotation> linearityMarks;
     if (chart == ChartType::Task || chart == ChartType::Pressure) {
-        experimentalMarks = ch->annotations();
-        if (!experimentalMarks.isEmpty())
+        linearityMarks = ch->annotations();
+        if (!linearityMarks.isEmpty())
             ch->clearAnnotations();
     }
-#endif
 
     const QSize originalSize = ch->size();
     const bool needsUpscale =
@@ -75,10 +73,8 @@ QImage ImageService::captureChart(ChartType chart)
     if (backup)
         restoreSeries(chart, *backup);
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    if (!experimentalMarks.isEmpty())
-        ch->setAnnotations(experimentalMarks); // ЭКСПЕРИМЕНТ: вернуть разметку
-#endif
+    if (!linearityMarks.isEmpty())
+        ch->setAnnotations(linearityMarks); // вернуть разметку карточки
 
     return pixmap.toImage();
 }

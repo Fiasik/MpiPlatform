@@ -49,6 +49,12 @@ public:
     void setSeriesDraggable(quint8 seriesN, bool draggable);
     void snapshotDraggableSeries();
     void restoreDraggableSeries();
+    // Исходные положения перетаскиваемых линий (то, что запомнил
+    // snapshotDraggableSeries()). clear() их сбрасывает — просмотр архива во
+    // «Истории» забирает их до подмены графика и возвращает вместе с живым
+    // тестом.
+    QHash<quint8, QList<QPointF>> draggableSnapshot() const { return m_draggableSnapshot; }
+    void setDraggableSnapshot(const QHash<quint8, QList<QPointF>>& snapshot);
     void setAxisXTitle(const QString& title);
 
     // Постоянная разметка поверх графика (не путать с крестиком наведения
@@ -75,8 +81,8 @@ public:
     };
     void setAnnotations(const QVector<ChartAnnotation>& annotations);
     void clearAnnotations();
-    // Текущая разметка — нужна ImageService, чтобы снять экспериментальную
-    // разметку карточки линейности на время снимка для отчёта.
+    // Текущая разметка — нужна ImageService, чтобы снять разметку карточки
+    // способов линейности на время снимка для отчёта.
     const QVector<ChartAnnotation>& annotations() const { return m_annotationData; }
     // Пересчитывает диапазон данных (m_min_X/m_max_X) по уже имеющимся
     // точкам во всех сериях и переприменяет автомасштаб. Нужен только тем,

@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QList>
 #include <QMap>
 #include <QObject>
 #include <QStringList>
 
 #include "Gui/Setup/SelectTests.h"
+#include "Report/Context.h"
+#include "Report/Pdf/Builder.h"
 #include "Report/Html/CommentCard.h"
 #include "Report/Html/ConclusionField.h"
 #include "Storage/ChartImageStorage.h"
@@ -54,7 +57,18 @@ public:
         QMap<Report::Html::CommentSlot, QString> testComments;
         QStringList spareParts;
         SelectTests::PatternType pattern = SelectTests::Pattern_None;
+        Report::EditChoices editChoices;
         bool buildTechnicalInspectionPdf = false;
+
+        // Context ссылается на поля этого Input — живёт не дольше его.
+        Report::Context context() const;
+
+        // PDF-акты, которые «Сформировать отчёт» запишет из этих данных
+        // (Комментарии сюда не входят — их пишет ReportGenerationPresenter
+        // при правке комментария). По тому же списку строит выбор
+        // ReportPreviewPresenter — чтобы предпросмотр показывал ровно то, что
+        // попадёт в папку.
+        QList<Report::Pdf::Act> pdfActs() const;
     };
 
     explicit ReportGenerationWorker(Report::Saver* saver, QObject* parent = nullptr);

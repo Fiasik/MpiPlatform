@@ -344,7 +344,7 @@ void HistoryPresenter::loadSessions()
         "cr.linear_characteristic_lower, cr.linear_characteristic_upper, "
         "cr.spring_low_lower, cr.spring_low_upper, "
         "cr.spring_high_lower, cr.spring_high_upper, "
-        "s.needs_repair "
+        "s.needs_repair, s.folder_path "
         "FROM sessions s "
         "JOIN positions p ON p.id = s.position_id "
         "JOIN sites si ON si.id = p.site_id "
@@ -415,6 +415,7 @@ void HistoryPresenter::loadSessions()
         e.springLowLower = nz(30); e.springLowUpper = nz(31);
         e.springHighLower = nz(32); e.springHighUpper = nz(33);
         e.needsRepair = query.value(34).toBool();
+        e.folderPath = query.value(35).toString();
 
         m_sessions.push_back(e);
     }
@@ -518,6 +519,46 @@ void HistoryPresenter::setActiveSession(qint64 sessionId)
     updateChipsAndTitle();
     updateReportExtras();
     updateCards();
+    updateOpenChartsButton();
+}
+
+HistoryPresenter::ActiveSessionInfo HistoryPresenter::activeSessionInfo() const
+{
+    ActiveSessionInfo info;
+    const int index = indexOfSession(m_activeSessionId);
+    if (index < 0)
+        return info;
+    const SessionEntry& e = m_sessions[index];
+    info.id = e.id;
+    info.folderPath = e.folderPath;
+    info.title = formatTimestamp(e.tsDisplay);
+    info.valveStroke = e.valveStrokeValue;
+    return info;
+}
+
+void HistoryPresenter::setArchiveViewActive(bool active)
+{
+    m_archiveViewActive = active;
+    updateOpenChartsButton();
+}
+
+void HistoryPresenter::updateOpenChartsButton()
+{
+    QPushButton* button = m_ui->pushButton_history_openCharts;
+    if (m_archiveViewActive) {
+        button->setText(QObject::tr("Закрыть просмотр"));
+        button->setEnabled(true);
+        button->setToolTip(QObject::tr("Вернуть на вкладку «Основной тест» графики текущего теста"));
+        return;
+    }
+
+    const int index = indexOfSession(m_activeSessionId);
+    const bool hasFolder = index >= 0 && !m_sessions[index].folderPath.isEmpty();
+    button->setText(QObject::tr("Открыть графики"));
+    button->setEnabled(hasFolder);
+    button->setToolTip(hasFolder
+        ? QObject::tr("Показать графики основного теста выбранной сессии на вкладке «Основной тест» (только просмотр)")
+        : QObject::tr("Для этой сессии в базе нет папки с графиками"));
 }
 
 void HistoryPresenter::setCurrentSessionId(qint64 sessionId)
@@ -651,6 +692,15 @@ void HistoryPresenter::updateReportExtras()
         if (db.open()) {
             const auto esc = [](const QString& text) { return text.toHtmlEscaped(); };
             QStringList blocks;
+
+            QSqlQuery supply(db);
+            supply.prepare(QStringLiteral("SELECT supply_pressure_bar FROM sessions WHERE id = ?"));
+            supply.addBindValue(m_activeSessionId);
+            if (supply.exec() && supply.next() && !supply.value(0).isNull()) {
+                blocks << QStringLiteral("<b>%1</b> %2 %3")
+                              .arg(QObject::tr("Давление питания:"),
+                                   QString::number(supply.value(0).toDouble(), 'f', 2), QObject::tr("бар"));
+            }
 
             QSqlQuery conclusion(db);
             conclusion.prepare(QStringLiteral(

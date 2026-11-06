@@ -473,9 +473,12 @@ void Builder::buildSki(Writer& writer, const Report::Context& ctx)
 
         layout.summaryRow = 20;
 
+        // Соленоид — строки 36/38, концевик — 44/46 (сверено с
+        // SKI_C_SOVT.xlsx: B36/B38 и B44 "О-З"/B46 "З-О"). Из MpiSki
+        // пришло 33/36 — "З-О" затирал строку соленоида "0% хода".
         layout.solenoidDetailsRow = 36;
-        layout.solenoidSwitch1Row = 33;
-        layout.solenoidSwitch2Row = 36;
+        layout.solenoidSwitch1Row = 44;
+        layout.solenoidSwitch2Row = 46;
 
         layout.fioRow = 53;
         layout.dateRow = 57;

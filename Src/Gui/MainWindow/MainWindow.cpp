@@ -4,7 +4,9 @@
 
 #include <QCloseEvent>
 #include <QDebug>
+#include <QDir>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHash>
 #include <QIcon>
 #include <QImage>
@@ -20,9 +22,12 @@
 #include "Gui/Style/ThemeManager.h"
 #include "Gui/MainWindow/StatusBarPresenter.h"
 #include "Gui/MainWindow/ReportGenerationPresenter.h"
+#include "Gui/MainWindow/ReportPreviewPresenter.h"
 #include "Gui/MainWindow/ReportGenerationWorker.h"
 #include "Gui/MainWindow/HistoryPresenter.h"
+#include "Storage/AppSettings.h"
 #include "Storage/HistoryWriter.h"
+#include "Storage/SessionFolders.h"
 
 #include "Utils/Shortcuts/TabBinder.h"
 #include "Utils/NumberUtils.h"
@@ -33,10 +38,8 @@
 #include "Widgets/Chart/AnnotationBuilder.h"
 
 #include "Widgets/Chart/ImageService.h"
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-#include "Gui/MainWindow/Experimental/ExpandableCard.h"        // ЭКСПЕРИМЕНТ
-#include "Gui/MainWindow/Experimental/LinearityLabPresenter.h" // ЭКСПЕРИМЕНТ
-#endif
+#include "Gui/MainWindow/Linearity/ExpandableCard.h"
+#include "Gui/MainWindow/Linearity/LinearityMethodsPresenter.h"
 
 using ChartType = Widgets::Chart::ChartType;
 
@@ -67,6 +70,43 @@ QMap<int, QString> taskSliderLabels(PositionerScale scale)
     }
 
     return labels;
+}
+
+// Папка сессии с графиками основного теста. Путь из БД — как есть
+// (абсолютный или от папки приложения); не нашлось — от корня архива из
+// settings.ini; иначе корень спрашивается у оператора и запоминается
+// (сессии, перенесённые из архива, записаны относительно его корня, а он на
+// каждой машине свой). Пусто — не нашлась или оператор отказался.
+QString findSessionFolder(QWidget* parent, const QString& stored)
+{
+    const auto hasCharts = [](const QString& folder) { return ArchivedTest::pickRun(folder) > 0; };
+
+    const QString direct = SessionFolders::resolve(stored);
+    if (hasCharts(direct))
+        return direct;
+    if (QDir::isAbsolutePath(stored) || !SessionFolders::isSafeRelative(stored))
+        return {};
+
+    AppSettings settings;
+    const QString root = settings.historyArchiveRoot();
+    if (!root.isEmpty() && hasCharts(SessionFolders::resolve(stored, root)))
+        return SessionFolders::resolve(stored, root);
+
+    const QString top = stored.section(QLatin1Char('/'), 0, 0);
+    QString chosen = QFileDialog::getExistingDirectory(
+        parent,
+        QObject::tr("Папка архива испытаний (в ней лежит «%1»)").arg(top),
+        root.isEmpty() ? SessionFolders::appRoot() : root);
+    if (chosen.isEmpty())
+        return {};
+    if (QDir(chosen).dirName() == top) // выбрали саму «%1» — корень на уровень выше
+        chosen = QFileInfo(chosen).absolutePath();
+
+    const QString folder = SessionFolders::resolve(stored, chosen);
+    if (!hasCharts(folder))
+        return {};
+    settings.setHistoryArchiveRoot(chosen);
+    return folder;
 }
 }
 
@@ -115,6 +155,12 @@ MainWindow::MainWindow(QWidget *parent)
             this, [this] { m_historyPresenter->onSelectionChanged(); });
     connect(ui->pushButton_history_deleteSessions, &QPushButton::clicked,
             this, [this] { m_historyPresenter->deleteSelectedSessions(); });
+    connect(ui->pushButton_history_openCharts, &QPushButton::clicked, this, [this] {
+        if (m_archiveView)
+            closeArchiveView();
+        else
+            openArchiveView();
+    });
 
     m_statusBarPresenter = new StatusBarPresenter(ui, m_mapper.get(), m_chartManager.get(), this);
     m_statusStateValue = m_statusBarPresenter->stateValueLabel();
@@ -176,6 +222,18 @@ MainWindow::MainWindow(QWidget *parent)
     m_reportPresenter = std::make_unique<ReportGenerationPresenter>(
         ui, m_conclusionPresenter.get(), m_sparePartsPresenter.get(),
         m_reportSaver, m_telemetry, m_chartImageStorage, m_chartSnapshotStorage, this);
+
+    // Предпросмотр PDF-актов — последней вкладкой «Формирования отчёта»; данные
+    // берёт у m_reportPresenter при каждом открытии вкладки.
+    m_reportPreview = std::make_unique<ReportPreviewPresenter>(m_reportPresenter.get());
+    ui->tabWidget_reportGeneration->addTab(m_reportPreview->panel(), tr("Предпросмотр"));
+    connect(ui->checkBox_report_TO, &QCheckBox::toggled,
+            m_reportPreview.get(), &ReportPreviewPresenter::refreshIfVisible);
+
+    // Давление питания печатается в акте ТО — в историю сессии при каждой
+    // правке поля (и ещё по завершении теста и при формировании отчёта).
+    connect(ui->lineEdit_supplyPressure, &QLineEdit::editingFinished,
+            this, &MainWindow::saveSupplyPressureToHistory);
 
     // generate() реально выполняется на m_reportWorkerThread (см.
     // generateReportClicked() — invokeMethod + Qt::QueuedConnection). Сама
@@ -504,12 +562,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    // ЭКСПЕРИМЕНТ: панель лежит внутри ui — убираем карточку и презентер
+    // Панель способов линейности лежит внутри ui — убираем карточку и презентер
     // раньше delete ui, чтобы сигналы при разборе виджетов не пришли в них.
     m_linearityCard.reset();
-    m_linearityLab.reset();
-#endif
+    m_linearityMethods.reset();
+    // Страница предпросмотра тоже внутри ui (вкладка tabWidget_reportGeneration).
+    m_reportPreview.reset();
 
     if (m_program) {
         QMetaObject::invokeMethod(
@@ -726,29 +784,25 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
 
     m_historyPresenter->applyPalette(themeManager->currentPalette());
     applyArrowButtonIcons(themeManager->currentPalette());
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    m_labThemeManager = themeManager; // ЭКСПЕРИМЕНТ
-    if (m_linearityLab)
-        m_linearityLab->applyPalette(themeManager->currentPalette());
+    m_linearityThemeManager = themeManager;
+    if (m_linearityMethods)
+        m_linearityMethods->applyPalette(themeManager->currentPalette());
     if (m_linearityCard) {
         const auto& p = themeManager->currentPalette();
         m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
                                        p.iconChevronUp, p.iconChevronUpActive);
     }
-#endif
     connect(themeManager, &Gui::Style::ThemeManager::schemeChanged, this,
             [this, themeManager](Gui::Style::ColorScheme) {
                 m_historyPresenter->applyPalette(themeManager->currentPalette());
                 applyArrowButtonIcons(themeManager->currentPalette());
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-                if (m_linearityLab) // ЭКСПЕРИМЕНТ
-                    m_linearityLab->applyPalette(themeManager->currentPalette());
+                if (m_linearityMethods)
+                    m_linearityMethods->applyPalette(themeManager->currentPalette());
                 if (m_linearityCard) {
                     const auto& p = themeManager->currentPalette();
                     m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
                                                    p.iconChevronUp, p.iconChevronUpActive);
                 }
-#endif
             });
 }
 
@@ -892,6 +946,7 @@ void MainWindow::applyCrossingLimitsFromRecommend(const ValveInfo& valveInfo)
 
 void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
 {
+    closeArchiveView(); // живые данные важнее просмотра архива
     m_telemetry.testMain = result;
 
     m_mapper->updateMainTest(result, m_telemetry.valveStrokeRecord);
@@ -900,23 +955,20 @@ void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
     if (auto* chart = m_chartManager->chart(ChartType::Pressure))
         chart->snapshotDraggableSeries();
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
-        m_linearityLab->refresh();
-#endif
+    if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
+        m_linearityMethods->refresh();
 }
 
 void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& result)
 {
+    closeArchiveView();
     m_telemetry.testMain = result;
 
     m_mapper->updateMainTest(result, m_telemetry.valveStrokeRecord);
     m_mapper->updateCrossingValues(result, m_telemetry.valveStrokeRecord);
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    if (m_linearityLab) // ЭКСПЕРИМЕНТ: пересчёт по новым точкам
-        m_linearityLab->refresh();
-#endif
+    if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
+        m_linearityMethods->refresh();
 }
 
 void MainWindow::onStrokeResultUpdated(const Domain::Tests::Stroke::Result& result)
@@ -957,17 +1009,17 @@ void MainWindow::onResolutionResultUpdated(const Domain::Tests::Option::Resoluti
 
 void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
 {
+    closeArchiveView();
     m_telemetry.crossingStatus = status;
     m_crossingIndicators->update(status);
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
-        m_linearityLab->reapplyCardOverride();
-#endif
+    if (m_linearityMethods) // выбранный способ линейности поверх официального
+        m_linearityMethods->reapplyCardOverride();
 }
 
 void MainWindow::onTelemetryUpdated(const Telemetry& t)
 {
+    closeArchiveView();
     m_telemetry = t;
 
     m_mapper->updateInit(t.init, t.valveStrokeRecord);
@@ -985,10 +1037,8 @@ void MainWindow::onTelemetryUpdated(const Telemetry& t)
 
     m_crossingIndicators->update(t.crossingStatus);
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    if (m_linearityLab) // ЭКСПЕРИМЕНТ: подстановка способа поверх официального
-        m_linearityLab->reapplyCardOverride();
-#endif
+    if (m_linearityMethods) // выбранный способ линейности поверх официального
+        m_linearityMethods->reapplyCardOverride();
 }
 
 void MainWindow::appendLog(const QString& text) {
@@ -1101,6 +1151,7 @@ void MainWindow::setPatternType(SelectTests::PatternType pattern)
 
 void MainWindow::setRegistry(Registry* registry)
 {
+    closeArchiveView(); // архив — сессия прежней позиции
     m_registry = registry;
     m_reportPresenter->setRegistry(registry);
     m_historyPresenter->setRegistry(registry);
@@ -1149,6 +1200,7 @@ void MainWindow::setRegistry(Registry* registry)
     cfg.driveRangeHigh = valveInfo.driveRangeHigh;
 
     m_program->setConfig(cfg);
+    m_deviceConfig = cfg;
 
     UiText::setLabelOrDash(ui->lineEdit_date, otherParameters.date);
 
@@ -1240,14 +1292,13 @@ void MainWindow::setRegistry(Registry* registry)
         m_chartsInitialized = true;
     }
 
-#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    // ЭКСПЕРИМЕНТ: стрелка в карточке «Линейность характеристики» блока
+    // Стрелка в карточке «Линейность характеристики» блока
     // Pass|Fail раскрывает под ней способы расчёта; остальные карточки
     // сворачиваются до строки «название + статус».
-    if (!m_linearityLab) {
-        m_linearityLab = std::make_unique<LinearityLabPresenter>(m_chartManager.get());
-        if (m_labThemeManager)
-            m_linearityLab->applyPalette(m_labThemeManager->currentPalette());
+    if (!m_linearityMethods) {
+        m_linearityMethods = std::make_unique<LinearityMethodsPresenter>(m_chartManager.get());
+        if (m_linearityThemeManager)
+            m_linearityMethods->applyPalette(m_linearityThemeManager->currentPalette());
 
         using Card = ExpandableCard::Card;
         m_linearityCard = std::make_unique<ExpandableCard>(
@@ -1261,25 +1312,29 @@ void MainWindow::setRegistry(Registry* registry)
                 ui->frame_crossingLimits_range_Card,
                 // левая колонка вкладки «Результаты» остаётся на месте
             },
-            m_linearityLab->panel(),
-            tr("Подробнее: способы расчёта линейности (эксперимент)"));
+            m_linearityMethods->panel(),
+            tr("Подробнее: способы расчёта линейности"));
 
         connect(m_linearityCard.get(), &ExpandableCard::expandedChanged,
-                m_linearityLab.get(), &LinearityLabPresenter::setActive);
+                m_linearityMethods.get(), &LinearityMethodsPresenter::setActive);
 
         // Результат выбранного способа — прямо в карточке; при сворачивании
         // (или выборе «текущего») — официальный из телеметрии обратно.
-        m_linearityLab->setCardTargets(
+        m_linearityMethods->setCardTargets(
             {ui->label_crossingLimits_linearCharacteristic_Value,
              ui->label_crossingLimits_linearCharacteristic_Status,
              ui->toleranceBar_linearCharacteristic},
             [this] {
+                if (m_archiveView) {
+                    showArchivedResult();
+                    return;
+                }
                 m_crossingIndicators->update(m_telemetry.crossingStatus);
                 if (m_telemetry.testMain)
                     m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
             });
-        if (m_labThemeManager) {
-            const auto& p = m_labThemeManager->currentPalette();
+        if (m_linearityThemeManager) {
+            const auto& p = m_linearityThemeManager->currentPalette();
             m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
                                            p.iconChevronUp, p.iconChevronUpActive);
         }
@@ -1287,8 +1342,7 @@ void MainWindow::setRegistry(Registry* registry)
         // Другой клапан — набор карточек мог поменяться: сворачиваем сразу.
         m_linearityCard->setExpanded(false, false);
     }
-    m_linearityLab->setRegistry(registry);
-#endif
+    m_linearityMethods->setRegistry(registry);
 }
 
 void MainWindow::setTask(qreal task)
@@ -1418,6 +1472,7 @@ void MainWindow::endTest()
             HistoryWriter::writeCrossingResults(
                 m_sessionId, m_telemetry.crossingStatus, m_registry->valveInfo().crossingLimits);
         }
+        saveSupplyPressureToHistory();
 
         // endTest() не знает, какой именно из опциональных тестов только что
         // завершился (testFinished() общий на все типы, см. Program::endTest()) —
@@ -1556,7 +1611,10 @@ bool MainWindow::tryStartTest()
             setTestState(TestState::Canceled);
             emit stopTest();
         } return false;
-    } return true;
+    }
+
+    closeArchiveView(); // тест рисует в те же графики и тексты
+    return true;
 }
 
 void MainWindow::startMainTestClicked()
@@ -2257,6 +2315,13 @@ bool MainWindow::saveChart(ChartType chart)
     return true;
 }
 
+void MainWindow::saveSupplyPressureToHistory()
+{
+    // -1 — сессия в БД не завелась, тихо ничего не пишем (как и результаты).
+    if (m_sessionId >= 0)
+        HistoryWriter::setSupplyPressure(m_sessionId, m_reportPresenter->supplyPressure());
+}
+
 void MainWindow::saveChartWithToast(ChartType chart)
 {
     const bool ok = saveChart(chart);
@@ -2323,6 +2388,7 @@ void MainWindow::generateReportClicked()
     // заменяет прежнее. -1 (БД не завелась) — тихо ничего не пишем.
     if (m_sessionId >= 0)
         m_reportPresenter->saveReportExtrasToHistory(m_sessionId);
+    saveSupplyPressureToHistory();
 
     setReportGenerationInProgress(true);
 
@@ -2364,6 +2430,149 @@ void MainWindow::setReportGenerationInProgress(bool inProgress)
 
     ui->pushButton_report_generate->setText(
         inProgress ? tr("Формирование…") : tr("Сформировать отчёт"));
+
+    applyArchiveViewLocks();
+}
+
+void MainWindow::applyArchiveViewLocks()
+{
+    const bool viewing = m_archiveView.has_value();
+    ui->pushButton_mainTest_save->setEnabled(!viewing && !m_reportGenerationInProgress);
+    ui->pushButton_report_generate->setEnabled(!viewing && !m_reportGenerationInProgress);
+    ui->pushButton_recalculationRegression->setEnabled(!viewing);
+    m_historyPresenter->setArchiveViewActive(viewing);
+}
+
+void MainWindow::showArchivedResult()
+{
+    const ArchiveView& v = *m_archiveView;
+    m_mapper->updateMainTest(v.result, v.stroke);
+    m_mapper->updateCrossingValues(v.result, v.stroke);
+    if (qIsNaN(v.stroke.real))
+        ui->lineEdit_resultsTable_strokeReal->clear(); // а не «nan»
+    m_crossingIndicators->update(v.status);
+}
+
+void MainWindow::openArchiveView()
+{
+    const auto warn = [this](const QString& text) {
+        if (m_toastManager)
+            m_toastManager->show(Gui::Style::StatusKind::Warning, text);
+    };
+
+    if (m_testState == TestState::Running)
+        return warn(tr("Дождитесь окончания теста"));
+    if (m_reportGenerationInProgress)
+        return warn(tr("Дождитесь окончания формирования отчёта"));
+    if (!ui->tabWidget_main->isTabEnabled(ui->tabWidget_main->indexOf(ui->tab_mainTests)))
+        return warn(tr("Основного теста нет в этом наборе тестов"));
+
+    auto* pressure = m_chartManager->chart(ChartType::Pressure);
+    auto* task = m_chartManager->chart(ChartType::Task);
+    auto* friction = m_chartManager->chart(ChartType::Friction);
+    const auto session = m_historyPresenter->activeSessionInfo();
+    if (!pressure || !task || session.folderPath.isEmpty())
+        return;
+
+    const QString folder = findSessionFolder(this, session.folderPath);
+    if (folder.isEmpty())
+        return warn(tr("Не найдены графики сессии: %1")
+                        .arg(QDir::toNativeSeparators(session.folderPath)));
+
+    ArchiveView view;
+    view.title = session.title;
+    view.pressure = ArchivedTest::backupChart(pressure);
+    view.task = ArchivedTest::backupChart(task);
+    view.friction = ArchivedTest::backupChart(friction);
+    const auto restoreLive = [&] {
+        ArchivedTest::restoreChart(pressure, view.pressure);
+        ArchivedTest::restoreChart(task, view.task);
+        ArchivedTest::restoreChart(friction, view.friction);
+    };
+
+    const int run = ArchivedTest::pickRun(folder);
+    if (!ArchivedTest::loadMainTestCharts(folder, run, pressure, task, friction)) {
+        restoreLive();
+        return warn(tr("Не удалось прочитать графики сессии"));
+    }
+    const auto result = ArchivedTest::analyze(task, pressure, m_deviceConfig.driveDiameter);
+    if (!result) {
+        restoreLive();
+        return warn(tr("В графиках сессии нет обоих ходов — расчёт невозможен"));
+    }
+    ArchivedTest::addRegressionLines(pressure);
+    pressure->snapshotDraggableSeries(); // «Исходное состояние» — линии архива
+
+    view.result = *result;
+    view.stroke.real = session.valveStroke;
+    view.stroke.range = qIsNaN(session.valveStroke)
+        ? QStringLiteral("--") : QString::number(session.valveStroke, 'f', 2);
+    view.status = ArchivedTest::crossingStatus(view.result, m_deviceConfig, session.valveStroke);
+    view.regressionEnabled = ui->checkBox_regression->isEnabled();
+    view.regressionState = ui->checkBox_regression->checkState();
+
+    // Тексты до просмотра — чтобы вернуть ровно то, что поменял архив
+    // (в том числе «--», если живого теста ещё не было).
+    const QList<QLabel*> labels = ui->centralWidget->findChildren<QLabel*>();
+    const QList<QLineEdit*> edits = ui->centralWidget->findChildren<QLineEdit*>();
+    QStringList labelTexts, editTexts;
+    for (const QLabel* l : labels)
+        labelTexts << l->text();
+    for (const QLineEdit* e : edits)
+        editTexts << e->text();
+
+    m_archiveView = std::move(view);
+    showArchivedResult();
+    if (m_linearityMethods) {
+        m_linearityMethods->refresh();
+        m_linearityMethods->reapplyCardOverride();
+    }
+
+    for (int i = 0; i < labels.size(); ++i)
+        if (labels[i]->text() != labelTexts[i])
+            m_archiveView->labels.push_back({labels[i], labelTexts[i]});
+    for (int i = 0; i < edits.size(); ++i)
+        if (edits[i]->text() != editTexts[i])
+            m_archiveView->lineEdits.push_back({edits[i], editTexts[i]});
+
+    ui->checkBox_regression->setEnabled(true);
+    ui->checkBox_regression->setCheckState(Qt::Checked);
+    applyArchiveViewLocks();
+    ui->tabWidget_main->setCurrentWidget(ui->tab_mainTests);
+
+    if (m_toastManager)
+        m_toastManager->show(Gui::Style::StatusKind::Info,
+            tr("Сессия %1 — только просмотр. Закрыть — во вкладке «История»").arg(m_archiveView->title));
+}
+
+void MainWindow::closeArchiveView()
+{
+    if (!m_archiveView)
+        return;
+    const ArchiveView view = std::move(*m_archiveView);
+    m_archiveView.reset();
+
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Pressure), view.pressure);
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Task), view.task);
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Friction), view.friction);
+
+    for (const auto& [label, text] : view.labels)
+        label->setText(text);
+    for (const auto& [edit, text] : view.lineEdits)
+        edit->setText(text);
+    ui->checkBox_regression->setCheckState(view.regressionState);
+    ui->checkBox_regression->setEnabled(view.regressionEnabled);
+
+    if (m_telemetry.testMain) {
+        m_mapper->updateMainTest(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
+        m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
+    }
+    m_crossingIndicators->update(m_telemetry.crossingStatus);
+    if (m_linearityMethods) {
+        m_linearityMethods->refresh();
+        m_linearityMethods->reapplyCardOverride();
+    }
+    applyArchiveViewLocks();
 }
 
 void MainWindow::openReportClicked()

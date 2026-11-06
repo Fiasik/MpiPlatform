@@ -41,6 +41,10 @@ public:
 
     bool saveReport(const Excel::ReportData& report, const QString& templatePath);
 
+    // report.xlsx внутри сессионной папки — и для шаблонного saveReport(),
+    // и для Report::Excel::generate(), и для кнопки "Открыть отчёт".
+    [[nodiscard]] QString reportXlsxPath() const;
+
     // Report::Pdf::Builder сам пишет PDF по пути (QtRPT::printPDF), в
     // отличие от saveReport() (данные в память -> Saver сохраняет) —
     // тут только вычисляем путь внутри сессионной папки, как уже делает

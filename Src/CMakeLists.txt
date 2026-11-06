@@ -7,6 +7,7 @@ set(DOMAIN_CPP
     Domain/Tests/Main/DoubleActing/AlgorithmDoubleActing.cpp
     Domain/Tests/Main/Analyzer.cpp
     Domain/Tests/Main/CrossingStatusUpdater.cpp
+    Domain/Tests/Main/Linearity/LinearityMethods.cpp
     Domain/Tests/Main/Standard/Runner.cpp
     Domain/Tests/Main/DoubleActing/RunnerDoubleActing.cpp
     Domain/Tests/Main/DoubleActing/ScenarioDoubleActing.cpp
@@ -80,6 +81,7 @@ set(DOMAIN_HEADERS
     Domain/Tests/Main/DoubleActing/AlgorithmDoubleActing.h
     Domain/Tests/Main/Analyzer.h
     Domain/Tests/Main/CrossingStatusUpdater.h
+    Domain/Tests/Main/Linearity/LinearityMethods.h
     Domain/Tests/Main/Params.h
     Domain/Tests/Main/Result.h
     Domain/Tests/Main/Standard/Runner.h
@@ -185,6 +187,13 @@ set(REPORT_CPP
     Report/Excel/Blocks/CyclicRegulatoryRanges.cpp
     Report/Excel/Blocks/SolenoidDetails.cpp
     Report/Excel/Writer.cpp
+    Report/Excel/Generator.cpp
+    Report/Excel/Choices.cpp
+    Report/Excel/Sheet.cpp
+    Report/Excel/Acts/Common.cpp
+    Report/Excel/Acts/TechnicalInspection.cpp
+    Report/Excel/Acts/OptionTests.cpp
+    Report/Excel/Acts/Cyclic.cpp
     Report/Pdf/Builder.cpp
     Report/Pdf/DiagramInjector.cpp
     Report/Pdf/TechnicalInspectionSource.cpp
@@ -221,6 +230,13 @@ set(REPORT_HEADERS
     Report/Excel/Blocks/SolenoidDetails.h
     Report/Excel/Data.h
     Report/Excel/Writer.h
+    Report/Excel/Generator.h
+    Report/Excel/Choices.h
+    Report/Excel/Sheet.h
+    Report/Excel/Acts/Common.h
+    Report/Excel/Acts/TechnicalInspection.h
+    Report/Excel/Acts/OptionTests.h
+    Report/Excel/Acts/Cyclic.h
     Report/Pdf/Builder.h
     Report/Pdf/DiagramInjector.h
     Report/Pdf/TechnicalInspectionSource.h
@@ -248,7 +264,11 @@ set(GUI_CPP
     Gui/MainWindow/StatusBarPresenter.cpp
     Gui/MainWindow/ReportGenerationPresenter.cpp
     Gui/MainWindow/ReportGenerationWorker.cpp
+    Gui/MainWindow/ReportPreviewPresenter.cpp
     Gui/MainWindow/HistoryPresenter.cpp
+    Gui/MainWindow/ArchivedTest.cpp
+    Gui/MainWindow/Linearity/LinearityMethodsPresenter.cpp
+    Gui/MainWindow/Linearity/ExpandableCard.cpp
     Gui/Setup/ValveWindow/Logic.cpp
     Gui/Setup/ValveWindow/Mapper.cpp
     Gui/Setup/ObjectWindow.cpp
@@ -289,7 +309,11 @@ set(GUI_HEADERS
     Gui/MainWindow/StatusBarPresenter.h
     Gui/MainWindow/ReportGenerationPresenter.h
     Gui/MainWindow/ReportGenerationWorker.h
+    Gui/MainWindow/ReportPreviewPresenter.h
     Gui/MainWindow/HistoryPresenter.h
+    Gui/MainWindow/ArchivedTest.h
+    Gui/MainWindow/Linearity/LinearityMethodsPresenter.h
+    Gui/MainWindow/Linearity/ExpandableCard.h
     Gui/Setup/ObjectWindow.h
     Gui/WindowGeometry.h
     Gui/Setup/ValveWindow/Logic.h
@@ -324,27 +348,14 @@ set(GUI_UI
     Gui/Setup/SelectTests.ui
     Gui/Setup/ValveWindow/ValveWindow.ui
     Gui/MainWindow/MainWindow.ui
+    Gui/MainWindow/Linearity/LinearityMethodsPanel.ui
+    Gui/MainWindow/Linearity/LinearityInfoPopup.ui
+    Gui/MainWindow/ReportPreviewPanel.ui
     Gui/TestSettings/MainTestSettings.ui
     Gui/TestSettings/OtherTestSettings.ui
     Gui/TestSettings/StepTestSettings.ui
     Gui/TestSettings/CyclicTestSettings.ui
 )
-
-# ЭКСПЕРИМЕНТ: раскрывающаяся карточка линейности в Pass|Fail — сравнение способов расчёта
-# линейности характеристики (Domain/Tests/Main/Experimental,
-# Gui/MainWindow/Experimental). На официальный Pass|Fail, отчёт и базу не
-# влияет. Выключить: -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=OFF.
-option(MPIPLATFORM_EXPERIMENTAL_LINEARITY "Experimental linearity methods tab (main test)" ON)
-if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-    list(APPEND DOMAIN_CPP Domain/Tests/Main/Experimental/LinearityLab.cpp)
-    list(APPEND DOMAIN_HEADERS Domain/Tests/Main/Experimental/LinearityLab.h)
-    list(APPEND GUI_CPP Gui/MainWindow/Experimental/LinearityLabPresenter.cpp
-                        Gui/MainWindow/Experimental/ExpandableCard.cpp)
-    list(APPEND GUI_HEADERS Gui/MainWindow/Experimental/LinearityLabPresenter.h
-                            Gui/MainWindow/Experimental/ExpandableCard.h)
-    list(APPEND GUI_UI Gui/MainWindow/Experimental/LinearityLabPanel.ui
-                       Gui/MainWindow/Experimental/LinearityInfoPopup.ui)
-endif()
 
 add_library(Domain STATIC
     ${DOMAIN_CPP}
@@ -386,12 +397,6 @@ target_sources(Domain
   PRIVATE
 )
 
-# PUBLIC — Gui и сам исполняемый файл видят тот же флаг (#ifdef в MainWindow,
-# ImageService).
-if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-    target_compile_definitions(Domain PUBLIC MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-endif()
-
 add_library(Report STATIC
     ${REPORT_CPP}
     ${REPORT_HEADERS}
@@ -427,6 +432,7 @@ target_link_libraries(Gui
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
+        Qt6::PrintSupport
         Qt6::Charts
         Qt6::Svg
         Qt6::Sql

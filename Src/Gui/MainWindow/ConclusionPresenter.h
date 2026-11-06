@@ -4,6 +4,7 @@
 
 #include <QMap>
 #include <QString>
+#include <QStringList>
 
 namespace Ui { class MainWindow; }
 
@@ -24,6 +25,10 @@ public:
     void onSummaryTemplateChanged();
 
     QMap<Report::Html::ConclusionField, QString> fieldAnswers() const;
+
+    // Все пункты тех же пяти комбобоксов — для выпадающих списков в
+    // report.xlsx (Report::EditChoices).
+    QMap<Report::Html::ConclusionField, QStringList> fieldChoices() const;
     QString summaryText() const;
 
     // Текст выбранного шаблона заключения; пусто — выбран "Ручной ввод".

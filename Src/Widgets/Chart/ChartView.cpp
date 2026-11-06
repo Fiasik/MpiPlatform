@@ -1527,6 +1527,13 @@ void ChartView::snapshotDraggableSeries()
     }
 }
 
+void ChartView::setDraggableSnapshot(const QHash<quint8, QList<QPointF>>& snapshot)
+{
+    m_draggableSnapshot = snapshot;
+    for (quint8 idx : std::as_const(m_draggableSeries))
+        highlightBendPoints(idx);
+}
+
 void ChartView::restoreDraggableSeries()
 {
     for (auto it = m_draggableSnapshot.cbegin(); it != m_draggableSnapshot.cend(); ++it) {

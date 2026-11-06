@@ -64,6 +64,19 @@ public:
     // выбрали папку) — тогда до воркера дело не доходит вообще.
     std::optional<ReportGenerationWorker::Input> prepareReportGeneration();
 
+    // Те же данные отчёта, что возьмёт «Сформировать отчёт» прямо сейчас, но
+    // без побочных эффектов: папка не резолвится (диалога не будет),
+    // m_telemetry и m_lastOverrides не меняются. overrides — куда сложить
+    // найденные правки значений (prepareReportGeneration() кладёт их в
+    // m_lastOverrides для истории). Для предпросмотра — ReportPreviewPresenter.
+    // nullopt — ещё нет Registry.
+    std::optional<ReportGenerationWorker::Input> collectInput(
+        QVector<FieldOverrides::Record>* overrides = nullptr) const;
+
+    // Давление питания из поля вкладки отчёта, бар (запятая или точка);
+    // nullopt — поле пустое или не число (в отчёт тогда идёт 0).
+    std::optional<double> supplyPressure() const;
+
     // Пишет в историю сессии то, что оператор сделал на вкладке отчёта:
     // заключение, ЗИП и ручные правки значений (см. HistoryWriter::
     // writeReportExtras()). Правки определены в последнем prepareReportGeneration(),
@@ -85,7 +98,7 @@ private:
     // не определялась.
     void collectReportOverrides(Telemetry& telemetry, QVector<FieldOverrides::Record>& overrides) const;
     void collectRegistryOverrides(ObjectInfo& objectInfo, ValveInfo& valveInfo,
-                                  OtherParameters& otherParameters);
+                                  OtherParameters& otherParameters) const;
     bool hasAnyTestComments() const;
     QString commentsPdfPath() const;
     void saveCommentsPdfIfNeeded();

@@ -14,6 +14,14 @@
 
 namespace Report {
 
+// Варианты для выпадающих списков в report.xlsx — чтобы отчёт можно было
+// поправить уже в Excel. Берутся из тех же комбобоксов MainWindow.ui, что и
+// сами ответы, а не второй копией списков в коде отчёта.
+struct EditChoices {
+    QMap<Report::Html::ConclusionField, QStringList> conclusionFields;
+    QStringList spareParts;
+};
+
 struct Context {
     const Telemetry& telemetry;
     const ObjectInfo& object;
@@ -34,6 +42,10 @@ struct Context {
     // CyclicTestSettings::applyPattern (см. Program.h:145 — прецедент
     // включения Gui/Setup/SelectTests.h из Domain уже есть в кодовой базе).
     SelectTests::PatternType pattern = SelectTests::Pattern_None;
+
+    // Нужен только Excel::generate() (скрытый лист "Списки" и выпадающие
+    // списки в ТО); по значению — QStringList всё равно разделяемый.
+    EditChoices editChoices;
 };
 
 }

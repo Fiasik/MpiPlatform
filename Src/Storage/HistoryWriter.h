@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtGlobal>
+#include <optional>
 #include <QString>
 #include <QVector>
 
@@ -68,6 +69,10 @@ public:
     // Связывает сессию с папкой на диске (sessions.folder_path), когда Saver
     // её создал. absoluteDir приводится к виду для БД (см. SessionFolders).
     static bool setSessionFolder(qint64 sessionId, const QString& absoluteDir);
+
+    // Давление питания, бар (sessions.supply_pressure_bar) — из поля вкладки
+    // отчёта, его же печатает акт ТО. nullopt — поле пустое (NULL в БД).
+    static bool setSupplyPressure(qint64 sessionId, std::optional<double> bar);
 
     // Что оператор сделал на вкладке отчёта: заключение, список ЗИП и ручные
     // правки значений (посчитанное + исправленное). Вызывается при каждом

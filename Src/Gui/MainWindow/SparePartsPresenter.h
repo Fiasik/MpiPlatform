@@ -15,6 +15,10 @@ public:
 
     QStringList selectedParts() const;
 
+    // Весь каталог comboBox_spareParts_search — для выпадающего списка ЗИП
+    // в report.xlsx (Report::EditChoices).
+    QStringList catalog() const;
+
 private:
     static constexpr int kMaxParts = 10;
 

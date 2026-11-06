@@ -35,6 +35,20 @@ void SparePartsPresenter::removeSelected()
     delete list->takeItem(list->currentRow());
 }
 
+QStringList SparePartsPresenter::catalog() const
+{
+    QStringList result;
+    auto* combo = m_ui->comboBox_spareParts_search;
+
+    for (int i = 0; i < combo->count(); ++i) {
+        const QString text = combo->itemText(i).trimmed();
+        if (!text.isEmpty())
+            result << text;
+    }
+
+    return result;
+}
+
 QStringList SparePartsPresenter::selectedParts() const
 {
     QStringList result;

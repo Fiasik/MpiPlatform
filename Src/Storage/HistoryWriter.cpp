@@ -401,6 +401,24 @@ bool HistoryWriter::setSessionFolder(qint64 sessionId, const QString& absoluteDi
     return ok;
 }
 
+bool HistoryWriter::setSupplyPressure(qint64 sessionId, std::optional<double> bar)
+{
+    if (sessionId < 0)
+        return false;
+
+    bool ok = false;
+    withConnection(QStringLiteral("mpiplatform_history_writer_supply"), [&](QSqlDatabase& db) {
+        QSqlQuery q(db);
+        q.prepare(QStringLiteral("UPDATE sessions SET supply_pressure_bar = ? WHERE id = ?"));
+        q.addBindValue(bar ? QVariant(*bar) : QVariant());
+        q.addBindValue(sessionId);
+        ok = q.exec();
+        if (!ok)
+            qWarning() << "[HistoryWriter] Не удалось записать давление питания:" << q.lastError().text();
+    });
+    return ok;
+}
+
 int HistoryWriter::importLegacyCards(const QVector<LegacyCard>& cards, QString* errorOut)
 {
     int imported = -1;

@@ -5,6 +5,21 @@
 
 using Report::Html::ConclusionField;
 
+namespace {
+
+QStringList comboItems(const QComboBox* combo)
+{
+    QStringList items;
+    for (int i = 0; i < combo->count(); ++i) {
+        const QString text = combo->itemText(i).trimmed();
+        if (!text.isEmpty())
+            items << text;
+    }
+    return items;
+}
+
+}
+
 void ConclusionPresenter::setupSummaryTemplateItems()
 {
     m_ui->comboBox_conclusion_summaryTemplate->addItem(QObject::tr("Ручной ввод"));
@@ -39,6 +54,17 @@ QMap<ConclusionField, QString> ConclusionPresenter::fieldAnswers() const
         m_ui->comboBox_conclusion_glandLeak->currentText();
 
     return answers;
+}
+
+QMap<ConclusionField, QStringList> ConclusionPresenter::fieldChoices() const
+{
+    return {
+        {ConclusionField::SeatingZone, comboItems(m_ui->comboBox_conclusion_seatingZone)},
+        {ConclusionField::PositionerAdaptation, comboItems(m_ui->comboBox_conclusion_positionerAdaptation)},
+        {ConclusionField::AuxiliaryEquipment, comboItems(m_ui->comboBox_conclusion_auxiliaryEquipment)},
+        {ConclusionField::FrictionGraph, comboItems(m_ui->comboBox_conclusion_frictionGraph)},
+        {ConclusionField::GlandLeak, comboItems(m_ui->comboBox_conclusion_glandLeak)},
+    };
 }
 
 QString ConclusionPresenter::summaryText() const
