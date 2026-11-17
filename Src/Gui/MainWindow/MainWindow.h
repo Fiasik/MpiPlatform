@@ -48,8 +48,10 @@ namespace Ui { class MainWindow; }
 namespace Gui::Style { class ThemeManager; struct Palette; }
 
 class StatusBarPresenter;
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 class LinearityMethodsPresenter; // способы расчёта линейности в карточке Pass|Fail
 class ExpandableCard;
+#endif
 class ReportGenerationPresenter;
 class ReportGenerationWorker;
 class ReportPreviewPresenter;
@@ -299,9 +301,11 @@ private:
     std::unique_ptr<HistoryPresenter> m_historyPresenter;
     // Способы линейности: создаются в setRegistry() после initCharts(); тема —
     // через m_linearityThemeManager (setThemeManager() зовётся раньше).
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     std::unique_ptr<LinearityMethodsPresenter> m_linearityMethods;
     std::unique_ptr<ExpandableCard> m_linearityCard;
     Gui::Style::ThemeManager* m_linearityThemeManager = nullptr;
+#endif
 
     // Просмотр сессии из «Истории» (кнопка «Открыть графики»): графики
     // основного теста из её папки и результат, пересчитанный тем же

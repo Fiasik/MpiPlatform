@@ -12,7 +12,9 @@
 #include "Domain/Measurement/Sample.h"
 #include "Domain/Tests/Main/Analyzer.h"
 #include "Domain/Tests/Main/CrossingStatusUpdater.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Domain/Tests/Main/Linearity/LinearityMethods.h"
+#endif
 #include "Widgets/Chart/ChartType.h"
 #include "Widgets/Chart/ChartView.h"
 
@@ -211,8 +213,6 @@ void restoreChart(ChartView* chart, const ChartBackup& backup)
 
 void addRegressionLines(ChartView* pressure)
 {
-    using namespace Domain::Tests::Main::Linearity;
-
     const auto points = pressure->getPoints(0);
     // Рамка всех точек (как Analyzer::computePressureLimits). QRectF::united
     // не годится: точки — «пустые» прямоугольники, их он пропускает.
@@ -231,8 +231,10 @@ void addRegressionLines(ChartView* pressure)
     }
     if (!any)
         return;
-    // top() — меньшее y, bottom() — большее.
+
     const QRectF box(QPointF(minX, minY), QPointF(maxX, maxY));
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    using namespace Domain::Tests::Main::Linearity;
     const auto lsq = computeLinearity(LinearityMethod::IntegralLeastSquares, points.second, points.first);
     for (int i = 0; i < 2; ++i) {
         const StrokeLinearity& s = lsq.strokes[i];
@@ -242,6 +244,31 @@ void addRegressionLines(ChartView* pressure)
         for (const QPointF& p : regressionLine(s.k, s.b, box))
             pressure->addPoint(seriesIndex, p.x(), p.y());
     }
+#else
+    // Без модуля линейности — та же МНК-прямая [ОТ-4] (положение от давления
+    // по рабочему окну 10–90 % хода), что строит Analyzer.
+    const double winLow = minY + (maxY - minY) * 0.10;
+    const double winHigh = maxY - (maxY - minY) * 0.10;
+    const QList<QPointF>* strokesPts[2] = {&points.second, &points.first};
+    for (int i = 0; i < 2; ++i) {
+        double sx = 0, sy = 0, sxy = 0, sx2 = 0;
+        int n = 0;
+        for (const QPointF& p : *strokesPts[i]) {
+            if (p.y() < winLow || p.y() > winHigh)
+                continue;
+            ++n;
+            sx += p.x(); sy += p.y(); sxy += p.x() * p.y(); sx2 += p.x() * p.x();
+        }
+        const double den = n * sx2 - sx * sx;
+        if (n < 2 || qFuzzyIsNull(den))
+            continue;
+        const double k = (n * sxy - sx * sy) / den;
+        const double b = (sy - k * sx) / n;
+        const quint8 seriesIndex = i == 0 ? 1 : 2;
+        for (const QPointF& p : regressionLine(k, b, box))
+            pressure->addPoint(seriesIndex, p.x(), p.y());
+    }
+#endif
 }
 
 std::optional<Domain::Tests::Main::Result> analyze(const ChartView* task,

@@ -124,6 +124,12 @@ ValveWindow::ValveWindow(QWidget *parent)
 
     ui->tabWidget->setCurrentIndex(0);
 
+#ifndef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // Линейность — экспериментальная: допуск на неё без флага не задаётся.
+    ui->checkBox_crossingLimits_linearCharacteristic->setVisible(false);
+    ui->lineEdit_crossingLimits_linearCharacteristic->setVisible(false);
+#endif
+
     setupWindowGeometry();
     setupTabs();
     setupValidators();

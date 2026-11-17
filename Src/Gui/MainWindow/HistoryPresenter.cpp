@@ -174,6 +174,11 @@ HistoryPresenter::HistoryPresenter(Ui::MainWindow* ui)
     : m_ui(ui)
     , m_connectionName(QStringLiteral("mpiplatform_history"))
 {
+#ifndef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // Линейность — экспериментальная: блоки тренда и сравнения скрыты.
+    m_ui->frame_historyTrend_linearCharacteristic_Section->setVisible(false);
+    m_ui->frame_historyCompare_linearCharacteristic_Section->setVisible(false);
+#endif
     // Ссылки на .ui-виджеты карточек (widget_history_cardsGrid) — сами
     // карточки и их заголовки не создаются и не именуются в коде, только
     // порядок здесь должен совпадать с kUnits и SessionEntry ниже.

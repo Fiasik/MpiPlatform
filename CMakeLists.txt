@@ -250,9 +250,16 @@ endif()
 # архивной папке испытания или сессии из рабочей базы.
 option(MPIPLATFORM_BUILD_PREVIEW "Build MpiPreview: real MainWindow on synthetic/archive/session data (experiments/preview)" OFF)
 
+# MpiPreview целиком про способы линейности (--open linearity, таблица
+# способов) — собирается только с экспериментальным флагом линейности.
 if(MPIPLATFORM_BUILD_PREVIEW)
-    add_subdirectory(experiments/preview)
+    if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+        add_subdirectory(experiments/preview)
+    else()
+        message(WARNING "MpiPreview пропущен: нужен -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=ON")
+    endif()
 endif()
+
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 

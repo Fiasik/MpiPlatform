@@ -141,7 +141,14 @@ void updateCrossingStatus(Telemetry& ts, const DeviceConfig& cfg)
         cs.springHighUpper = qQNaN();
     }
 
-    if (limits.linearCharacteristicEnabled) {
+    // Линейность — экспериментальная (MPIPLATFORM_EXPERIMENTAL_LINEARITY): без
+    // флага значение не считается и в Pass|Fail не участвует.
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    constexpr bool kLinearityOn = true;
+#else
+    constexpr bool kLinearityOn = false;
+#endif
+    if (kLinearityOn && limits.linearCharacteristicEnabled) {
         cs.linearCharacteristicMiss =
             missFrom(ts.testMain->linearityError, 0.0, limits.linearCharacteristic);
         cs.linearCharacteristic = stateFromMiss(cs.linearCharacteristicMiss);

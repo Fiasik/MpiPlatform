@@ -7,7 +7,6 @@ set(DOMAIN_CPP
     Domain/Tests/Main/DoubleActing/AlgorithmDoubleActing.cpp
     Domain/Tests/Main/Analyzer.cpp
     Domain/Tests/Main/CrossingStatusUpdater.cpp
-    Domain/Tests/Main/Linearity/LinearityMethods.cpp
     Domain/Tests/Main/Standard/Runner.cpp
     Domain/Tests/Main/DoubleActing/RunnerDoubleActing.cpp
     Domain/Tests/Main/DoubleActing/ScenarioDoubleActing.cpp
@@ -82,7 +81,6 @@ set(DOMAIN_HEADERS
     Domain/Tests/Main/DoubleActing/AlgorithmDoubleActing.h
     Domain/Tests/Main/Analyzer.h
     Domain/Tests/Main/CrossingStatusUpdater.h
-    Domain/Tests/Main/Linearity/LinearityMethods.h
     Domain/Tests/Main/Params.h
     Domain/Tests/Main/Result.h
     Domain/Tests/Main/Standard/Runner.h
@@ -271,8 +269,6 @@ set(GUI_CPP
     Gui/MainWindow/ReportPreviewPresenter.cpp
     Gui/MainWindow/HistoryPresenter.cpp
     Gui/MainWindow/ArchivedTest.cpp
-    Gui/MainWindow/Linearity/LinearityMethodsPresenter.cpp
-    Gui/MainWindow/Linearity/ExpandableCard.cpp
     Gui/Setup/ValveWindow/Logic.cpp
     Gui/Setup/ValveWindow/Mapper.cpp
     Gui/Setup/ObjectWindow.cpp
@@ -316,8 +312,6 @@ set(GUI_HEADERS
     Gui/MainWindow/ReportPreviewPresenter.h
     Gui/MainWindow/HistoryPresenter.h
     Gui/MainWindow/ArchivedTest.h
-    Gui/MainWindow/Linearity/LinearityMethodsPresenter.h
-    Gui/MainWindow/Linearity/ExpandableCard.h
     Gui/Setup/ObjectWindow.h
     Gui/WindowGeometry.h
     Gui/Setup/ValveWindow/Logic.h
@@ -352,14 +346,31 @@ set(GUI_UI
     Gui/Setup/SelectTests.ui
     Gui/Setup/ValveWindow/ValveWindow.ui
     Gui/MainWindow/MainWindow.ui
-    Gui/MainWindow/Linearity/LinearityMethodsPanel.ui
-    Gui/MainWindow/Linearity/LinearityInfoPopup.ui
     Gui/MainWindow/ReportPreviewPanel.ui
     Gui/TestSettings/MainTestSettings.ui
     Gui/TestSettings/OtherTestSettings.ui
     Gui/TestSettings/StepTestSettings.ui
     Gui/TestSettings/CyclicTestSettings.ui
 )
+
+# ЭКСПЕРИМЕНТ: расчёт линейности характеристики «давление -> положение»
+# ([ОТ-6]/[ОТ-7]: интегральная и минимакс), строка «Линейность характеристики»
+# в Pass|Fail, допуск в карточке клапана, блоки в «Истории» и панель четырёх
+# способов расчёта. Без флага ничего из этого не компилируется и не
+# показывается (поля в БД остаются пустыми). Регрессия для трения и пружины
+# ([ОТ-4]) от флага не зависит.
+# Включить: -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=ON.
+option(MPIPLATFORM_EXPERIMENTAL_LINEARITY "Experimental linearity-of-characteristic calculation and UI" OFF)
+if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    list(APPEND DOMAIN_CPP Domain/Tests/Main/Linearity/LinearityMethods.cpp)
+    list(APPEND DOMAIN_HEADERS Domain/Tests/Main/Linearity/LinearityMethods.h)
+    list(APPEND GUI_CPP Gui/MainWindow/Linearity/LinearityMethodsPresenter.cpp
+                        Gui/MainWindow/Linearity/ExpandableCard.cpp)
+    list(APPEND GUI_HEADERS Gui/MainWindow/Linearity/LinearityMethodsPresenter.h
+                            Gui/MainWindow/Linearity/ExpandableCard.h)
+    list(APPEND GUI_UI Gui/MainWindow/Linearity/LinearityMethodsPanel.ui
+                       Gui/MainWindow/Linearity/LinearityInfoPopup.ui)
+endif()
 
 add_library(Domain STATIC
     ${DOMAIN_CPP}
@@ -395,6 +406,11 @@ if(MPIPLATFORM_VARIANT STREQUAL "Ilim")
     target_compile_definitions(Domain PUBLIC MPIPLATFORM_VARIANT_ILIM)
 elseif(MPIPLATFORM_VARIANT STREQUAL "Ski")
     target_compile_definitions(Domain PUBLIC MPIPLATFORM_VARIANT_SKI)
+endif()
+
+# PUBLIC — Gui, Report, тесты и превью видят тот же флаг.
+if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    target_compile_definitions(Domain PUBLIC MPIPLATFORM_EXPERIMENTAL_LINEARITY)
 endif()
 
 target_sources(Domain

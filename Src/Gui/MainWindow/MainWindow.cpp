@@ -38,8 +38,10 @@
 #include "Widgets/Chart/AnnotationBuilder.h"
 
 #include "Widgets/Chart/ImageService.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Gui/MainWindow/Linearity/ExpandableCard.h"
 #include "Gui/MainWindow/Linearity/LinearityMethodsPresenter.h"
+#endif
 
 using ChartType = Widgets::Chart::ChartType;
 
@@ -564,8 +566,10 @@ MainWindow::~MainWindow()
 {
     // Панель способов линейности лежит внутри ui — убираем карточку и презентер
     // раньше delete ui, чтобы сигналы при разборе виджетов не пришли в них.
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     m_linearityCard.reset();
     m_linearityMethods.reset();
+#endif
     // Страница предпросмотра тоже внутри ui (вкладка tabWidget_reportGeneration).
     m_reportPreview.reset();
 
@@ -784,6 +788,7 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
 
     m_historyPresenter->applyPalette(themeManager->currentPalette());
     applyArrowButtonIcons(themeManager->currentPalette());
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     m_linearityThemeManager = themeManager;
     if (m_linearityMethods)
         m_linearityMethods->applyPalette(themeManager->currentPalette());
@@ -792,10 +797,12 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
         m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
                                        p.iconChevronUp, p.iconChevronUpActive);
     }
+#endif
     connect(themeManager, &Gui::Style::ThemeManager::schemeChanged, this,
             [this, themeManager](Gui::Style::ColorScheme) {
                 m_historyPresenter->applyPalette(themeManager->currentPalette());
                 applyArrowButtonIcons(themeManager->currentPalette());
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
                 if (m_linearityMethods)
                     m_linearityMethods->applyPalette(themeManager->currentPalette());
                 if (m_linearityCard) {
@@ -803,6 +810,7 @@ void MainWindow::setThemeManager(Gui::Style::ThemeManager* themeManager)
                     m_linearityCard->setArrowIcons(p.iconChevronDown, p.iconChevronDownActive,
                                                    p.iconChevronUp, p.iconChevronUpActive);
                 }
+#endif
             });
 }
 
@@ -956,8 +964,10 @@ void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
         chart->snapshotDraggableSeries();
     applyPressureZones(&result);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
         m_linearityMethods->refresh();
+#endif
 }
 
 void MainWindow::applyPressureZones(const Domain::Tests::Main::Result* result)
@@ -982,8 +992,10 @@ void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& res
     m_mapper->updateCrossingValues(result, m_telemetry.valveStrokeRecord);
     applyPressureZones(&result);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
         m_linearityMethods->refresh();
+#endif
 }
 
 void MainWindow::onStrokeResultUpdated(const Domain::Tests::Stroke::Result& result)
@@ -1034,8 +1046,10 @@ void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
     m_telemetry.crossingStatus = status;
     m_crossingIndicators->update(status);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) // выбранный способ линейности поверх официального
         m_linearityMethods->reapplyCardOverride();
+#endif
 }
 
 void MainWindow::onTelemetryUpdated(const Telemetry& t)
@@ -1058,8 +1072,10 @@ void MainWindow::onTelemetryUpdated(const Telemetry& t)
 
     m_crossingIndicators->update(t.crossingStatus);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) // выбранный способ линейности поверх официального
         m_linearityMethods->reapplyCardOverride();
+#endif
 }
 
 void MainWindow::appendLog(const QString& text) {
@@ -1261,9 +1277,17 @@ void MainWindow::setRegistry(Registry* registry)
     UiText::setLabelOrDash(ui->lineEdit_materialStock, materialInfo.stock);
     UiText::setLabelOrDash(ui->lineEdit_materialGuideSleeve, materialInfo.guideSleeve);
 
+    // Линейность — экспериментальная: без MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    // карточка Pass|Fail скрыта, значение не считается.
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    constexpr bool kLinearityOn = true;
+#else
+    constexpr bool kLinearityOn = false;
+#endif
+
     const bool anyCrossingEnabled =
         limits.frictionEnabled
-        || limits.linearCharacteristicEnabled
+        || (limits.linearCharacteristicEnabled && kLinearityOn)
         || limits.valveStrokeEnabled
         || limits.springEnabled
         || limits.dynamicErrorEnabled;
@@ -1288,7 +1312,7 @@ void MainWindow::setRegistry(Registry* registry)
 
     ui->frame_crossingLimits_coefficientFriction_control_Card->setVisible(limits.frictionEnabled);
     ui->frame_crossingLimits_range_Card->setVisible(limits.valveStrokeEnabled);
-    ui->frame_crossingLimits_linearCharacteristic_Card->setVisible(limits.linearCharacteristicEnabled);
+    ui->frame_crossingLimits_linearCharacteristic_Card->setVisible(kLinearityOn && limits.linearCharacteristicEnabled);
     ui->frame_crossingLimits_spring_Card->setVisible(limits.springEnabled);
     ui->frame_crossingLimits_dynamicError_Card->setVisible(limits.dynamicErrorEnabled);
 
@@ -1297,7 +1321,7 @@ void MainWindow::setRegistry(Registry* registry)
             tr("допуск %1").arg(NumberUtils::formatRange(limits.frictionCoefLower, limits.frictionCoefUpper)));
     }
 
-    if (limits.linearCharacteristicEnabled) {
+    if (kLinearityOn && limits.linearCharacteristicEnabled) {
         ui->label_crossingLimits_linearCharacteristic_Norm->setText(
             tr("допуск %1").arg(NumberUtils::formatRange(0.0, limits.linearCharacteristic)));
     }
@@ -1313,6 +1337,7 @@ void MainWindow::setRegistry(Registry* registry)
         m_chartsInitialized = true;
     }
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     // Стрелка в карточке «Линейность характеристики» блока
     // Pass|Fail раскрывает под ней способы расчёта; остальные карточки
     // сворачиваются до строки «название + статус».
@@ -1364,6 +1389,7 @@ void MainWindow::setRegistry(Registry* registry)
         m_linearityCard->setExpanded(false, false);
     }
     m_linearityMethods->setRegistry(registry);
+#endif
 }
 
 void MainWindow::setTask(qreal task)
@@ -2559,10 +2585,12 @@ void MainWindow::openArchiveView()
 
     m_archiveView = std::move(view);
     showArchivedResult();
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) {
         m_linearityMethods->refresh();
         m_linearityMethods->reapplyCardOverride();
     }
+#endif
 
     for (int i = 0; i < labels.size(); ++i)
         if (labels[i]->text() != labelTexts[i])
@@ -2604,10 +2632,12 @@ void MainWindow::closeArchiveView()
         m_mapper->updateCrossingValues(*m_telemetry.testMain, m_telemetry.valveStrokeRecord);
     }
     m_crossingIndicators->update(m_telemetry.crossingStatus);
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) {
         m_linearityMethods->refresh();
         m_linearityMethods->reapplyCardOverride();
     }
+#endif
     applyArchiveViewLocks();
 }
 

@@ -133,6 +133,7 @@ private:
         const Regression& regressionSecond,
         const Limits& pressureLimits);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     // Интегральная линейность (прежний метод): max |положение - (k*давление+b)|
     // в % от рабочего окна хода. Оставлена для сравнения.
     double computeLinearityError(
@@ -145,6 +146,7 @@ private:
     double computeMinimaxLinearityError(
         const QVector<PressurePoint>& points,
         const Limits& limits) const;
+#endif
 
     double computePressureDiff(
         const Regression& regressionForward,

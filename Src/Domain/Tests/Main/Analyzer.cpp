@@ -1,5 +1,7 @@
 #include "Analyzer.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Linearity/LinearityMethods.h"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -192,6 +194,7 @@ Analyzer::Regression Analyzer::calculateRegression(
     return result;
 }
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 // [ОТ-6] Линейность, интегральная (для сравнения) — docs/formulas/main_test.md
 double Analyzer::computeLinearityError(
     const QVector<PressurePoint>& points,
@@ -243,6 +246,7 @@ double Analyzer::computeMinimaxLinearityError(
     // Тот же расчёт, что способ «минимакс» в карточке линейности.
     return Linearity::minimaxLinearity(xy, limits.minY, limits.maxY);
 }
+#endif // MPIPLATFORM_EXPERIMENTAL_LINEARITY
 
 // [ОТ-8] Разность давлений ходов на середине хода — docs/formulas/main_test.md
 double Analyzer::computePressureDiff(
@@ -637,6 +641,7 @@ void Analyzer::applyRegressions(
     m_result.workWindowLow = pressureLimits.minY + strokeRange * kWorkWindowFrac;
     m_result.workWindowHigh = pressureLimits.maxY - strokeRange * kWorkWindowFrac;
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     const double linearityForward =
         computeLinearityError(m_pressureSeriesFirst, regressionFirst, pressureLimits);
 
@@ -660,6 +665,7 @@ void Analyzer::applyRegressions(
 
     m_result.linearity =
         100.0 - m_result.linearityError;
+#endif
 
     // [ОТ-8] — docs/formulas/main_test.md
     m_result.pressureDiff =
