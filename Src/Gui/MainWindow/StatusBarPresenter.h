@@ -45,6 +45,10 @@ public:
     QLabel* pressureCaptionLabel() const { return m_statusPressureCaption; }
     BalanceSeesawWidget* balanceSeesaw() const { return m_statusBalanceSeesaw; }
 
+signals:
+    // Нажали «?» — открыть справку.
+    void helpRequested();
+
 private:
     void build();
     void updatePalette();
@@ -71,4 +75,5 @@ private:
     QWidget* m_statusPanelWrapper = nullptr;
     QList<QLabel*> m_statusCaptionLabels;
     QToolButton* m_themeToggleButton = nullptr;
+    QToolButton* m_helpButton = nullptr;
 };

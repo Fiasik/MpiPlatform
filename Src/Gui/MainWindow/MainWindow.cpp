@@ -24,6 +24,7 @@
 #include "Domain/BuildVariant.h"
 #include "Gui/Style/ThemeManager.h"
 #include "Gui/MainWindow/StatusBarPresenter.h"
+#include "Gui/Help/HelpDialog.h"
 #include "Gui/MainWindow/ReportGenerationPresenter.h"
 #include "Gui/MainWindow/ReportPreviewPresenter.h"
 #include "Gui/MainWindow/ReportGenerationWorker.h"
@@ -130,6 +131,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     applyBuildVariantUi();
 
+    QTimer::singleShot(2000, this, [this] { checkSensorsReminder(); });
+
     setupUiConnections();
 
     m_mapper = std::make_unique<TelemetryUiMapper>(ui);
@@ -179,6 +182,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::openHistorySessionFolder);
 
     m_statusBarPresenter = new StatusBarPresenter(ui, m_mapper.get(), m_chartManager.get(), this);
+    connect(m_statusBarPresenter, &StatusBarPresenter::helpRequested, this, &MainWindow::openHelp);
     m_statusStateValue = m_statusBarPresenter->stateValueLabel();
     m_statusTimeValue = m_statusBarPresenter->timeValueLabel();
     m_statusPositionValue = m_statusBarPresenter->positionValueLabel();
@@ -791,15 +795,62 @@ static QString formatHMS(quint64 ms)
         .arg(s, 2, 10, QChar('0'));
 }
 
+void MainWindow::openHelp()
+{
+    // Вкладки — как их видит оператор: видимые по порядку (цифра N — N-я из
+    // них, см. TabBinder). Вложенные вкладки и кнопки Enter — из тех же
+    // привязок, что реально работают, чтобы справка не разошлась с клавишами.
+    const QHash<QWidget*, QTabWidget*> innerTabs = {
+        {ui->tab_mainTests, ui->tabWidget_mainTests},
+        {ui->tab_optionalTests, ui->tabWidget_optionalTests},
+        {ui->tab_reportGeneration, ui->tabWidget_reportGeneration},
+    };
+    const auto buttonText = [](const QPushButton* button) {
+        return button ? button->text() : QString();
+    };
+
+    QList<HelpDialog::TabHelp> tabs;
+    QTabWidget* main = ui->tabWidget_main;
+    for (int i = 0; i < main->count(); ++i) {
+        if (!main->isTabVisible(i))
+            continue;
+        QWidget* page = main->widget(i);
+        HelpDialog::TabHelp tab;
+        tab.title = main->tabText(i);
+        if (QTabWidget* inner = innerTabs.value(page, nullptr)) {
+            for (int j = 0; j < inner->count(); ++j)
+                if (inner->isTabVisible(j))
+                    tab.innerTabs << inner->tabText(j);
+        }
+        const TabActions actions = m_tabActionRouter.actions(page);
+        tab.enterAction = buttonText(actions.primary);
+        tab.shiftEnterAction = buttonText(actions.secondary);
+        tabs << tab;
+    }
+
+    HelpDialog dialog(tabs, this);
+    dialog.exec();
+}
+
 void MainWindow::setupShortcuts()
 {
+    auto* help = new QShortcut(QKeySequence(Qt::Key_F1), this);
+    help->setContext(Qt::ApplicationShortcut);
+    connect(help, &QShortcut::activated, this, &MainWindow::openHelp);
+
     auto* enter = new QShortcut(QKeySequence(Qt::Key_Return), this);
     enter->setContext(Qt::ApplicationShortcut);
 
+    // Скрытая вкладка (циклический тест вне Ski) не должна получать Enter —
+    // иначе нажалась бы её кнопка «Старт».
+    const auto visibleCurrentTab = [this]() -> QWidget* {
+        const int i = ui->tabWidget_main->currentIndex();
+        return ui->tabWidget_main->isTabVisible(i) ? ui->tabWidget_main->widget(i) : nullptr;
+    };
+
     connect(enter, &QShortcut::activated,
-            this, [this] {
-                m_tabActionRouter.triggerPrimary(
-                    ui->tabWidget_main->currentWidget());
+            this, [this, visibleCurrentTab] {
+                m_tabActionRouter.triggerPrimary(visibleCurrentTab());
             });
 
     auto* shiftEnter =
@@ -808,9 +859,8 @@ void MainWindow::setupShortcuts()
     shiftEnter->setContext(Qt::ApplicationShortcut);
 
     connect(shiftEnter, &QShortcut::activated,
-            this, [this] {
-                m_tabActionRouter.triggerSecondary(
-                    ui->tabWidget_main->currentWidget());
+            this, [this, visibleCurrentTab] {
+                m_tabActionRouter.triggerSecondary(visibleCurrentTab());
             });
 }
 
@@ -3034,5 +3084,48 @@ void MainWindow::backClicked()
         }
 
         setRegistry(m_registry);
+    }
+}
+
+
+void MainWindow::checkSensorsReminder()
+{
+    AppSettings settings;
+    const QDate today = QDate::currentDate();
+
+    const QDate checked = settings.sensorsCheckedDate();
+    if (!checked.isValid()) {
+        // Первый запуск: отсчёт начинается с сегодняшнего дня.
+        settings.setSensorsCheckedDate(today);
+        return;
+    }
+
+    const int interval = settings.sensorsCheckIntervalDays();
+    if (checked.daysTo(today) < interval)
+        return;
+
+    const QDate later = settings.sensorsRemindAfter();
+    if (later.isValid() && today < later)
+        return;
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Information);
+    box.setWindowTitle(tr("Проверка датчиков"));
+    box.setText(tr("Пора проверить датчики стенда"));
+    box.setInformativeText(tr("Последняя проверка: %1 (%2 дн. назад, интервал — %3 дн.).\n"
+                              "Проверьте датчики давления, положения и тока и нажмите "
+                              "«Проверено сегодня».")
+                               .arg(checked.toString(QStringLiteral("dd.MM.yyyy")))
+                               .arg(checked.daysTo(today))
+                               .arg(interval));
+    QPushButton* done = box.addButton(tr("Проверено сегодня"), QMessageBox::AcceptRole);
+    box.addButton(tr("Напомнить завтра"), QMessageBox::RejectRole);
+    box.exec();
+
+    if (box.clickedButton() == done) {
+        settings.setSensorsCheckedDate(today);
+        settings.setSensorsRemindAfter(QDate());
+    } else {
+        settings.setSensorsRemindAfter(today.addDays(1));
     }
 }

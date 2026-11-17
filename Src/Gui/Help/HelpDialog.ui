@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HelpDialog</class>
+ <widget class="QDialog" name="HelpDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>660</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Справка</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_help">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>16</number></property>
+   <property name="topMargin"><number>16</number></property>
+   <property name="rightMargin"><number>16</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <widget class="QTabWidget" name="tabWidget_help">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab_helpAbout">
+      <attribute name="title">
+       <string>О программе</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_helpAbout">
+       <property name="spacing"><number>12</number></property>
+       <property name="leftMargin"><number>0</number></property>
+       <property name="topMargin"><number>12</number></property>
+       <property name="rightMargin"><number>0</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+   <item>
+    <widget class="QFrame" name="frame_helpProgram_Section">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_helpProgram" columnstretch="0,1">
+      <property name="leftMargin"><number>14</number></property>
+      <property name="topMargin"><number>12</number></property>
+      <property name="rightMargin"><number>14</number></property>
+      <property name="bottomMargin"><number>12</number></property>
+      <property name="horizontalSpacing"><number>16</number></property>
+      <property name="verticalSpacing"><number>8</number></property>
+      <item row="0" column="0" colspan="2">
+     <widget class="QLabel" name="label_helpProgramHeader_Title">
+      <property name="text">
+       <string>Приложение</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="0">
+     <widget class="QLabel" name="label_helpProgram_Title">
+      <property name="text">
+       <string>Название</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="1">
+     <widget class="QLabel" name="label_helpProgram_Text">
+      <property name="text">
+       <string>MpiPlatform</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="0">
+     <widget class="QLabel" name="label_helpVersion_Title">
+      <property name="text">
+       <string>Версия</string>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="1">
+     <widget class="QLabel" name="label_helpVersion_Text">
+      <property name="text">
+       <string>1.0</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="0">
+     <widget class="QLabel" name="label_helpBuild_Title">
+      <property name="text">
+       <string>Сборка</string>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="1">
+     <widget class="QLabel" name="label_helpBuild_Text">
+      <property name="text">
+       <string>Standard</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="4" column="0">
+     <widget class="QLabel" name="label_helpCompany_Title">
+      <property name="text">
+       <string>Разработчик</string>
+      </property>
+     </widget>
+      </item>
+      <item row="4" column="1">
+     <widget class="QLabel" name="label_helpCompany_Text">
+      <property name="text">
+       <string>ООО «РДК Системс»</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_helpSupport_Section">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_helpSupport" columnstretch="0,1">
+      <property name="leftMargin"><number>14</number></property>
+      <property name="topMargin"><number>12</number></property>
+      <property name="rightMargin"><number>14</number></property>
+      <property name="bottomMargin"><number>12</number></property>
+      <property name="horizontalSpacing"><number>16</number></property>
+      <property name="verticalSpacing"><number>8</number></property>
+      <item row="0" column="0" colspan="2">
+     <widget class="QLabel" name="label_helpSupportHeader_Title">
+      <property name="text">
+       <string>Поддержка</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="0">
+     <widget class="QLabel" name="label_helpSupportName_Title">
+      <property name="text">
+       <string>ФИО</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="1">
+     <widget class="QLabel" name="label_helpSupportName_Text">
+      <property name="text">
+       <string>Фамилия Имя Отчество</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="0">
+     <widget class="QLabel" name="label_helpSupportPhone_Title">
+      <property name="text">
+       <string>Телефон</string>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="1">
+     <widget class="QLabel" name="label_helpSupportPhone_Text">
+      <property name="text">
+       <string>+7 (000) 000-00-00</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="0">
+     <widget class="QLabel" name="label_helpSupportEmail_Title">
+      <property name="text">
+       <string>Почта</string>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="1">
+     <widget class="QLabel" name="label_helpSupportEmail_Text">
+      <property name="text">
+       <string>support@example.com</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_helpSystem_Section">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_helpSystem" columnstretch="0,1">
+      <property name="leftMargin"><number>14</number></property>
+      <property name="topMargin"><number>12</number></property>
+      <property name="rightMargin"><number>14</number></property>
+      <property name="bottomMargin"><number>12</number></property>
+      <property name="horizontalSpacing"><number>16</number></property>
+      <property name="verticalSpacing"><number>8</number></property>
+      <item row="0" column="0" colspan="2">
+     <widget class="QLabel" name="label_helpSystemHeader_Title">
+      <property name="text">
+       <string>Система (для обращения в поддержку)</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="0">
+     <widget class="QLabel" name="label_helpQt_Title">
+      <property name="text">
+       <string>Qt</string>
+      </property>
+     </widget>
+      </item>
+      <item row="1" column="1">
+     <widget class="QLabel" name="label_helpQt_Text">
+      <property name="text">
+       <string>6.8.0</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="0">
+     <widget class="QLabel" name="label_helpOs_Title">
+      <property name="text">
+       <string>Система</string>
+      </property>
+     </widget>
+      </item>
+      <item row="2" column="1">
+     <widget class="QLabel" name="label_helpOs_Text">
+      <property name="text">
+       <string>—</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="0">
+     <widget class="QLabel" name="label_helpDatabase_Title">
+      <property name="text">
+       <string>База данных</string>
+      </property>
+     </widget>
+      </item>
+      <item row="3" column="1">
+     <widget class="QLabel" name="label_helpDatabase_Text">
+      <property name="text">
+       <string>—</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+      <item row="4" column="0">
+     <widget class="QLabel" name="label_helpSchema_Title">
+      <property name="text">
+       <string>Схема базы</string>
+      </property>
+     </widget>
+      </item>
+      <item row="4" column="1">
+     <widget class="QLabel" name="label_helpSchema_Text">
+      <property name="text">
+       <string>—</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+       <item>
+        <spacer name="verticalSpacer_helpAbout">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_helpControls">
+      <attribute name="title">
+       <string>Управление</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_helpControls">
+       <property name="leftMargin"><number>0</number></property>
+       <property name="topMargin"><number>12</number></property>
+       <property name="rightMargin"><number>0</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+       <item>
+        <widget class="QTextBrowser" name="textBrowser_helpControls">
+         <property name="openExternalLinks">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_helpTests">
+      <attribute name="title">
+       <string>Тесты</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_helpTests">
+       <property name="leftMargin"><number>0</number></property>
+       <property name="topMargin"><number>12</number></property>
+       <property name="rightMargin"><number>0</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+       <item>
+        <widget class="QTabWidget" name="tabWidget_helpTests">
+         <property name="documentMode">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_helpButtons">
+     <item>
+      <widget class="QPushButton" name="pushButton_helpCopy">
+       <property name="toolTip">
+        <string>Версия, сборка, система и путь к базе — одним текстом, чтобы вставить в письмо или сообщение поддержке</string>
+       </property>
+       <property name="text">
+        <string>Скопировать для поддержки</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_helpButtons">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_helpClose">
+       <property name="text">
+        <string>Закрыть</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

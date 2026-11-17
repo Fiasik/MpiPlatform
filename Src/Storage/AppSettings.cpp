@@ -2,6 +2,8 @@
 
 #include <QCoreApplication>
 
+#include <algorithm>
+
 AppSettings::AppSettings()
     : m_settings(
           QCoreApplication::applicationDirPath() + "/settings.ini",
@@ -65,4 +67,29 @@ void AppSettings::setThemePreference(ThemePreference pref)
     else if (pref == ThemePreference::Dark)
         value = "Dark";
     setValue("Appearance/theme", QString::fromLatin1(value));
+}
+
+QDate AppSettings::sensorsCheckedDate() const
+{
+    return QDate::fromString(m_settings.value("Maintenance/sensorsCheckedDate").toString(), Qt::ISODate);
+}
+
+void AppSettings::setSensorsCheckedDate(const QDate& date)
+{
+    setValue("Maintenance/sensorsCheckedDate", date.toString(Qt::ISODate));
+}
+
+QDate AppSettings::sensorsRemindAfter() const
+{
+    return QDate::fromString(m_settings.value("Maintenance/sensorsRemindAfter").toString(), Qt::ISODate);
+}
+
+void AppSettings::setSensorsRemindAfter(const QDate& date)
+{
+    setValue("Maintenance/sensorsRemindAfter", date.toString(Qt::ISODate));
+}
+
+int AppSettings::sensorsCheckIntervalDays() const
+{
+    return std::max(1, m_settings.value("Maintenance/sensorsCheckIntervalDays", 60).toInt());
 }

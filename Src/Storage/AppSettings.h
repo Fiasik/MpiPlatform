@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDate>
 #include <QSettings>
 
 enum class ThemePreference { System, Light, Dark };
@@ -28,6 +29,15 @@ public:
     // Пусто — не сохранено, берётся значение по умолчанию.
     QString chartDisplayOption(const QString& chart, const QString& name) const;
     void setChartDisplayOption(const QString& chart, const QString& name, const QString& value);
+
+    // Напоминание о проверке датчиков стенда (давление, положение, ток):
+    // дата последней подтверждённой проверки, "не напоминать до" (отложено)
+    // и интервал в днях (по умолчанию 60). Невалидная дата — не задана.
+    QDate sensorsCheckedDate() const;
+    void setSensorsCheckedDate(const QDate& date);
+    QDate sensorsRemindAfter() const;
+    void setSensorsRemindAfter(const QDate& date);
+    int sensorsCheckIntervalDays() const;
 
 private:
     void setValue(const QString& key, const QVariant& val);

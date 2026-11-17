@@ -235,6 +235,8 @@ private:
     // прошлого акта и в «Истории» у сессии без сформированного отчёта их нет.
     void scheduleConclusionSave();
     void flushConclusionSave();
+    // Справка (F1 / «?» в строке состояния): О программе и клавиатура.
+    void openHelp();
     void setupPrimaryActions();
     // Видимость вкладок/кнопок, которые существуют только в конкретной
     // сборке (Domain::k...Variant) — см. её собственный комментарий.
@@ -247,6 +249,9 @@ private:
     void applyTestStateToUi(TestState  state);
     void setTestState(TestState state);
     void showIdleState();
+    // Раз в 60 дней (AppSettings::sensorsCheckIntervalDays) напоминает о проверке
+    // датчиков стенда; тесты не блокирует. Первый запуск только заводит дату.
+    void checkSensorsReminder();
     void showInitFailedState();
 
     // Единое состояние попытки инициализации устройства — single source of

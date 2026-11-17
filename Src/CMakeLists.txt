@@ -269,6 +269,7 @@ set(GUI_CPP
     Gui/MainWindow/ReportPreviewPresenter.cpp
     Gui/MainWindow/HistoryPresenter.cpp
     Gui/MainWindow/ArchivedTest.cpp
+    Gui/Help/HelpDialog.cpp
     Gui/Setup/ValveWindow/Logic.cpp
     Gui/Setup/ValveWindow/Mapper.cpp
     Gui/Setup/ObjectWindow.cpp
@@ -312,6 +313,8 @@ set(GUI_HEADERS
     Gui/MainWindow/ReportPreviewPresenter.h
     Gui/MainWindow/HistoryPresenter.h
     Gui/MainWindow/ArchivedTest.h
+    Gui/Help/HelpDialog.h
+    Utils/AppInfo.h
     Gui/Setup/ObjectWindow.h
     Gui/WindowGeometry.h
     Gui/Setup/ValveWindow/Logic.h
@@ -346,6 +349,7 @@ set(GUI_UI
     Gui/Setup/SelectTests.ui
     Gui/Setup/ValveWindow/ValveWindow.ui
     Gui/MainWindow/MainWindow.ui
+    Gui/Help/HelpDialog.ui
     Gui/MainWindow/ReportPreviewPanel.ui
     Gui/TestSettings/MainTestSettings.ui
     Gui/TestSettings/OtherTestSettings.ui
@@ -488,7 +492,9 @@ target_link_libraries(Gui
 target_compile_definitions(Gui
     PRIVATE
         MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        MPIPLATFORM_VERSION="${PROJECT_VERSION}"
 )
+
 # PUBLIC — MainWindow и превью experiments/preview видят тот же флаг.
 if(MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
     target_compile_definitions(Gui PUBLIC MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)

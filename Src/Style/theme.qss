@@ -433,6 +433,25 @@ QToolButton {
     background: none;
 }
 
+/* «?» в строке состояния (StatusBarPresenter): открывает справку (F1). Круглая
+ * кнопка с рамкой — чтобы читалась как кнопка, а не как случайный значок. */
+QToolButton#helpButton {
+    border: 1px solid @{borderSubtle};
+    border-radius: 10px;
+    color: @{textMuted};
+    font-weight: bold;
+    min-width: 20px;
+    max-width: 20px;
+    min-height: 20px;
+    max-height: 20px;
+}
+
+QToolButton#helpButton:hover,
+QToolButton#helpButton:pressed {
+    color: @{textBase};
+    border-color: @{textMuted};
+}
+
 /* ⚙ настроек графика (Widgets::Chart::ChartView, правый верхний угол):
  * иконка без рамки, подсветка при наведении/открытом меню, без стрелки
  * меню — по смыслу это просто кнопка-шестерёнка. */

@@ -115,6 +115,16 @@ void StatusBarPresenter::build()
             this, updatePanelVisibility);
 
     updatePanelVisibility(m_ui->tabWidget_main->currentIndex());
+
+    // «?» — слева от переключателя темы (тот добавляется позже и остаётся
+    // крайним справа).
+    m_helpButton = new QToolButton(m_ui->statusbar);
+    m_helpButton->setObjectName(QStringLiteral("helpButton"));
+    m_helpButton->setText(QStringLiteral("?"));
+    m_helpButton->setCursor(Qt::PointingHandCursor);
+    m_helpButton->setToolTip(tr("Справка: управление, версия, поддержка (F1)"));
+    m_ui->statusbar->addPermanentWidget(m_helpButton);
+    connect(m_helpButton, &QToolButton::clicked, this, &StatusBarPresenter::helpRequested);
 }
 
 void StatusBarPresenter::updatePalette()
