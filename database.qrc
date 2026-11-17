@@ -4,5 +4,9 @@
         <file alias="migrations/002_valve_card_and_passfail.sql">Database/migrations/002_valve_card_and_passfail.sql</file>
         <file alias="migrations/003_legacy_source_and_app_state.sql">Database/migrations/003_legacy_source_and_app_state.sql</file>
         <file alias="migrations/004_session_supply_pressure.sql">Database/migrations/004_session_supply_pressure.sql</file>
+        <file alias="migrations/005_equipment_catalog.sql">Database/migrations/005_equipment_catalog.sql</file>
+        <file alias="migrations/006_equipment_catalog_update.sql">Database/migrations/006_equipment_catalog_update.sql</file>
+        <file alias="migrations/007_epp_manufacturers.sql">Database/migrations/007_epp_manufacturers.sql</file>
+        <file alias="migrations/008_samson_3277_area.sql">Database/migrations/008_samson_3277_area.sql</file>
     </qresource>
 </RCC>

@@ -301,7 +301,8 @@ bool doMerge(QSqlDatabase& db, const QString& dataRoot, const QString& appRoot,
 
     static const QStringList kHandledElsewhere = {
         QStringLiteral("sites"), QStringLiteral("positions"), QStringLiteral("sessions"),
-        QStringLiteral("app_state")};
+        QStringLiteral("app_state"),
+        QStringLiteral("catalog_manufacturers"), QStringLiteral("catalog_models")};
 
     for (const QString& table : tables) {
         if (kHandledElsewhere.contains(table))
@@ -337,6 +338,21 @@ bool doMerge(QSqlDatabase& db, const QString& dataRoot, const QString& appRoot,
                      selectExprs.join(QStringLiteral(", "))), &error))
             return fail();
     }
+
+    // --- справочник оборудования (миграция 005) ------------------------------
+    // Ключи естественные, так что слияние — просто "добавить, чего нет".
+    // Исходные записи у обеих баз одинаковые (из одной миграции) и
+    // пропускаются; переезжает то, что на другом стенде ввели вручную.
+    if (!run(q, QStringLiteral(
+            "INSERT OR IGNORE INTO main.catalog_manufacturers(name, sort_order, source) "
+            "SELECT name, sort_order, source FROM src.catalog_manufacturers"), &error))
+        return fail();
+    if (!run(q, QStringLiteral(
+            "INSERT OR IGNORE INTO main.catalog_models"
+            "(kind, manufacturer, dynamic_error, name, sort_order, source) "
+            "SELECT kind, manufacturer, dynamic_error, name, sort_order, source "
+            "FROM src.catalog_models"), &error))
+        return fail();
 
     if (!run(q, QStringLiteral("COMMIT"), &error))
         return fail();

@@ -27,6 +27,10 @@ constexpr Migration kMigrations[] = {
     {2, ":/Database/migrations/002_valve_card_and_passfail.sql"},
     {3, ":/Database/migrations/003_legacy_source_and_app_state.sql"},
     {4, ":/Database/migrations/004_session_supply_pressure.sql"},
+    {5, ":/Database/migrations/005_equipment_catalog.sql"},
+    {6, ":/Database/migrations/006_equipment_catalog_update.sql"},
+    {7, ":/Database/migrations/007_epp_manufacturers.sql"},
+    {8, ":/Database/migrations/008_samson_3277_area.sql"},
 };
 
 constexpr int kLatestVersion =

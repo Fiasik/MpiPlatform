@@ -58,6 +58,7 @@ set(DOMAIN_CPP
     Storage/DataTransfer.cpp
     Storage/ChartImageStorage.cpp
     Storage/ChartSnapshotStorage.cpp
+    Storage/EquipmentCatalog.cpp
 
     Utils/NumberUtils.cpp
     Utils/StyledMessageBox.cpp
@@ -153,6 +154,7 @@ set(DOMAIN_HEADERS
     Storage/ChartImageStorage.h
     Storage/ChartSnapshot.h
     Storage/ChartSnapshotStorage.h
+    Storage/EquipmentCatalog.h
 
 
     Utils/NumberUtils.h

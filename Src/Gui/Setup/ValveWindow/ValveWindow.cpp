@@ -7,11 +7,13 @@
 #include "Gui/Style/Palette.h"
 #include "Gui/WindowGeometry.h"
 #include "ValidatorFactory/ValidatorFactory.h"
+#include "Utils/Shortcuts/LayoutTabOrder.h"
 #include "Utils/Shortcuts/TabBinder.h"
 #include "Utils/StyledMessageBox.h"
 #include "Utils/NumberUtils.h"
 #include "Domain/BuildVariant.h"
 #include "Storage/HistoryReader.h"
+#include "Storage/EquipmentCatalog.h"
 
 #include <QTimer>
 #include <QScreen>
@@ -128,6 +130,13 @@ ValveWindow::ValveWindow(QWidget *parent)
     setupConnections();
     setupInitialUi();
     setupColorPickers();
+
+    // Tab — сверху вниз по полям, а не в порядке их записи в .ui. Области
+    // прокрутки — не остановка: фокус на них ничего не показывает, а к
+    // полю под краем QScrollArea и так прокручивает сама.
+    ui->scrollArea_valveData->setFocusPolicy(Qt::NoFocus);
+    ui->scrollArea_valveMaterials->setFocusPolicy(Qt::NoFocus);
+    LayoutTabOrder::apply(this);
 }
 
 void ValveWindow::updateManufacturerUi()
@@ -141,12 +150,168 @@ void ValveWindow::updateManufacturerUi()
         ui->lineEdit_manufacturer->clear();
 }
 
+void ValveWindow::reloadManufacturers()
+{
+    // Без сигналов: списки моделей вызывающий перестраивает сам, когда
+    // остальные поля (коэффициент) уже выставлены.
+    QSignalBlocker blocker(ui->comboBox_manufacturer);
+    ui->comboBox_manufacturer->clear();
+    ui->comboBox_manufacturer->addItems(EquipmentCatalog::manufacturers());
+    ui->comboBox_manufacturer->addItem(kManualInput);
+    ui->comboBox_manufacturer->setCurrentIndex(0);
+}
+
+QString ValveWindow::catalogManufacturer() const
+{
+    const QString text = ui->comboBox_manufacturer->currentText().trimmed();
+    return text == kManualInput ? QString() : text;
+}
+
+void ValveWindow::reloadPositionerModels()
+{
+    fillModelCombo(ui->comboBox_positionerModel, ui->lineEdit_positionerModel,
+                   EquipmentCatalog::models(EquipmentCatalog::Kind::Positioner,
+                                            catalogManufacturer(),
+                                            ui->comboBox_dinamicError->currentText()));
+}
+
+void ValveWindow::reloadDriveModels()
+{
+    fillModelCombo(ui->comboBox_driveModel, ui->lineEdit_driveModel,
+                   EquipmentCatalog::models(EquipmentCatalog::Kind::Drive,
+                                            catalogManufacturer(), QString()));
+}
+
+void ValveWindow::fillModelCombo(QComboBox* combo, QLineEdit* manual, const QStringList& models)
+{
+    {
+        QSignalBlocker blocker(combo);
+        combo->clear();
+        combo->addItems(models);
+        combo->addItem(kManualInput);
+        // Ничего не выбираем за оператора: первая модель списка, молча
+        // подставленная в карточку, хуже пустого поля. Если в справочнике
+        // для этого производителя моделей нет — сразу "Ручной ввод".
+        combo->setCurrentIndex(models.isEmpty() ? combo->count() - 1 : -1);
+    }
+    // Список сменился (другой производитель/коэффициент) — прежняя модель,
+    // в том числе введённая вручную, к нему уже не относится. Сохранённое
+    // значение карточки возвращает setModelValue() после перестроения.
+    manual->clear();
+    updateModelManualUi(combo, manual);
+}
+
+void ValveWindow::updateModelManualUi(QComboBox* combo, QLineEdit* manual)
+{
+    const bool isManual = (combo->itemText(combo->currentIndex()) == kManualInput);
+
+    manual->setEnabled(isManual);
+
+    if (!isManual)
+        manual->clear();
+}
+
+void ValveWindow::setModelValue(QComboBox* combo, QLineEdit* manual, const QString& value)
+{
+    const QString text = value.trimmed();
+    const int manualIndex = combo->count() - 1;   // "Ручной ввод" всегда последний
+
+    // Регистр не важен: "SAMSON 3730" из старой карточки = "Samson 3730".
+    int index = text.isEmpty() ? -1 : combo->findText(text, Qt::MatchFixedString);
+    if (index == manualIndex)
+        index = -1;
+
+    if (index >= 0) {
+        combo->setCurrentIndex(index);
+    } else if (text.isEmpty()) {
+        combo->setCurrentIndex(combo->count() > 1 ? -1 : manualIndex);
+    } else {
+        combo->setCurrentIndex(manualIndex);
+    }
+
+    // setCurrentIndex() не эмитит сигнал, если индекс не поменялся.
+    updateModelManualUi(combo, manual);
+
+    // Значения нет в списке (старая карточка со свободным текстом или модель
+    // другого производителя) — показываем его в поле ручного ввода.
+    // setText() сбрасывает isModified(), так что в справочник оно само не
+    // попадёт (см. saveManualEntriesToCatalog()).
+    if (index < 0 && !text.isEmpty())
+        manual->setText(text);
+}
+
+QString ValveWindow::modelValue(const QComboBox* combo, const QLineEdit* manual)
+{
+    const QString text = combo->currentText().trimmed();
+    return (text == kManualInput) ? manual->text().trimmed() : text;
+}
+
+void ValveWindow::saveManualEntriesToCatalog()
+{
+    const bool manualManufacturer =
+        (ui->comboBox_manufacturer->currentText() == kManualInput);
+    const QString manufacturer = manualManufacturer
+        ? ui->lineEdit_manufacturer->text().trimmed()
+        : ui->comboBox_manufacturer->currentText().trimmed();
+
+    // Модель без производителя справочник не пополняет (см.
+    // EquipmentCatalog::addModel()).
+    if (manufacturer.isEmpty())
+        return;
+
+    const auto typed = [](const QComboBox* combo, const QLineEdit* manual) {
+        return (combo->currentText() == kManualInput && manual->isModified())
+            ? manual->text().trimmed()
+            : QString();
+    };
+
+    const QString positioner = typed(ui->comboBox_positionerModel, ui->lineEdit_positionerModel);
+    const QString drive = typed(ui->comboBox_driveModel, ui->lineEdit_driveModel);
+
+    // Производителя, введённого вручную, добавляем и тогда, когда сам он
+    // пришёл из старой карточки, но под ним впервые вводят модель: иначе
+    // модель лежала бы в справочнике под производителем, которого нет в
+    // списке, и не показывалась бы.
+    if (manualManufacturer
+        && (ui->lineEdit_manufacturer->isModified() || !positioner.isEmpty() || !drive.isEmpty())) {
+        EquipmentCatalog::addManufacturer(manufacturer);
+    }
+
+    if (!positioner.isEmpty()) {
+        EquipmentCatalog::addModel(EquipmentCatalog::Kind::Positioner, manufacturer,
+                                   ui->comboBox_dinamicError->currentText(), positioner);
+    }
+
+    if (!drive.isEmpty())
+        EquipmentCatalog::addModel(EquipmentCatalog::Kind::Drive, manufacturer, QString(), drive);
+}
+
 void ValveWindow::setupConnections()
 {
     // comboBox_manufacturer — Widgets::Combo::SearchableComboBox (см. .ui),
     // поиск уже встроен в сам виджет.
     connect(ui->comboBox_manufacturer, &QComboBox::currentTextChanged,
             this, &ValveWindow::updateManufacturerUi);
+
+    // Списки моделей перестраиваются по currentIndexChanged, а не по
+    // currentTextChanged: в комбобоксе с поиском текст меняется на каждую
+    // набранную букву, а пункт — только когда его реально выбрали.
+    connect(ui->comboBox_manufacturer, &QComboBox::currentIndexChanged,
+            this, [this] {
+                reloadPositionerModels();
+                reloadDriveModels();
+            });
+    connect(ui->comboBox_dinamicError, &QComboBox::currentIndexChanged,
+            this, &ValveWindow::reloadPositionerModels);
+
+    connect(ui->comboBox_positionerModel, &QComboBox::currentIndexChanged,
+            this, [this] {
+                updateModelManualUi(ui->comboBox_positionerModel, ui->lineEdit_positionerModel);
+            });
+    connect(ui->comboBox_driveModel, &QComboBox::currentIndexChanged,
+            this, [this] {
+                updateModelManualUi(ui->comboBox_driveModel, ui->lineEdit_driveModel);
+            });
 
     connect(ui->comboBox_strokeMovement, &QComboBox::currentIndexChanged,
             this, &ValveWindow::strokeChanged);
@@ -190,10 +355,13 @@ void ValveWindow::setupConnections()
 
 void ValveWindow::setupInitialUi()
 {
+    reloadManufacturers();
     updateManufacturerUi();
 
     onDriveTypeChanged(ui->comboBox_driveType->currentIndex());
+    // Заодно строит список моделей позиционера (см. onPositionerTypeChanged).
     onPositionerTypeChanged(ui->comboBox_positionerType->currentIndex());
+    reloadDriveModels();
 
     applyFrictionLimitsFromStuffingBoxSeal();
 
@@ -403,6 +571,8 @@ void ValveWindow::applyPatternVisibility()
         break;
     case SelectTests::Pattern_C_SOVT:
         ui->label_positionerModel->setVisible(false);
+        ui->label_2->setVisible(false);
+        ui->comboBox_positionerModel->setVisible(false);
         ui->lineEdit_positionerModel->setVisible(false);
         ui->label_dinamicError_positionerType->setVisible(false);
         ui->comboBox_positionerType->setVisible(false);
@@ -419,12 +589,19 @@ void ValveWindow::onPositionerTypeChanged(quint8)
     const PositionerType type = ValveEnums::positionerTypeFromCombo(ui->comboBox_positionerType);
     const Logic::DynamicErrorRule rule = Logic::dynamicErrorRule(type);
 
-    ui->comboBox_dinamicError->clear();
-    ui->comboBox_dinamicError->addItems(rule.values);
+    {
+        // clear() + addItems() дают два лишних currentIndexChanged (через
+        // пустой список) — модели позиционера перестраиваем один раз ниже.
+        QSignalBlocker blocker(ui->comboBox_dinamicError);
+        ui->comboBox_dinamicError->clear();
+        ui->comboBox_dinamicError->addItems(rule.values);
 
-    if (!rule.values.isEmpty()) {
-        ui->comboBox_dinamicError->setCurrentIndex(0);
+        if (!rule.values.isEmpty()) {
+            ui->comboBox_dinamicError->setCurrentIndex(0);
+        }
     }
+
+    reloadPositionerModels();
 
     ui->checkBox_crossingLimits_dinamicError->setEnabled(rule.crossingLimitsEnabled);
 
@@ -646,6 +823,7 @@ void ValveWindow::on_pushButton_netWindow_clicked()
 
     saveValveInfo();
     readMaterialsFromUi(m_materialsLocal);
+    saveManualEntriesToCatalog();
 
     // Запоминаем позицию, с которой реально закончили работу — раньше
     // этот хинт нигде не писался (см. Registry::lastPosition()), поэтому
@@ -663,6 +841,15 @@ void ValveWindow::on_pushButton_clear_clicked()
 
     for (auto edit : findChildren<QComboBox*>())
         edit->setCurrentIndex(0);
+
+    // Цикл выше чистит и поле ввода внутри комбобоксов с поиском (это тоже
+    // QLineEdit), а setCurrentIndex(0) при неизменном индексе текст не
+    // возвращает. Пересобираем списки справочника явно: производитель —
+    // первый пункт, модели — "ничего не выбрано".
+    reloadManufacturers();
+    updateManufacturerUi();
+    reloadPositionerModels();
+    reloadDriveModels();
 
     applyFrictionLimitsFromStuffingBoxSeal();
 

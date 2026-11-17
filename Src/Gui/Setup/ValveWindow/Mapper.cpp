@@ -37,12 +37,13 @@ ValveInfo Mapper::read(const ValveWindow& view)
     v.serialNumber = text(ui->lineEdit_serialNumber);
     v.DN = text(ui->lineEdit_DN);
     v.PN = text(ui->lineEdit_PN);
-    v.positionerModel = text(ui->lineEdit_positionerModel);
+    v.positionerModel = ValveWindow::modelValue(ui->comboBox_positionerModel,
+                                                ui->lineEdit_positionerModel);
     v.solenoidValveModel = text(ui->lineEdit_solenoidValveModel);
     v.limitSwitchModel = text(ui->lineEdit_limitSwitchModel);
     v.positionSensorModel = text(ui->lineEdit_positionSensorModel);
     v.valveStroke = text(ui->lineEdit_valveStroke);
-    v.driveModel = text(ui->lineEdit_driveModel);
+    v.driveModel = ValveWindow::modelValue(ui->comboBox_driveModel, ui->lineEdit_driveModel);
 
     v.driveType = ValveEnums::driveTypeFromCombo(ui->comboBox_driveType);
 
@@ -114,26 +115,33 @@ void Mapper::write(ValveWindow& view, const ValveInfo& v)
     ui->lineEdit_positionNumber->setEnabled(manual);
     ui->lineEdit_positionNumber->setText(v.positionNumber);
 
-    if (ui->comboBox_manufacturer->findText(v.manufacturer) >= 0) {
-        ui->comboBox_manufacturer->setCurrentText(v.manufacturer);
-        ui->lineEdit_manufacturer->clear();
-    } else {
-        ui->comboBox_manufacturer->setCurrentText(ValveWindow::kManualInput);
+    // Регистр не важен: в старых карточках встречается "Valvitalia" при
+    // "ValvItalia" в справочнике. setCurrentIndex(), а не setCurrentText():
+    // у редактируемого комбобокса (с поиском) setCurrentText() меняет только
+    // текст поля, а текущий пункт и сигнал currentIndexChanged, по которому
+    // перестраиваются списки моделей, остаются прежними.
+    const int manualManufacturer = ui->comboBox_manufacturer->findText(ValveWindow::kManualInput);
+    int manufacturerIndex = v.manufacturer.isEmpty()
+        ? -1
+        : ui->comboBox_manufacturer->findText(v.manufacturer, Qt::MatchFixedString);
+    if (manufacturerIndex == manualManufacturer)
+        manufacturerIndex = -1;
+
+    ui->comboBox_manufacturer->setCurrentIndex(
+        manufacturerIndex >= 0 ? manufacturerIndex : manualManufacturer);
+    view.updateManufacturerUi();
+    if (manufacturerIndex < 0)
         ui->lineEdit_manufacturer->setText(v.manufacturer);
-    }
 
     ui->lineEdit_valveModel->setText(v.valveModel);
     ui->lineEdit_serialNumber->setText(v.serialNumber);
     ui->lineEdit_DN->setText(v.DN);
     ui->lineEdit_PN->setText(v.PN);
     ui->lineEdit_valveStroke->setText(v.valveStroke);
-    ui->lineEdit_positionerModel->setText(v.positionerModel);
 
     ui->lineEdit_solenoidValveModel->setText(v.solenoidValveModel);
     ui->lineEdit_limitSwitchModel->setText(v.limitSwitchModel);
     ui->lineEdit_positionSensorModel->setText(v.positionSensorModel);
-
-    ui->lineEdit_driveModel->setText(v.driveModel);
 
     if (v.driveType == DriveType::DoubleActing) {
         ui->lineEdit_driveRange->setText(QStringLiteral("Привод ДД"));
@@ -164,12 +172,19 @@ void Mapper::write(ValveWindow& view, const ValveInfo& v)
     ui->comboBox_positionerType->setCurrentIndex(static_cast<int>(v.positionerType));
     ui->comboBox_scale->setCurrentIndex(static_cast<int>(v.positionerScale));
 
-    // Список динамической ошибки зависит от типа позиционера и пересобирается
-    // в onPositionerTypeChanged() с выбором первого пункта — возвращаем
-    // сохранённое значение уже после него.
+    // Список динамической ошибки зависит от типа позиционера
     const int dynamicErrorIndex = ui->comboBox_dinamicError->findText(v.dinamicErrorRecomend);
     if (dynamicErrorIndex >= 0)
         ui->comboBox_dinamicError->setCurrentIndex(dynamicErrorIndex);
+
+    // Списки моделей зависят от производителя и коэффициента, выставленных
+    // выше. Перестраиваем явно (сигналы не приходят, если значение не
+    // поменялось) и только потом возвращаем сохранённые модели.
+    view.reloadPositionerModels();
+    view.reloadDriveModels();
+    view.setModelValue(ui->comboBox_positionerModel, ui->lineEdit_positionerModel,
+                       v.positionerModel);
+    view.setModelValue(ui->comboBox_driveModel, ui->lineEdit_driveModel, v.driveModel);
 
     auto& c = v.crossingLimits;
 

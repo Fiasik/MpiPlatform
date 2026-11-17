@@ -8,6 +8,8 @@
 #include "Storage/AppSettings.h"
 
 class Mapper;
+class QComboBox;
+class QLineEdit;
 
 namespace Ui {
 class ValveWindow;
@@ -43,6 +45,30 @@ private:
     void saveLinearRange();
 
     void updateManufacturerUi();
+
+    // Справочник оборудования (Storage/EquipmentCatalog, таблицы catalog_*):
+    // производители ЗРА и модели позиционеров/приводов. Модели — строго
+    // выбранного производителя, у позиционеров ещё и по коэффициенту из
+    // comboBox_dinamicError. В каждом
+    // списке последним пунктом "Ручной ввод" с полем справа, как у
+    // производителя.
+    void reloadManufacturers();
+    void reloadPositionerModels();
+    void reloadDriveModels();
+    // Производитель для поиска моделей: при "Ручном вводе" — пусто
+    // (введённого вручную производителя в справочнике ещё нет, моделей у
+    // него нет — списки сразу встают на "Ручной ввод").
+    QString catalogManufacturer() const;
+    void fillModelCombo(QComboBox* combo, QLineEdit* manual, const QStringList& models);
+    void updateModelManualUi(QComboBox* combo, QLineEdit* manual);
+    void setModelValue(QComboBox* combo, QLineEdit* manual, const QString& value);
+    static QString modelValue(const QComboBox* combo, const QLineEdit* manual);
+    // Пополняет справочник тем, что оператор сам впечатал в поля "Ручной
+    // ввод" в этом окне (QLineEdit::isModified()). Значения, подставленные
+    // из старой карточки, не добавляются — иначе в списки разом попал бы
+    // весь накопленный в истории свободный текст.
+    void saveManualEntriesToCatalog();
+
     void setupWindowGeometry();
     void bindTabShortcut(int key, QWidget* tab);
     void setupTabs();
