@@ -2292,7 +2292,7 @@ void MainWindow::getImage(QLabel* label, ChartType chart)
         Qt::SmoothTransformation
         );
 
-    m_chartImageStorage.set(chart, scaled);
+    m_chartImageStorage.setManual(chart, scaled);
 
     if (label)
         label->setPixmap(QPixmap::fromImage(scaled));

@@ -7,6 +7,7 @@
 
 #include "Domain/ValveEnums.h"
 #include "Report/Context.h"
+#include "Report/CuratedChartSeries.h"
 #include "Report/Excel/Sheet.h"
 
 namespace Report::Excel::Acts {
@@ -181,6 +182,35 @@ void sideBySide(Sheet& sheet, const QVector<Item>& left, const QVector<Item>& ri
             writeItem(sheet, row, Sheet::kRightFirst, Sheet::kRightLast, right.at(i));
         sheet.skip();
     }
+}
+
+
+namespace {
+
+QVector<ChartSeries> chartSeries(const Report::Context& ctx, Widgets::Chart::ChartType type)
+{
+    QVector<ChartSeries> series;
+    if (ctx.chartImages.isManual(type))
+        return series;
+    for (const ChartSeries& s : ctx.chartData.get(type).seriesNamed(curatedSeriesNames(type))) {
+        if (!s.points.isEmpty())
+            series.append(s);
+    }
+    return series;
+}
+
+}
+
+bool hasChart(const Report::Context& ctx, Widgets::Chart::ChartType type)
+{
+    return !chartSeries(ctx, type).isEmpty() || !ctx.chartImages.get(type).isNull();
+}
+
+void chart(Sheet& sheet, const Report::Context& ctx, Widgets::Chart::ChartType type,
+           const Sheet::ChartAxes& axes, int first, int last, double aspect)
+{
+    if (!sheet.chart(chartSeries(ctx, type), axes, first, last, aspect))
+        sheet.image(ctx.chartImages.get(type), first, last, aspect);
 }
 
 }

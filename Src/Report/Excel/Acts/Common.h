@@ -3,12 +3,14 @@
 #include <QString>
 #include <QVector>
 
+#include "Report/Excel/Sheet.h"
+
 namespace Report {
 struct Context;
 }
 
-namespace Report::Excel {
-class Sheet;
+namespace Widgets::Chart {
+enum class ChartType;
 }
 
 // Общие части всех актов: шапка (название + "Данные по объекту" +
@@ -41,6 +43,16 @@ void date(Sheet& sheet, const Report::Context& ctx, int first);
 // отчёт: в ТО, а если ТО нет (Ski B_*, C_SOVT) — в конце листа "ЦТ";
 // остальные акты подшиваются к нему.
 void signatures(Sheet& sheet, const Report::Context& ctx);
+
+// Есть ли что поставить на место графика type (см. chart()).
+bool hasChart(const Report::Context& ctx, Widgets::Chart::ChartType type);
+
+// График type в текущей строке на столбцах сетки [first..last], высота =
+// ширина * aspect: настоящий график Excel по точкам ctx.chartData (те же
+// серии, что у PDF). Картинка вместо него — если оператор выбрал её файлом
+// вместо графика или точек нет.
+void chart(Sheet& sheet, const Report::Context& ctx, Widgets::Chart::ChartType type,
+           const Sheet::ChartAxes& axes, int first, int last, double aspect);
 
 // Две таблицы "подпись — значение" рядом (левая и правая половины листа),
 // строка листа общая — её высота берётся по более высокой из сторон.

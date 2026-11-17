@@ -34,11 +34,13 @@ constexpr int kConclusionLast = Sheet::kRightFirst - 1;
 // пустые остаются с рамкой, чтобы дописать вручную.
 constexpr int kSparePartRows = 10;
 
-// Три графика должны поместиться на одну страницу A4 — отсюда ширина
-// (столбцы 2..14) и пропорция.
-constexpr int kChartFirst = 2;
-constexpr int kChartLast = 14;
-constexpr double kChartAspect = 0.45;
+// Графики — на всю ширину таблиц акта. Три должны поместиться на одну
+// страницу A4: при «вписать по ширине» (масштаб ≈ 0,78) это ≈ 960 pt листа по
+// высоте — заголовок страницы + 3 × (подпись + график + пустая строка);
+// отсюда высота 0,41 ширины.
+constexpr int kChartFirst = 1;
+constexpr int kChartLast = Sheet::kColumns;
+constexpr double kChartAspect = 0.41;
 
 // Варианты "Примечания" для правки в Excel — те же слова, что пишут
 // resultOk()/resultLimit() (как в старом шаблоне, K29:P38).
@@ -231,19 +233,25 @@ void charts(Sheet& sheet, const Report::Context& ctx)
 {
     using Widgets::Chart::ChartType;
 
+    const QString stroke = ctx.valve.strokeMovement == StrokeMovement::Rotary
+        ? QStringLiteral("Угол поворота, °") : QStringLiteral("Ход штока, мм");
+
     struct Chart {
         QString caption;
-        QImage image;
+        ChartType type;
+        Sheet::ChartAxes axes;
     };
     QVector<Chart> charts;
-    for (const auto& [caption, type] : {
-             std::pair{QStringLiteral("График зависимости ход штока/управляющий сигнал, мА"), ChartType::Task},
-             std::pair{QStringLiteral("График зависимости ход штока/давление в приводе"), ChartType::Pressure},
-             std::pair{QStringLiteral("График трения, Н"), ChartType::Friction},
+    for (const Chart& chart : {
+             Chart{QStringLiteral("График зависимости ход штока/управляющий сигнал, мА"), ChartType::Task,
+                   {QStringLiteral("Управляющий сигнал, мА"), stroke}},
+             Chart{QStringLiteral("График зависимости ход штока/давление в приводе"), ChartType::Pressure,
+                   {QStringLiteral("Давление в приводе, бар"), stroke}},
+             Chart{QStringLiteral("График трения, Н"), ChartType::Friction,
+                   {stroke, QStringLiteral("Сила трения, Н")}},
          }) {
-        const QImage image = ctx.chartImages.get(type);
-        if (!image.isNull())
-            charts.append({caption, image});
+        if (hasChart(ctx, chart.type))
+            charts.append(chart);
     }
     if (charts.isEmpty())
         return;
@@ -254,7 +262,7 @@ void charts(Sheet& sheet, const Report::Context& ctx)
     for (const Chart& chart : charts) {
         sheet.put(sheet.row(), kChartFirst, kChartLast, chart.caption, sheet.styles().caption);
         sheet.skip();
-        sheet.image(chart.image, kChartFirst, kChartLast, kChartAspect);
+        Acts::chart(sheet, ctx, chart.type, chart.axes, kChartFirst, kChartLast, kChartAspect);
         sheet.skip();
     }
 }

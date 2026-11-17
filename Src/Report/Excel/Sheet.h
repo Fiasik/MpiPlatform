@@ -3,8 +3,11 @@
 #include <QHash>
 #include <QString>
 #include <QVariant>
+#include <QVector>
 
 #include "xlsxformat.h"
+
+struct ChartSeries;
 
 class QImage;
 
@@ -97,6 +100,22 @@ public:
     // следующую.
     void image(const QImage& image, int first, int last, double aspect);
 
+    // Настоящий график Excel на месте image(): точечный, линии без
+    // маркеров, цвета серий — как на графике приложения. Занимает ровно
+    // столбцы [first..last] текущей строки (привязка к ячейкам, а не к
+    // пикселям — в LibreOffice ширина та же, что у таблиц), высота строки =
+    // ширина * aspect. Excel строит график только по ячейкам — точки серий
+    // ложатся на скрытый лист kChartDataSheet (его нет даже в списке
+    // «Показать»). false — ни у одной серии нет точек, ничего не вставлено.
+    struct ChartAxes {
+        QString x;
+        QString y;
+        double xScale = 1.0; // X точек -> X графика (время: мс -> с)
+    };
+    static const QString kChartDataSheet;
+    bool chart(const QVector<ChartSeries>& series, const ChartAxes& axes,
+               int first, int last, double aspect);
+
     // Колонтитул внизу каждой печатной страницы: слева left, по центру
     // "Стр. N из M", справа right.
     void setFooter(const QString& left, const QString& right);
@@ -107,6 +126,7 @@ private:
     int column(int gridColumn) const { return gridColumn + 1; }
     double widthPx(int first, int last) const;
 
+    QXlsx::Document& m_doc;
     QXlsx::Worksheet* m_ws = nullptr;
     Styles m_styles;
     QHash<int, double> m_heights;

@@ -24,16 +24,20 @@ constexpr double kChartAspect = 0.42;
 constexpr int kStepLabelLast = 5;
 constexpr int kMaxStepColumns = Sheet::kColumns - kStepLabelLast;
 
-void chart(Sheet& sheet, const QString& caption, const QImage& image)
+// График теста по времени (ось X приложения — мс от начала теста).
+void chart(Sheet& sheet, const QString& caption, const Report::Context& ctx,
+           Widgets::Chart::ChartType type)
 {
-    if (image.isNull())
+    if (!hasChart(ctx, type))
         return;
 
     const int row = sheet.row();
     sheet.put(row, 1, Sheet::kColumns, caption, sheet.styles().heading);
     sheet.setMinHeight(row, 20);
     sheet.skip();
-    sheet.image(image, 1, Sheet::kColumns, kChartAspect);
+    Acts::chart(sheet, ctx, type,
+                {QStringLiteral("Время, с"), QStringLiteral("Положение, %"), 0.001},
+                1, Sheet::kColumns, kChartAspect);
     sheet.skip();
 }
 
@@ -194,16 +198,19 @@ void resolutionDirection(Sheet& sheet, const QString& direction,
     QVector<double> selected;
     StepRow task{QStringLiteral("Задание, %"), {StepCell{f2(result.baseTask)}}};
     StepRow actual{QStringLiteral("Факт, %"), {StepCell{f2(result.baseActual)}}};
+    StepRow allowed{QStringLiteral("Допустимая ошибка на шаг, %"), {StepCell{}}};
     StepRow error{QStringLiteral("Ошибка на шаг, %"), {StepCell{}}};
 
     for (const auto& item : items) {
         selected << item.selectedPercent;
         task.cells << StepCell{f2(item.selectedPercent)};
         actual.cells << StepCell{f2(item.actualPercent)};
-        error.cells << StepCell{f2(item.stepErrorPercent)};
+        allowed.cells << StepCell{f2(item.allowedErrorPercent)};
+        error.cells << StepCell{f2(item.stepErrorPercent),
+                                std::isfinite(item.stepErrorPercent) ? (item.isOk ? 1 : -1) : 0};
     }
 
-    stepGrid(sheet, direction, stepHeaders(result.baseTask, selected), {task, actual, error});
+    stepGrid(sheet, direction, stepHeaders(result.baseTask, selected), {task, actual, allowed, error});
 }
 
 const QString kUpward = QStringLiteral("Восходящее движение");
@@ -214,8 +221,7 @@ const QString kDownward = QStringLiteral("Нисходящее движение"
 void stepReaction(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт шагового испытания клапана"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА ШАГОВОЙ РЕАКЦИИ"),
-          ctx.chartImages.get(Widgets::Chart::ChartType::Step));
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА ШАГОВОЙ РЕАКЦИИ"), ctx, Widgets::Chart::ChartType::Step);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА ШАГОВОЙ РЕАКЦИИ"));
     if (const auto& result = ctx.telemetry.testStep)
@@ -228,8 +234,7 @@ void stepReaction(Sheet& sheet, const Report::Context& ctx, const HeaderOptions&
 void response(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт теста на чувствительность реагирования"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"),
-          ctx.chartImages.get(Widgets::Chart::ChartType::Response));
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"), ctx, Widgets::Chart::ChartType::Response);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"));
     if (const auto& result = ctx.telemetry.testResponse) {
@@ -250,8 +255,7 @@ void response(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& hea
 void resolution(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт теста на разрешающую способность"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"),
-          ctx.chartImages.get(Widgets::Chart::ChartType::Resolution));
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"), ctx, Widgets::Chart::ChartType::Resolution);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"));
     if (const auto& result = ctx.telemetry.testResolution) {

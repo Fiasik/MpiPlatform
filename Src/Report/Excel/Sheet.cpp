@@ -6,11 +6,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
+#include <tuple>
 
 #include "xlsxcellrange.h"
+#include "xlsxchart.h"
 #include "xlsxdatavalidation.h"
 #include "xlsxdocument.h"
 #include "xlsxworksheet.h"
+
+#include "Storage/ChartSnapshot.h"
 
 using namespace QXlsx;
 
@@ -33,6 +38,52 @@ int columnPx(double width)
 constexpr int kDotsPerMeter96Dpi = 3780;
 constexpr double kPxToPt = 72.0 / 96.0;
 constexpr double kMaxRowHeightPt = 409.0; // предел Excel
+
+// Ось графика с «круглыми» делениями: шаг 1, 2, 2.5 или 5 × 10^k на 4–7
+// делений — как подбирает сам Excel, только без его привычки тянуть ось к
+// нулю (3..21 мА -> 0..25). Начало — кратно шагу (от него идут подписи),
+// конец — кратно половине шага: данные до 100,05 % дают ось до 110, а не
+// 120, и выброс (перерегулирование ТШР) не обрезается. Отрицательный
+// «хвост» шума датчика в пределах 1 % диапазона ноль не сдвигает (обрежется
+// у края — невидимо).
+struct ChartAxis {
+    double min = 0.0;
+    double max = 0.0;
+    double step = 0.0;
+    QString format;
+};
+
+std::optional<ChartAxis> chartAxis(double lo, double hi)
+{
+    if (!(hi > lo) || !std::isfinite(lo) || !std::isfinite(hi))
+        return std::nullopt;
+
+    const double noise = 0.01 * (hi - lo);
+    if (lo < 0.0 && lo >= -noise)
+        lo = 0.0;
+
+    const double raw = (hi - lo) / 7.0;
+    const double magnitude = std::pow(10.0, std::floor(std::log10(raw)));
+    double step = 10.0 * magnitude;
+    for (double m : {1.0, 2.0, 2.5, 5.0}) {
+        if (m * magnitude >= raw) {
+            step = m * magnitude;
+            break;
+        }
+    }
+
+    ChartAxis axis;
+    axis.step = step;
+    axis.min = std::floor(lo / step + 1e-9) * step;
+    axis.max = std::ceil(hi / (step / 2.0) - 1e-9) * (step / 2.0);
+
+    // Знаков после запятой — сколько нужно самому шагу (2.5 -> 1, 0.25 -> 2).
+    int decimals = 0;
+    while (decimals < 4 && std::abs(step * std::pow(10.0, decimals) - std::round(step * std::pow(10.0, decimals))) > 1e-6)
+        ++decimals;
+    axis.format = decimals == 0 ? QStringLiteral("0") : QStringLiteral("0.") + QString(decimals, QLatin1Char('0'));
+    return axis;
+}
 
 QString escapeFooter(QString text)
 {
@@ -108,8 +159,11 @@ Sheet::Styles makeStyles()
 
 }
 
+const QString Sheet::kChartDataSheet = QStringLiteral("Данные графиков");
+
 Sheet::Sheet(Document& doc, const QString& name)
     : m_styles(makeStyles())
+    , m_doc(doc)
 {
     doc.addSheet(name);
     doc.selectSheet(name);
@@ -233,6 +287,78 @@ void Sheet::image(const QImage& source, int first, int last, double aspect)
     m_ws->writeBlank(m_row, column(first));
     setMinHeight(m_row, heightPx * kPxToPt);
     ++m_row;
+}
+
+bool Sheet::chart(const QVector<ChartSeries>& series, const ChartAxes& axes,
+                  int first, int last, double aspect)
+{
+    QVector<const ChartSeries*> drawn;
+    for (const ChartSeries& s : series) {
+        if (!s.points.isEmpty())
+            drawn.append(&s);
+    }
+    if (drawn.isEmpty())
+        return false;
+
+    // Лист точек — один на книгу, создаётся первым графиком. addSheet()
+    // делает его текущим, но пишем мы через свои указатели, а первый лист
+    // книги перед сохранением выбирает Generator.
+    if (!m_doc.sheetNames().contains(kChartDataSheet)) {
+        m_doc.addSheet(kChartDataSheet);
+        m_doc.sheet(kChartDataSheet)->setSheetState(AbstractSheet::SS_VeryHidden);
+    }
+    auto* data = static_cast<Worksheet*>(m_doc.sheet(kChartDataSheet));
+    const CellRange used = data->dimension();
+    int col = used.isValid() ? used.lastColumn() + 1 : 1;
+
+    const int heightPx = int(Sheet::widthPx(first, last) * aspect);
+    QXlsx::Chart* chart = m_ws->insertChart(CellRange(m_row, column(first), m_row, column(last)));
+    chart->setChartType(QXlsx::Chart::CT_ScatterChart);
+
+    double xMin = qInf(), xMax = -qInf(), yMin = qInf(), yMax = -qInf();
+    for (int i = 0; i < drawn.size(); ++i) {
+        const ChartSeries& s = *drawn.at(i);
+        // Пара столбцов на серию: X, Y; в строке 1 над Y — имя серии (из
+        // него Excel берёт подпись в легенде).
+        data->write(1, col, QStringLiteral("x"));
+        data->write(1, col + 1, s.name);
+        int row = 2;
+        for (const QPointF& p : s.points) {
+            const double x = p.x() * axes.xScale;
+            data->write(row, col, x);
+            data->write(row, col + 1, p.y());
+            ++row;
+            xMin = std::min(xMin, x);
+            xMax = std::max(xMax, x);
+            yMin = std::min(yMin, p.y());
+            yMax = std::max(yMax, p.y());
+        }
+        chart->addSeries(CellRange(1, col, row - 1, col + 1), data,
+                         /*headerH=*/true, /*headerV=*/false, /*swapHeaders=*/true);
+        if (s.color.isValid())
+            chart->setSeriesColor(i, s.color);
+        col += 2;
+    }
+
+    chart->setSeriesLineStyle(/*showMarker=*/false, /*lineWidthPt=*/1.0);
+    chart->setChartLegend(QXlsx::Chart::Top);
+    chart->setGridlinesEnable(true);
+    chart->setAxisTitle(QXlsx::Chart::Bottom, axes.x);
+    chart->setAxisTitle(QXlsx::Chart::Left, axes.y);
+    for (const auto& [pos, lo, hi] : {std::tuple{QXlsx::Chart::Bottom, xMin, xMax},
+                                      std::tuple{QXlsx::Chart::Left, yMin, yMax}}) {
+        if (const auto axis = chartAxis(lo, hi)) {
+            chart->setAxisRange(pos, axis->min, axis->max);
+            chart->setAxisMajorUnit(pos, axis->step);
+            chart->setAxisNumberFormat(pos, axis->format);
+        }
+    }
+
+    // Как в image(): высота строки — по графику (он оверлей, не ячейка).
+    m_ws->writeBlank(m_row, column(first));
+    setMinHeight(m_row, heightPx * kPxToPt);
+    ++m_row;
+    return true;
 }
 
 void Sheet::setFooter(const QString& left, const QString& right)

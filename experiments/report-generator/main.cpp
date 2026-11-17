@@ -17,11 +17,13 @@
 
 #include <iterator>
 
+#include "Domain/Tests/Option/Resolution/Limits.h"
 #include "Domain/Tests/Option/Response/Limits.h"
 #include "Report/Context.h"
 #include "Report/Excel/Generator.h"
 #include "Storage/ChartImageStorage.h"
 #include "Storage/ChartSnapshotStorage.h"
+#include "Storage/ChartSnapshot.h"
 #include "Widgets/Chart/ChartType.h"
 
 namespace {
@@ -50,6 +52,26 @@ QImage placeholderChart(const QString& title, const QColor& lineColor)
     p.setFont(f);
     p.drawText(QRect(20, 20, img.width() - 40, 40), Qt::AlignLeft, title);
     return img;
+}
+
+// Тест по времени, как пишет его приложение: X — мс от начала, Y — %;
+// «Задание» ступеньками по steps (по holdMs на ступеньку), «Датчик
+// линейных перемещений» догоняет его с запаздыванием tauMs.
+ChartSnapshot timeTest(const QVector<double>& steps, double holdMs, double tauMs)
+{
+    ChartSeries task{QObject::tr("Задание"), QColor(0, 0, 0), {}};
+    ChartSeries sensor{QObject::tr("Датчик линейных перемещений"), QColor(255, 0, 0), {}};
+    double position = steps.value(0);
+    double t = 0.0;
+    constexpr double dtMs = 50.0;
+    for (double target : steps) {
+        for (double elapsed = 0.0; elapsed < holdMs; elapsed += dtMs, t += dtMs) {
+            position += (target - position) * (1.0 - qExp(-dtMs / tauMs));
+            task.points.append({t, target});
+            sensor.points.append({t, position + 0.05 * qSin(t / 170.0)});
+        }
+    }
+    return ChartSnapshot{{task, sensor}};
 }
 
 struct Session {
@@ -175,11 +197,14 @@ void fillFull(Session& s)
     Domain::Tests::Option::Resolution::Result resolution;
     resolution.baseTask = 50;
     resolution.baseActual = 50.05;
+    namespace Reso = Domain::Tests::Option::Resolution;
     for (int i = 1; i <= 4; ++i) {
-        resolution.upward << Domain::Tests::Option::Resolution::ResultItem{
-            50 + 0.25 * i, 50 + 0.25 * i - 0.02 * i, 8.0 * i};
-        resolution.downward << Domain::Tests::Option::Resolution::ResultItem{
-            50 - 0.25 * i, 50 - 0.25 * i + 0.03 * i, 12.0 * i};
+        const double upErr = 8.0 * i, downErr = 12.0 * i;
+        const double allowed = Reso::allowedErrorForStep(i - 1);
+        resolution.upward << Reso::ResultItem{
+            50 + 0.25 * i, 50 + 0.25 * i - 0.02 * i, upErr, allowed, upErr <= allowed};
+        resolution.downward << Reso::ResultItem{
+            50 - 0.25 * i, 50 - 0.25 * i + 0.03 * i, downErr, allowed, downErr <= allowed};
     }
     t.testResolution = resolution;
 
@@ -220,6 +245,10 @@ void fillFull(Session& s)
     s.chartImages.set(ChartType::Step, placeholderChart("Шаговая реакция", QColor("#7B4FA0")));
     s.chartImages.set(ChartType::Response, placeholderChart("Чувствительность", QColor("#C77700")));
     s.chartImages.set(ChartType::Resolution, placeholderChart("Разрешающая способность", QColor("#00838F")));
+    // Точки — для настоящих графиков Excel (картинки выше остаются запасом).
+    s.chartData.set(ChartType::Step, timeTest({0, 10, 25, 50, 75, 90, 100, 90, 75, 50, 25, 10, 0}, 8000, 900));
+    s.chartData.set(ChartType::Response, timeTest({50, 50.5, 51, 50.5, 50, 49.5, 49, 49.5, 50}, 6000, 600));
+    s.chartData.set(ChartType::Resolution, timeTest({50, 50.25, 50.5, 50.75, 51, 50.75, 50.5, 50.25, 50}, 6000, 600));
 
     using Report::Html::ConclusionField;
     s.conclusionAnswers = {
