@@ -83,6 +83,11 @@ public:
     // поэтому вызывать надо сразу после него.
     void saveReportExtrasToHistory(qint64 sessionId);
 
+    // Только заключение и ЗИП — по ходу работы, без формирования отчёта (см.
+    // HistoryWriter::writeConclusionAndParts()): правки значений не пишутся —
+    // они определяются только при формировании.
+    void saveConclusionToHistory(qint64 sessionId);
+
     // Возвращают false при неудаче — MainWindow решает, как об этом
     // сообщить оператору (тост), этот класс сознательно ничего не знает
     // про ToastManager (см. комментарий класса выше).

@@ -79,9 +79,20 @@ public:
     // формировании отчёта и каждый раз ПОЛНОСТЬЮ заменяет прежнее содержимое
     // этих трёх таблиц для сессии: убранная правка или позиция ЗИП не должна
     // оставаться в истории.
+    //
+    // replaceOverrides = false — правки значений не трогать (остаются те, что
+    // записало последнее формирование отчёта): так пишется заключение и ЗИП
+    // по ходу работы, см. writeConclusionAndParts().
     static bool writeReportExtras(qint64 sessionId, const ConclusionRecord& conclusion,
                                   const QVector<SparePartRecord>& spareParts,
-                                  const QVector<FieldOverrides::Record>& overrides);
+                                  const QVector<FieldOverrides::Record>& overrides,
+                                  bool replaceOverrides = true);
+
+    // Заключение и ЗИП — сразу, как оператор их поменял, а не только при
+    // «Сформировать отчёт»: иначе у сессии, где отчёт не формировали, в истории
+    // и в предпросмотре прошлого акта заключения нет. Правки значений не трогает.
+    static bool writeConclusionAndParts(qint64 sessionId, const ConclusionRecord& conclusion,
+                                        const QVector<SparePartRecord>& spareParts);
 
     struct DeleteResult {
         bool ok = false;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QHash>
+#include <QTimer>
 #include <QLabel>
 #include <QMainWindow>
 #include <QSize>
@@ -188,6 +190,7 @@ private:
     Telemetry m_telemetry;
     SelectTests::BlockCTS m_blockCts{};
     qint64 m_sessionId = -1;
+    QTimer m_conclusionSaveTimer;
 
     Domain::Program *m_program;
     QThread *m_programThread;
@@ -227,6 +230,11 @@ private:
     bool tryStartTest();
 
     void setupShortcuts();
+    // Заключение и ЗИП пишутся в историю сессии сразу после правки (с паузой в
+    // долю секунды), а не только при «Сформировать отчёт»: иначе в предпросмотре
+    // прошлого акта и в «Истории» у сессии без сформированного отчёта их нет.
+    void scheduleConclusionSave();
+    void flushConclusionSave();
     void setupPrimaryActions();
     // Видимость вкладок/кнопок, которые существуют только в конкретной
     // сборке (Domain::k...Variant) — см. её собственный комментарий.
@@ -307,18 +315,24 @@ private:
     Gui::Style::ThemeManager* m_linearityThemeManager = nullptr;
 #endif
 
-    // Просмотр сессии из «Истории» (кнопка «Открыть графики»): графики
-    // основного теста из её папки и результат, пересчитанный тем же
-    // Analyzer'ом. Только просмотр: m_telemetry не трогается (endTest() пишет
-    // её в БД), сохранение графиков, пересчёт регрессии и отчёт закрыты.
-    // Живой тест (точки графиков, тексты результатов) откладывается и
-    // возвращается при закрытии — перед любым тестом или живыми данными.
+    // Просмотр сессии из «Истории» (кнопка «Открыть сессию»): графики её
+    // основного теста и тестов по времени (полный ход, ШР, ЧР, РС) из папки и
+    // результаты, пересчитанные теми же Analyzer'ами, — на своих вкладках, с
+    // разметкой и таблицами как у живого теста. Тестов, которых в сессии нет,
+    // на вкладках пусто. Только просмотр: m_telemetry не трогается (endTest()
+    // пишет её в БД), сохранение графиков, пересчёт регрессии и отчёт закрыты.
+    // Живой тест (точки графиков, разметка, таблицы, тексты результатов)
+    // откладывается и возвращается при закрытии — перед любым тестом или
+    // живыми данными.
     struct ArchiveView {
         QString title; // дата сессии
+        bool hasMain = false; // основной тест показан (есть в папке и считается)
         Domain::Tests::Main::Result result;
         CrossingStatus status;
         ValveStrokeRecord stroke;
         ArchivedTest::ChartBackup pressure, task, friction;
+        // Графики тестов по времени до просмотра; ключ — int(ChartType)
+        QHash<int, ArchivedTest::ChartBackup> timeCharts;
         QVector<QPair<QLabel*, QString>> labels;       // тексты до просмотра,
         QVector<QPair<QLineEdit*, QString>> lineEdits; // только изменённые
         bool regressionEnabled = false;
@@ -327,8 +341,22 @@ private:
     std::optional<ArchiveView> m_archiveView;
     Domain::DeviceConfig m_deviceConfig; // то же, что ушло в Program::setConfig()
 
+    // «История» → «Открыть папку»: папка выбранной сессии в проводнике.
+    void openHistorySessionFolder();
     void openArchiveView();
     void closeArchiveView();
+    // Тест по времени сессии из архива (data — его график из папки): график,
+    // разметка, таблица и тексты результатов. nullopt — в сессии такого теста
+    // нет, вкладка очищается. true — показан.
+    bool showArchivedTimeTest(Widgets::Chart::ChartType type,
+                              const std::optional<ArchivedTest::DataFile>& data,
+                              const Domain::DeviceConfig& config, double stepTestValue);
+    // Живые графики, разметка и таблицы вместо архивных (закрытие просмотра,
+    // отказ при открытии).
+    void restoreLiveCharts(const ArchiveView& view);
+    void showLiveTimeTest(Widgets::Chart::ChartType type);
+    // Основного теста в сессии нет: его тексты — «--», а не живые числа.
+    void blankMainTestTexts();
     // Сохранение основного теста, отчёт и пересчёт регрессии — закрыты на
     // время просмотра (и на время формирования отчёта, см.
     // setReportGenerationInProgress()).

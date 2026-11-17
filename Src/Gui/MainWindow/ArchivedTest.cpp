@@ -15,6 +15,10 @@
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Domain/Tests/Main/Linearity/LinearityMethods.h"
 #endif
+#include "Domain/Tests/Option/Resolution/Analyzer.h"
+#include "Domain/Tests/Option/Response/Analyzer.h"
+#include "Domain/Tests/Option/Step/Analyzer.h"
+#include "Domain/Tests/Stroke/Analyzer.h"
 #include "Widgets/Chart/ChartType.h"
 #include "Widgets/Chart/ChartView.h"
 
@@ -24,30 +28,6 @@ using Widgets::Chart::ChartView;
 namespace ArchivedTest {
 
 namespace {
-
-// Путь к файлу графика испытания run (см. ArchivedTest.h): сначала имя, под
-// которым пишет нынешний Report::Saver, затем английское из старых архивов.
-// Пусто — нет ни того, ни другого.
-QString chartFile(const QString& folder, ChartType type, int run)
-{
-    QString legacy;
-    switch (type) {
-    case ChartType::Pressure: legacy = QStringLiteral("Pressure"); break;
-    case ChartType::Task:     legacy = QStringLiteral("Task"); break;
-    case ChartType::Friction: legacy = QStringLiteral("Friction"); break;
-    default: break;
-    }
-
-    const QString suffix = QLatin1Char('_') + QString::number(run) + QStringLiteral(".data");
-    for (const QString& base : {Widgets::Chart::chartTypeDisplayName(type), legacy}) {
-        if (base.isEmpty())
-            continue;
-        const QString path = folder + QLatin1Char('/') + base + suffix;
-        if (QFile::exists(path))
-            return path;
-    }
-    return QString();
-}
 
 QList<QPointF> series(const QVector<QList<QPointF>>& layer, int index)
 {
@@ -101,6 +81,49 @@ QVector<QPointF> regressionLine(double k, double b, const QRectF& box)
 
 }
 
+// Путь к файлу графика испытания run (см. ArchivedTest.h): сначала имя, под
+// которым пишет нынешний Report::Saver, затем английское из старых архивов.
+QString chartFile(const QString& folder, ChartType type, int run)
+{
+    QString legacy;
+    switch (type) {
+    case ChartType::Pressure: legacy = QStringLiteral("Pressure"); break;
+    case ChartType::Task: legacy = QStringLiteral("Task"); break;
+    case ChartType::Friction: legacy = QStringLiteral("Friction"); break;
+    default: break;
+    }
+
+    const QString suffix = QLatin1Char('_') + QString::number(run) + QStringLiteral(".data");
+    for (const QString& base : {Widgets::Chart::chartTypeDisplayName(type), legacy}) {
+        if (base.isEmpty())
+            continue;
+        const QString path = folder + QLatin1Char('/') + base + suffix;
+        if (QFile::exists(path))
+            return path;
+    }
+    return QString();
+}
+
+ChartSnapshot toSnapshot(const DataFile& file)
+{
+    ChartSnapshot snapshot;
+    for (int i = 0; i < file.live.size(); ++i) {
+        const QString name = i < file.names.size() ? file.names[i] : QString();
+        const QColor color = i < file.colors.size() ? file.colors[i] : QColor();
+        const QList<QPointF> dubl = series(file.dubl, i);
+
+        if (!dubl.isEmpty()) {
+            snapshot.series.append({name + QStringLiteral(" (прямой ход)"), color.lighter(170),
+                                    QVector<QPointF>(dubl.begin(), dubl.end())});
+            snapshot.series.append({name + QStringLiteral(" (обратный ход)"), color,
+                                    QVector<QPointF>(file.live[i].begin(), file.live[i].end())});
+        } else {
+            snapshot.series.append({name, color, QVector<QPointF>(file.live[i].begin(), file.live[i].end())});
+        }
+    }
+    return snapshot;
+}
+
 std::optional<DataFile> readDataFile(const QString& path)
 {
     QFile file(path);
@@ -109,7 +132,7 @@ std::optional<DataFile> readDataFile(const QString& path)
         return std::nullopt;
     }
     QDataStream s(&file);
-    s.setVersion(QDataStream::Qt_6_2); // как Report::Saver
+    s.setVersion(QDataStream::Qt_6_2);
     QString name, format;
     bool valueAxis = false;
     s >> name >> valueAxis >> format;
@@ -121,13 +144,15 @@ std::optional<DataFile> readDataFile(const QString& path)
     }
     qsizetype count = 0;
     s >> count;
+    DataFile d;
     for (qsizetype i = 0; i < count; ++i) {
         quint8 axis;
         QString seriesName;
         QColor color;
         s >> axis >> seriesName >> color;
+        d.names.push_back(seriesName);
+        d.colors.push_back(color);
     }
-    DataFile d;
     for (qsizetype i = 0; i < count; ++i) {
         QList<QPointF> points;
         s >> points;
@@ -179,6 +204,135 @@ bool loadMainTestCharts(const QString& folder, int run,
                 friction->addPoint(0, q.x(), q.y());
     }
     return true;
+}
+
+const QList<ChartType>& timeTestTypes()
+{
+    static const QList<ChartType> types = {ChartType::Stroke, ChartType::Step,
+                                           ChartType::Response, ChartType::Resolution};
+    return types;
+}
+
+int pickTimeRun(const QString& folder, ChartType type)
+{
+    for (int n = 9; n >= 1; --n)
+        if (!chartFile(folder, type, n).isEmpty())
+            return n;
+    return 0;
+}
+
+bool hasAnyChart(const QString& folder)
+{
+    if (pickRun(folder) > 0)
+        return true;
+    for (ChartType type : timeTestTypes())
+        if (pickTimeRun(folder, type) > 0)
+            return true;
+    return false;
+}
+
+QVector<Domain::Measurement::Sample> timeSamples(const DataFile& file)
+{
+    QVector<Domain::Measurement::Sample> samples;
+    if (file.live.size() < 2)
+        return samples;
+
+    // Обе серии добавляются на каждом замере с одним и тем же временем
+    // (Program::updateTimeChart()); идём по ним вместе и склеиваем по x —
+    // если какой-то замер выпал только из одной серии, он пропускается.
+    const QList<QPointF>& task = file.live[0];
+    const QList<QPointF>& position = file.live[1];
+    qsizetype i = 0, j = 0;
+    samples.reserve(qMin(task.size(), position.size()));
+    while (i < task.size() && j < position.size()) {
+        const double tx = task[i].x(), px = position[j].x();
+        if (tx < px) {
+            ++i;
+        } else if (px < tx) {
+            ++j;
+        } else {
+            Domain::Measurement::Sample s;
+            s.testTime = qint64(tx);
+            s.taskPercent = task[i].y();
+            s.positionPercent = position[j].y();
+            samples.push_back(s);
+            ++i;
+            ++j;
+        }
+    }
+    return samples;
+}
+
+void fillTimeChart(ChartView* chart, const DataFile& file)
+{
+    if (!chart)
+        return;
+    chart->clear();
+    const int count = qMin<int>(file.live.size(), chart->seriesCount());
+    for (int s = 0; s < count; ++s)
+        for (const QPointF& q : file.live[s])
+            chart->addPoint(quint8(s), q.x(), q.y());
+}
+
+namespace {
+
+// Замеры -> Analyzer -> результат: start(), все замеры по порядку, finish().
+template <typename Analyzer>
+const auto& runAnalyzer(Analyzer& analyzer, const QVector<Domain::Measurement::Sample>& samples)
+{
+    analyzer.start();
+    for (const auto& sample : samples)
+        analyzer.onSample(sample);
+    analyzer.finish();
+    return analyzer.result();
+}
+
+}
+
+std::optional<Domain::Tests::Stroke::Result> analyzeStroke(const DataFile& file, bool normalClosed)
+{
+    const auto samples = timeSamples(file);
+    if (samples.isEmpty())
+        return std::nullopt;
+    Domain::Tests::Stroke::Analyzer analyzer;
+    Domain::Tests::Stroke::Analyzer::Config cfg;
+    cfg.normalClosed = normalClosed;
+    analyzer.setConfig(cfg);
+    return runAnalyzer(analyzer, samples);
+}
+
+std::optional<Domain::Tests::Option::Step::Result> analyzeStep(const DataFile& file, double testValue)
+{
+    const auto samples = timeSamples(file);
+    if (samples.isEmpty())
+        return std::nullopt;
+    Domain::Tests::Option::Step::Analyzer analyzer;
+    analyzer.setConfig({testValue});
+    return runAnalyzer(analyzer, samples);
+}
+
+std::optional<Domain::Tests::Option::Response::Result> analyzeResponse(const DataFile& file, bool taskInverted)
+{
+    const auto samples = timeSamples(file);
+    if (samples.isEmpty())
+        return std::nullopt;
+    Domain::Tests::Option::Response::Analyzer analyzer;
+    Domain::Tests::Option::Response::Analyzer::Config cfg;
+    cfg.normalOpen = taskInverted;
+    analyzer.setConfig(cfg);
+    return runAnalyzer(analyzer, samples);
+}
+
+std::optional<Domain::Tests::Option::Resolution::Result> analyzeResolution(const DataFile& file, bool taskInverted)
+{
+    const auto samples = timeSamples(file);
+    if (samples.isEmpty())
+        return std::nullopt;
+    Domain::Tests::Option::Resolution::Analyzer analyzer;
+    Domain::Tests::Option::Resolution::Analyzer::Config cfg;
+    cfg.normalOpen = taskInverted;
+    analyzer.setConfig(cfg);
+    return runAnalyzer(analyzer, samples);
 }
 
 ChartBackup backupChart(const ChartView* chart)
@@ -271,12 +425,15 @@ void addRegressionLines(ChartView* pressure)
 #endif
 }
 
-std::optional<Domain::Tests::Main::Result> analyze(const ChartView* task,
-                                                   const ChartView* pressure,
-                                                   double driveDiameter)
+namespace {
+
+// Положение и давление 1 по ходам (first — обратный, second — прямой, как
+// ChartView::getPoints()) — в настоящий Analyzer, как живой тест.
+std::optional<Domain::Tests::Main::Result> analyzeStrokes(const QPair<QList<QPointF>, QList<QPointF>>& position,
+                                                          const QPair<QList<QPointF>, QList<QPointF>>& pressure1,
+                                                          const QPair<QList<QPointF>, QList<QPointF>>& pressureChart,
+                                                          double driveDiameter)
 {
-    const auto position = task->getPoints(1);
-    const auto pressure1 = task->getPoints(2);
     if (position.first.isEmpty() || position.second.isEmpty())
         return std::nullopt;
 
@@ -299,10 +456,30 @@ std::optional<Domain::Tests::Main::Result> analyze(const ChartView* task,
     analyzer.finish();
 
     Domain::Tests::Main::Result r = analyzer.result();
-    const auto points = pressure->getPoints(0);
-    r.pressureSeriesForward = points.second;
-    r.pressureSeriesBackward = points.first;
+    r.pressureSeriesForward = pressureChart.second;
+    r.pressureSeriesBackward = pressureChart.first;
     return r;
+}
+
+QPair<QList<QPointF>, QList<QPointF>> strokes(const DataFile& file, int index)
+{
+    return {series(file.live, index), series(file.dubl, index)};
+}
+
+}
+
+std::optional<Domain::Tests::Main::Result> analyze(const ChartView* task,
+                                                   const ChartView* pressure,
+                                                   double driveDiameter)
+{
+    return analyzeStrokes(task->getPoints(1), task->getPoints(2), pressure->getPoints(0), driveDiameter);
+}
+
+std::optional<Domain::Tests::Main::Result> analyze(const DataFile& task,
+                                                   const DataFile& pressure,
+                                                   double driveDiameter)
+{
+    return analyzeStrokes(strokes(task, 1), strokes(task, 2), strokes(pressure, 0), driveDiameter);
 }
 
 CrossingStatus crossingStatus(const Domain::Tests::Main::Result& result,

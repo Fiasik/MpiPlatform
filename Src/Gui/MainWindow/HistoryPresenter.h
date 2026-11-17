@@ -66,10 +66,15 @@ public:
     // делает, если сессий меньше двух.
     void compareLatestTwo();
 
+    // Кнопка «До / ремонт / после»: отмечает последнюю сессию с меткой
+    // «ремонт» и по одной соседней до и после неё. Ничего не делает, если
+    // такой сессии нет.
+    void compareAroundRepair();
+
     // changedItem — элемент, чья галочка только что переключилась (см.
     // MainWindow::setThemeManager()/конструктор — сигнатура itemChanged).
-    // Возвращает true, если попытка отмечена ТРЕТЬЕЙ сессией и была
-    // отменена (сравнение — только по двум) — MainWindow по этому
+    // Возвращает true, если попытка отмечена ЧЕТВЁРТОЙ сессией и была
+    // отменена (сравнение — по двум или трём) — MainWindow по этому
     // сигналу решает, показывать ли тост (см. комментарий класса
     // ReportGenerationPresenter про разделение ответственности с тостами).
     bool onSessionCheckStateChanged(QListWidgetItem* changedItem);
@@ -88,7 +93,7 @@ public:
     // applyPalette() при смене темы, см. MainWindow::setThemeManager().
     void applyPalette(const Gui::Style::Palette& palette);
 
-    // Активная (выбранная кликом) сессия — для кнопки «Открыть графики»:
+    // Активная (выбранная кликом) сессия — для кнопки «Открыть сессию»:
     // папка как в БД (sessions.folder_path: относительно папки приложения
     // или абсолютная; пусто — не записана), дата для подписей и измеренный
     // ход (crossing_results.valve_stroke_value, NaN — нет).
@@ -179,9 +184,10 @@ private:
         double selectedPercent = qQNaN();
         double actualPercent = qQNaN();
         double errorPercent = qQNaN();
-        // Допустимая ошибка на шаг (у Чувствительности есть, у Разрешающей
-        // способности в БД пусто) и вердикт сессии по этому шагу (-1 —
-        // неизвестно, 0 — не пройден, 1 — пройден).
+        // Допустимая ошибка на шаг (у Чувствительности и, с 2026-11-13, у
+        // Разрешающей способности; у более ранних сессий РС в БД пусто) и
+        // вердикт сессии по этому шагу (-1 — неизвестно, 0 — не пройден,
+        // 1 — пройден).
         double allowedPercent = qQNaN();
         int isOk = -1;
     };
@@ -214,11 +220,15 @@ private:
     // Рамка скрыта, если по сессии ничего не сохранено.
     void updateReportExtras();
     void updateDeleteButton();
-    void updateOpenChartsButton();
+    // «Открыть сессию» и «Открыть папку» — по выбранной сессии.
+    void updateFolderButtons();
     void updateCards();
     void updateChipsAndTitle();
     void updateCompareTable();
-    // Всё, что имеет смысл только при двух отмеченных сессиях: блоки
+    // Индекс в m_sessions средней сессии тройки «до / ремонт / после»
+    // (последняя с меткой «ремонт», у которой есть сосед до и после); -1 — нет.
+    int repairTripletIndex() const;
+    // Всё, что имеет смысл только при двух или трёх отмеченных сессиях: блоки
     // сравнения на вкладках "Основной" и "Тест полного хода" прячутся,
     // вкладки Шаговый/Чувствительность/Разрешающая способность
     // блокируются (с подсказкой на вкладке), а вместо содержимого
@@ -232,15 +242,18 @@ private:
     // Общий код для всех 8 блоков "график+таблица" (Шаговый x4 —
     // перерегулирование и время по восходящему/нисходящему движению,
     // Чувствительность x2, Разрешающая способность x2) — см. .cpp, строит
-    // объединение X-ключей обеих сессий, заполняет ChartView (2 серии,
+    // объединение X-ключей сессий, заполняет ChartView (серия на сессию,
     // addPoint) и QTableWidget (код сам задаёт заголовки колонок — они
     // зависят от дат сессий, см. tableWidget_stepResults).
+    //
+    // rows/dates — по сессиям в хронологическом порядке (две или три);
+    // yLabels — подпись величины у каждой сессии (пусто — yLabel; нужна
+    // шаговому тесту: у сессий разное T). Колонка Δ — последняя минус первая.
     void updateOverlayBlock(Widgets::Chart::ChartView* chart, QTableWidget* table,
                             const QString& xLabel, const QString& yLabel, const QString& yUnit,
-                            const QVector<OverlayRow>& rowsA,
-                            const QVector<OverlayRow>& rowsB,
-                            const QString& dateA, const QString& dateB,
-                            const QString& yLabelB = QString(),
+                            const QVector<QVector<OverlayRow>>& rows,
+                            const QStringList& dates,
+                            const QStringList& yLabels = {},
                             DeltaColoring coloring = DeltaColoring::None) const;
     void updateStepComparison();
     // T (в процентах хода), по которому шаговый тест считал время

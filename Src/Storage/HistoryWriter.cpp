@@ -182,9 +182,16 @@ qint64 HistoryWriter::beginSession(const Registry& registry, const QString& vari
     return sessionId;
 }
 
+bool HistoryWriter::writeConclusionAndParts(qint64 sessionId, const ConclusionRecord& conclusion,
+                                            const QVector<SparePartRecord>& spareParts)
+{
+    return writeReportExtras(sessionId, conclusion, spareParts, {}, /*replaceOverrides=*/false);
+}
+
 bool HistoryWriter::writeReportExtras(qint64 sessionId, const ConclusionRecord& conclusion,
                                       const QVector<SparePartRecord>& spareParts,
-                                      const QVector<FieldOverrides::Record>& overrides)
+                                      const QVector<FieldOverrides::Record>& overrides,
+                                      bool replaceOverrides)
 {
     if (sessionId < 0)
         return false;
@@ -247,12 +254,14 @@ bool HistoryWriter::writeReportExtras(qint64 sessionId, const ConclusionRecord& 
         }
 
         QSqlQuery clearOverrides(db);
-        clearOverrides.prepare(QStringLiteral("DELETE FROM field_overrides WHERE session_id = ?"));
-        clearOverrides.addBindValue(sessionId);
-        if (!clearOverrides.exec())
-            return fail(QStringLiteral("очистка правок"), clearOverrides);
+        if (replaceOverrides) {
+            clearOverrides.prepare(QStringLiteral("DELETE FROM field_overrides WHERE session_id = ?"));
+            clearOverrides.addBindValue(sessionId);
+            if (!clearOverrides.exec())
+                return fail(QStringLiteral("очистка правок"), clearOverrides);
+        }
 
-        for (const FieldOverrides::Record& record : overrides) {
+        for (const FieldOverrides::Record& record : replaceOverrides ? overrides : QVector<FieldOverrides::Record>{}) {
             QSqlQuery insert(db);
             insert.prepare(QStringLiteral(
                 "INSERT OR REPLACE INTO field_overrides(session_id, field_name, computed_value, corrected_value) "

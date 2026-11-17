@@ -353,6 +353,26 @@ set(GUI_UI
     Gui/TestSettings/CyclicTestSettings.ui
 )
 
+# Акт прошлой сессии из базы и папки сессии (ReportCompare::loadInput):
+# «Предпросмотр» при просмотре архива из «Истории» и сравнение отчётов.
+list(APPEND GUI_CPP Gui/MainWindow/ReportCompare/SessionReportLoader.cpp)
+list(APPEND GUI_HEADERS Gui/MainWindow/ReportCompare/SessionReportLoader.h)
+
+# ЭКСПЕРИМЕНТ (выключен с 2026-11-11 — решили, что для сравнения хватает
+# таблиц «Истории»): в «Предпросмотре» акт прошлой сессии позиции рядом с
+# текущим, изменившиеся ячейки подсвечены, таблица результатов двух
+# сессий. Отчёт, база и Pass|Fail не меняются.
+# Включить: -DMPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE=ON.
+option(MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE "Experimental report comparison in the report preview tab" OFF)
+if(MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
+    list(APPEND GUI_CPP Gui/MainWindow/ReportCompare/ReportDiff.cpp
+                        Gui/MainWindow/ReportCompare/ReportComparePresenter.cpp)
+    list(APPEND GUI_HEADERS Gui/MainWindow/ReportCompare/ReportDiff.h
+                            Gui/MainWindow/ReportCompare/ReportComparePresenter.h)
+    list(APPEND GUI_UI Gui/MainWindow/ReportCompare/ReportCompareTools.ui
+                       Gui/MainWindow/ReportCompare/ReportComparePanel.ui)
+endif()
+
 # ЭКСПЕРИМЕНТ: расчёт линейности характеристики «давление -> положение»
 # ([ОТ-6]/[ОТ-7]: интегральная и минимакс), строка «Линейность характеристики»
 # в Pass|Fail, допуск в карточке клапана, блоки в «Истории» и панель четырёх
@@ -468,4 +488,8 @@ target_link_libraries(Gui
 target_compile_definitions(Gui
     PRIVATE
         MPIPLATFORM_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-)
+)
+# PUBLIC — MainWindow и превью experiments/preview видят тот же флаг.
+if(MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
+    target_compile_definitions(Gui PUBLIC MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
+endif()

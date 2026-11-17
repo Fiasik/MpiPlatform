@@ -197,9 +197,12 @@ bool Builder::build(Act act, const Report::Context& ctx, const QString& outputPa
     });
 }
 
-bool Builder::preview(Act act, const Report::Context& ctx, QPrinter* printer)
+bool Builder::preview(Act act, const Report::Context& ctx, QPrinter* printer, const FieldHook& field)
 {
-    return render(act, ctx, [printer](QtRPT& report) {
+    return render(act, ctx, [printer, &field](QtRPT& report) {
+        if (field)
+            QObject::connect(&report, &QtRPT::setField, &report, [&field](RptFieldObject& f) { field(f); });
+
         // Свой QPainter — QtRPT сам заведённый через new не удаляет, а
         // предпросмотр пересобирается при каждом обновлении. Принтер отдаём
         // и как «свой» принтер отчёта: drawFields() при переносе высокого

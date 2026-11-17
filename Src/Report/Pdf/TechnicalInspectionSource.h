@@ -24,6 +24,11 @@ class TechnicalInspectionSource : public QObject
 public:
     explicit TechnicalInspectionSource(const Report::Context& ctx, QObject* parent = nullptr);
 
+    // Параметр шаблона ("[resDynErrorValue]" -> "resDynErrorValue") -> текст,
+    // который попадёт в акт. По нему сравнение в предпросмотре ищет, какие
+    // ячейки изменились.
+    const QHash<QString, QString>& values() const { return m_values; }
+
 public slots:
     void onSetValue(const int recNo, const QString paramName, QVariant& paramValue, const int reportPage);
     void onSetDSInfo(DataSetInfo& dsInfo);

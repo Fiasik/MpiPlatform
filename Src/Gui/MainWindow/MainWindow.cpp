@@ -4,6 +4,7 @@
 
 #include <QCloseEvent>
 #include <QDebug>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -14,6 +15,8 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPointF>
+#include <QTableWidget>
+#include <QUrl>
 
 #include "Gui/Setup/ValveWindow/ValveWindow.h"
 #include "Gui/TestSettings/BaseSequenceSettingsDialog.h"
@@ -38,6 +41,7 @@
 #include "Widgets/Chart/AnnotationBuilder.h"
 
 #include "Widgets/Chart/ImageService.h"
+#include "Gui/MainWindow/ReportCompare/SessionReportLoader.h"
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
 #include "Gui/MainWindow/Linearity/ExpandableCard.h"
 #include "Gui/MainWindow/Linearity/LinearityMethodsPresenter.h"
@@ -79,9 +83,13 @@ QMap<int, QString> taskSliderLabels(PositionerScale scale)
 // settings.ini; иначе корень спрашивается у оператора и запоминается
 // (сессии, перенесённые из архива, записаны относительно его корня, а он на
 // каждой машине свой). Пусто — не нашлась или оператор отказался.
-QString findSessionFolder(QWidget* parent, const QString& stored)
+// needCharts — папка нужна с графиками какого-нибудь теста («Открыть сессию»);
+// иначе хватит того, что она есть на диске («Открыть папку»).
+QString findSessionFolder(QWidget* parent, const QString& stored, bool needCharts = true)
 {
-    const auto hasCharts = [](const QString& folder) { return ArchivedTest::pickRun(folder) > 0; };
+    const auto hasCharts = [needCharts](const QString& folder) {
+        return needCharts ? ArchivedTest::hasAnyChart(folder) : QFileInfo(folder).isDir();
+    };
 
     const QString direct = SessionFolders::resolve(stored);
     if (hasCharts(direct))
@@ -135,8 +143,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pushButton_history_refresh, &QPushButton::clicked,
             this, [this] { m_historyPresenter->refresh(); });
     connect(ui->tabWidget_main, &QTabWidget::currentChanged, this, [this](int index) {
-        if (ui->tabWidget_main->widget(index) == ui->tab_history)
+        if (ui->tabWidget_main->widget(index) == ui->tab_history) {
+            flushConclusionSave(); // «История» показывает заключение из базы
             m_historyPresenter->refresh();
+        }
     });
     connect(ui->listWidget_history_sessions, &QListWidget::itemClicked,
             this, [this](QListWidgetItem* item) {
@@ -146,13 +156,15 @@ MainWindow::MainWindow(QWidget *parent)
             this, [this](QListWidgetItem* item) {
                 if (m_historyPresenter->onSessionCheckStateChanged(item) && m_toastManager) {
                     m_toastManager->show(Gui::Style::StatusKind::Warning,
-                        tr("Для сравнения можно отметить не более двух сессий"));
+                        tr("Для сравнения можно отметить не более трёх сессий"));
                 }
             });
     connect(ui->checkBox_history_needsRepair, &QCheckBox::toggled,
             this, [this](bool checked) { m_historyPresenter->onNeedsRepairToggled(checked); });
     connect(ui->pushButton_history_compareLatest, &QPushButton::clicked,
             this, [this] { m_historyPresenter->compareLatestTwo(); });
+    connect(ui->pushButton_history_compareRepair, &QPushButton::clicked,
+            this, [this] { m_historyPresenter->compareAroundRepair(); });
     connect(ui->listWidget_history_sessions, &QListWidget::itemSelectionChanged,
             this, [this] { m_historyPresenter->onSelectionChanged(); });
     connect(ui->pushButton_history_deleteSessions, &QPushButton::clicked,
@@ -163,6 +175,8 @@ MainWindow::MainWindow(QWidget *parent)
         else
             openArchiveView();
     });
+    connect(ui->pushButton_history_openFolder, &QPushButton::clicked,
+            this, &MainWindow::openHistorySessionFolder);
 
     m_statusBarPresenter = new StatusBarPresenter(ui, m_mapper.get(), m_chartManager.get(), this);
     m_statusStateValue = m_statusBarPresenter->stateValueLabel();
@@ -231,6 +245,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget_reportGeneration->addTab(m_reportPreview->panel(), tr("Предпросмотр"));
     connect(ui->checkBox_report_TO, &QCheckBox::toggled,
             m_reportPreview.get(), &ReportPreviewPresenter::refreshIfVisible);
+    connect(m_reportPreview.get(), &ReportPreviewPresenter::closePastSessionRequested,
+            this, &MainWindow::closeArchiveView);
 
     // Давление питания печатается в акте ТО — в историю сессии при каждой
     // правке поля (и ещё по завершении теста и при формировании отчёта).
@@ -545,6 +561,22 @@ MainWindow::MainWindow(QWidget *parent)
             this, [this] { m_conclusionPresenter->onSummaryTemplateChanged(); });
 
     m_conclusionPresenter->onSummaryTemplateChanged();
+
+    // Любая правка заключения или ЗИП — в историю сессии (см. scheduleConclusionSave()).
+    m_conclusionSaveTimer.setSingleShot(true);
+    m_conclusionSaveTimer.setInterval(700);
+    connect(&m_conclusionSaveTimer, &QTimer::timeout, this, &MainWindow::flushConclusionSave);
+    for (QComboBox* combo : {ui->comboBox_conclusion_seatingZone, ui->comboBox_conclusion_positionerAdaptation,
+                             ui->comboBox_conclusion_auxiliaryEquipment, ui->comboBox_conclusion_frictionGraph,
+                             ui->comboBox_conclusion_glandLeak, ui->comboBox_conclusion_summaryTemplate}) {
+        connect(combo, &QComboBox::currentTextChanged, this, [this] { scheduleConclusionSave(); });
+    }
+    connect(ui->textEdit_conclusion_additionalNotes, &QTextEdit::textChanged,
+            this, [this] { scheduleConclusionSave(); });
+    connect(ui->listWidget_spareParts->model(), &QAbstractItemModel::rowsInserted,
+            this, [this] { scheduleConclusionSave(); });
+    connect(ui->listWidget_spareParts->model(), &QAbstractItemModel::rowsRemoved,
+            this, [this] { scheduleConclusionSave(); });
 
     // ===== spare parts =====
     connect(ui->comboBox_spareParts_search->lineEdit(),
@@ -1168,14 +1200,35 @@ void MainWindow::closeEvent(QCloseEvent *event)
         }
     }
 
+    flushConclusionSave();
     QMainWindow::closeEvent(event);
+}
+
+void MainWindow::scheduleConclusionSave()
+{
+    if (m_sessionId >= 0)
+        m_conclusionSaveTimer.start();
+}
+
+void MainWindow::flushConclusionSave()
+{
+    m_conclusionSaveTimer.stop();
+    if (m_sessionId >= 0 && m_reportPresenter)
+        m_reportPresenter->saveConclusionToHistory(m_sessionId);
 }
 
 void MainWindow::setSessionId(qint64 sessionId)
 {
+    // Недописанное заключение принадлежит прежней сессии.
+    if (m_conclusionSaveTimer.isActive())
+        flushConclusionSave();
     m_sessionId = sessionId;
     // Сессию, в которую сейчас пишутся результаты, из истории удалять нельзя.
     m_historyPresenter->setCurrentSessionId(sessionId);
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // …и сравнивать отчёт с ней самой незачем.
+    m_reportPreview->setCurrentSessionId(sessionId);
+#endif
 }
 
 void MainWindow::setPatternType(SelectTests::PatternType pattern)
@@ -2496,11 +2549,181 @@ void MainWindow::setReportGenerationInProgress(bool inProgress)
     applyArchiveViewLocks();
 }
 
+namespace {
+
+// Таблицы результатов опциональных тестов без живого результата — пустые
+// (как до первого теста).
+void clearResultTable(QTableWidget* table)
+{
+    table->clear();
+    table->setRowCount(0);
+    table->setColumnCount(0);
+}
+
+}
+
+bool MainWindow::showArchivedTimeTest(ChartType type, const std::optional<ArchivedTest::DataFile>& data,
+                                      const Domain::DeviceConfig& config, double stepTestValue)
+{
+    Widgets::Chart::ChartView* chart = m_chartManager->chart(type);
+    if (!chart)
+        return false;
+
+    // Настройки теста — из карточки той сессии, как у Scenario: безопасное
+    // положение и шкала позиционера задают направление задания.
+    const bool taskInverted = SignalUtils::isTaskInverted(
+        config.safePosition == SafePosition::NormallyOpen, config.positionerScale);
+
+    using namespace Widgets::Chart;
+    bool shown = false;
+    switch (type) {
+    case ChartType::Stroke: {
+        const auto result = data ? ArchivedTest::analyzeStroke(*data, config.safePosition == SafePosition::NormallyClosed)
+                                 : std::nullopt;
+        if (result) {
+            ArchivedTest::fillTimeChart(chart, *data);
+            chart->setAnnotations(buildStrokeAnnotations(*result));
+            m_mapper->updateStrokeTest(*result);
+            shown = true;
+        } else {
+            chart->clear();
+            for (QLabel* label : {ui->label_strokeTest_forwardTime_Value, ui->label_strokeTest_backwardTime_Value,
+                                  ui->label_strokeTest_respondingReactionForwardTime_Value,
+                                  ui->label_strokeTest_respondingReactionBackwardTime_Value})
+                label->setText(QStringLiteral("--"));
+            ui->lineEdit_resultsTable_strokeTest_forwardTime->clear();
+            ui->lineEdit_resultsTable_strokeTest_backwardTime->clear();
+        }
+        break;
+    }
+    case ChartType::Step: {
+        const auto result = data ? ArchivedTest::analyzeStep(*data, stepTestValue) : std::nullopt;
+        if (result) {
+            ArchivedTest::fillTimeChart(chart, *data);
+            chart->setAnnotations(buildStepAnnotations(*result));
+            m_mapper->updateStepTest(*result);
+            shown = true;
+        } else {
+            chart->clear();
+            clearResultTable(ui->tableWidget_stepResults);
+        }
+        break;
+    }
+    case ChartType::Response: {
+        const auto result = data ? ArchivedTest::analyzeResponse(*data, taskInverted) : std::nullopt;
+        if (result) {
+            ArchivedTest::fillTimeChart(chart, *data);
+            chart->setAnnotations(buildResponseAnnotations(*result));
+            const auto zones = buildResponseZones(*result);
+            chart->setZones(zones.zones, zones.hint);
+            m_mapper->updateResponseTest(*result);
+            shown = true;
+        } else {
+            chart->clear();
+            clearResultTable(ui->tableWidget_responseResults);
+        }
+        break;
+    }
+    case ChartType::Resolution: {
+        const auto result = data ? ArchivedTest::analyzeResolution(*data, taskInverted) : std::nullopt;
+        if (result) {
+            ArchivedTest::fillTimeChart(chart, *data);
+            chart->setAnnotations(buildResolutionAnnotations(*result));
+            const auto zones = buildResolutionZones(*result);
+            chart->setZones(zones.zones, zones.hint);
+            m_mapper->updateResolutionTest(*result);
+            shown = true;
+        } else {
+            chart->clear();
+            clearResultTable(ui->tableWidget_resolutionResults);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return shown;
+}
+
+void MainWindow::showLiveTimeTest(ChartType type)
+{
+    Widgets::Chart::ChartView* chart = m_chartManager->chart(type);
+    if (!chart)
+        return;
+
+    // Как onStrokeResultUpdated() и остальные: разметка и таблица — по
+    // живому результату; не было теста — графики пустые, таблица пустая.
+    using namespace Widgets::Chart;
+    switch (type) {
+    case ChartType::Stroke:
+        if (m_telemetry.testStroke)
+            chart->setAnnotations(buildStrokeAnnotations(*m_telemetry.testStroke));
+        break;
+    case ChartType::Step:
+        if (m_telemetry.testStep) {
+            chart->setAnnotations(buildStepAnnotations(*m_telemetry.testStep));
+            m_mapper->updateStepTest(*m_telemetry.testStep);
+        } else {
+            clearResultTable(ui->tableWidget_stepResults);
+        }
+        break;
+    case ChartType::Response:
+        if (m_telemetry.testResponse) {
+            chart->setAnnotations(buildResponseAnnotations(*m_telemetry.testResponse));
+            const auto zones = buildResponseZones(*m_telemetry.testResponse);
+            chart->setZones(zones.zones, zones.hint);
+            m_mapper->updateResponseTest(*m_telemetry.testResponse);
+        } else {
+            clearResultTable(ui->tableWidget_responseResults);
+        }
+        break;
+    case ChartType::Resolution:
+        if (m_telemetry.testResolution) {
+            chart->setAnnotations(buildResolutionAnnotations(*m_telemetry.testResolution));
+            const auto zones = buildResolutionZones(*m_telemetry.testResolution);
+            chart->setZones(zones.zones, zones.hint);
+            m_mapper->updateResolutionTest(*m_telemetry.testResolution);
+        } else {
+            clearResultTable(ui->tableWidget_resolutionResults);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void MainWindow::restoreLiveCharts(const ArchiveView& view)
+{
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Pressure), view.pressure);
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Task), view.task);
+    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Friction), view.friction);
+    // restoreChart() очистил график вместе с полосами — вернуть полосы живого
+    // теста (если он был).
+    applyPressureZones(m_telemetry.testMain ? &*m_telemetry.testMain : nullptr);
+
+    for (ChartType type : ArchivedTest::timeTestTypes()) {
+        ArchivedTest::restoreChart(m_chartManager->chart(type), view.timeCharts.value(int(type)));
+        showLiveTimeTest(type);
+    }
+}
+
+void MainWindow::blankMainTestTexts()
+{
+    for (QLabel* label : ui->tab_mainTests->findChildren<QLabel*>()) {
+        if (label->objectName().endsWith(QLatin1String("_Value")))
+            label->setText(QStringLiteral("--"));
+    }
+    m_crossingIndicators->update(CrossingStatus{});
+}
+
 void MainWindow::applyArchiveViewLocks()
 {
     const bool viewing = m_archiveView.has_value();
-    ui->pushButton_mainTest_save->setEnabled(!viewing && !m_reportGenerationInProgress);
-    ui->pushButton_report_generate->setEnabled(!viewing && !m_reportGenerationInProgress);
+    const bool free = !viewing && !m_reportGenerationInProgress;
+    ui->pushButton_mainTest_save->setEnabled(free);
+    ui->pushButton_strokeTest_save->setEnabled(free); // запишет график архива в папку ТЕКУЩЕЙ сессии
+    ui->pushButton_optionalTests_save->setEnabled(free);
+    ui->pushButton_report_generate->setEnabled(free);
     ui->pushButton_recalculationRegression->setEnabled(!viewing);
     m_historyPresenter->setArchiveViewActive(viewing);
 }
@@ -2515,6 +2738,20 @@ void MainWindow::showArchivedResult()
     m_crossingIndicators->update(v.status);
 }
 
+void MainWindow::openHistorySessionFolder()
+{
+    const auto session = m_historyPresenter->activeSessionInfo();
+    if (session.folderPath.isEmpty())
+        return;
+
+    const QString folder = findSessionFolder(this, session.folderPath, /*needCharts=*/false);
+    if (folder.isEmpty() || !QDesktopServices::openUrl(QUrl::fromLocalFile(folder))) {
+        if (m_toastManager)
+            m_toastManager->show(Gui::Style::StatusKind::Warning,
+                tr("Папка сессии не найдена: %1").arg(QDir::toNativeSeparators(session.folderPath)));
+    }
+}
+
 void MainWindow::openArchiveView()
 {
     const auto warn = [this](const QString& text) {
@@ -2526,8 +2763,6 @@ void MainWindow::openArchiveView()
         return warn(tr("Дождитесь окончания теста"));
     if (m_reportGenerationInProgress)
         return warn(tr("Дождитесь окончания формирования отчёта"));
-    if (!ui->tabWidget_main->isTabEnabled(ui->tabWidget_main->indexOf(ui->tab_mainTests)))
-        return warn(tr("Основного теста нет в этом наборе тестов"));
 
     auto* pressure = m_chartManager->chart(ChartType::Pressure);
     auto* task = m_chartManager->chart(ChartType::Task);
@@ -2541,35 +2776,36 @@ void MainWindow::openArchiveView()
         return warn(tr("Не найдены графики сессии: %1")
                         .arg(QDir::toNativeSeparators(session.folderPath)));
 
+    // Что лежит в папке: основной тест и тесты по времени (последнее
+    // испытание каждого).
+    const int mainRun = ArchivedTest::pickRun(folder);
+    QHash<int, ArchivedTest::DataFile> timeFiles; // ключ — int(ChartType)
+    for (ChartType type : ArchivedTest::timeTestTypes()) {
+        const int run = ArchivedTest::pickTimeRun(folder, type);
+        if (run == 0)
+            continue;
+        auto data = ArchivedTest::readDataFile(ArchivedTest::chartFile(folder, type, run));
+        if (data && !ArchivedTest::timeSamples(*data).isEmpty())
+            timeFiles.insert(int(type), std::move(*data));
+    }
+    if (mainRun == 0 && timeFiles.isEmpty())
+        return warn(tr("В папке сессии нет читаемых графиков тестов"));
+
+    // Карточка сессии: допуски Pass|Fail, диаметр привода, безопасное
+    // положение и шкала позиционера, порог T шаговой реакции — как были у
+    // ЭТОЙ сессии, а не у текущей. Нет снимка карточки — текущая, как раньше.
+    const auto card = ReportCompare::loadCard(session.id);
+    const Domain::DeviceConfig sessionConfig =
+        card ? ReportCompare::deviceConfig(card->valve) : m_deviceConfig;
+    const double stepTestValue = card && card->stepTestValue ? *card->stepTestValue : 86.0;
+
     ArchiveView view;
     view.title = session.title;
     view.pressure = ArchivedTest::backupChart(pressure);
     view.task = ArchivedTest::backupChart(task);
     view.friction = ArchivedTest::backupChart(friction);
-    const auto restoreLive = [&] {
-        ArchivedTest::restoreChart(pressure, view.pressure);
-        ArchivedTest::restoreChart(task, view.task);
-        ArchivedTest::restoreChart(friction, view.friction);
-    };
-
-    const int run = ArchivedTest::pickRun(folder);
-    if (!ArchivedTest::loadMainTestCharts(folder, run, pressure, task, friction)) {
-        restoreLive();
-        return warn(tr("Не удалось прочитать графики сессии"));
-    }
-    const auto result = ArchivedTest::analyze(task, pressure, m_deviceConfig.driveDiameter);
-    if (!result) {
-        restoreLive();
-        return warn(tr("В графиках сессии нет обоих ходов — расчёт невозможен"));
-    }
-    ArchivedTest::addRegressionLines(pressure);
-    pressure->snapshotDraggableSeries(); // «Исходное состояние» — линии архива
-
-    view.result = *result;
-    view.stroke.real = session.valveStroke;
-    view.stroke.range = qIsNaN(session.valveStroke)
-        ? QStringLiteral("--") : QString::number(session.valveStroke, 'f', 2);
-    view.status = ArchivedTest::crossingStatus(view.result, m_deviceConfig, session.valveStroke);
+    for (ChartType type : ArchivedTest::timeTestTypes())
+        view.timeCharts.insert(int(type), ArchivedTest::backupChart(m_chartManager->chart(type)));
     view.regressionEnabled = ui->checkBox_regression->isEnabled();
     view.regressionState = ui->checkBox_regression->checkState();
 
@@ -2582,9 +2818,85 @@ void MainWindow::openArchiveView()
         labelTexts << l->text();
     for (const QLineEdit* e : edits)
         editTexts << e->text();
+    const auto restoreTexts = [&] {
+        for (int i = 0; i < labels.size(); ++i)
+            labels[i]->setText(labelTexts[i]);
+        for (int i = 0; i < edits.size(); ++i)
+            edits[i]->setText(editTexts[i]);
+    };
 
+    // ---- Основной тест ----
+    // Отчёт той сессии (для «Предпросмотра») — только если основной тест есть.
+    std::optional<ReportGenerationWorker::Input> pastInput;
+    QString pastError;
+    QString mainNote; // почему основной тест из папки не открылся
+    bool mainShown = false;
+    if (mainRun > 0) {
+        const auto failMain = [&](const QString& why) {
+            ArchivedTest::restoreChart(pressure, view.pressure);
+            ArchivedTest::restoreChart(task, view.task);
+            ArchivedTest::restoreChart(friction, view.friction);
+            mainNote = why;
+        };
+        if (!ArchivedTest::loadMainTestCharts(folder, mainRun, pressure, task, friction)) {
+            failMain(tr("графики не читаются"));
+        } else {
+            ReportCompare::PastSession past;
+            past.id = session.id;
+            past.folder = folder;
+            past.run = mainRun;
+            pastInput = ReportCompare::loadInput(past, &pastError);
+
+            const auto result = ArchivedTest::analyze(task, pressure, sessionConfig.driveDiameter);
+            if (!result) {
+                failMain(tr("нет обоих ходов"));
+                pastInput.reset();
+            } else {
+                ArchivedTest::addRegressionLines(pressure);
+                pressure->snapshotDraggableSeries(); // «Исходное состояние» — линии архива
+                applyPressureZones(&*result); // окно — по пересчёту архива, как и прямые
+
+                view.result = *result;
+                view.stroke.real = session.valveStroke;
+                view.stroke.range = qIsNaN(session.valveStroke)
+                    ? QStringLiteral("--") : QString::number(session.valveStroke, 'f', 2);
+                view.status = ArchivedTest::crossingStatus(view.result, sessionConfig, session.valveStroke);
+                mainShown = true;
+            }
+        }
+    }
+    view.hasMain = mainShown;
+    if (!mainShown) {
+        // Не оставлять на вкладках основного теста живой тест под видом сессии.
+        pressure->clear();
+        task->clear();
+        friction->clear();
+    }
+
+    // ---- Тесты по времени ----
+    QStringList shownTests, absentTests;
+    for (ChartType type : ArchivedTest::timeTestTypes()) {
+        const auto found = timeFiles.constFind(int(type));
+        const std::optional<ArchivedTest::DataFile> data =
+            found != timeFiles.constEnd() ? std::optional<ArchivedTest::DataFile>(*found) : std::nullopt;
+        (showArchivedTimeTest(type, data, sessionConfig, stepTestValue) ? shownTests : absentTests)
+            << Widgets::Chart::chartTypeDisplayName(type);
+    }
+
+    if (!mainShown && shownTests.isEmpty()) {
+        restoreLiveCharts(view);
+        restoreTexts();
+        return warn(mainNote.isEmpty()
+            ? tr("В папке сессии нет читаемых графиков тестов")
+            : tr("Не удалось открыть основной тест сессии: %1").arg(mainNote));
+    }
+
+    // ---- Окно ----
     m_archiveView = std::move(view);
-    showArchivedResult();
+    if (mainShown)
+        showArchivedResult();
+    else
+        blankMainTestTexts();
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     if (m_linearityMethods) {
         m_linearityMethods->refresh();
@@ -2599,14 +2911,33 @@ void MainWindow::openArchiveView()
         if (edits[i]->text() != editTexts[i])
             m_archiveView->lineEdits.push_back({edits[i], editTexts[i]});
 
-    ui->checkBox_regression->setEnabled(true);
-    ui->checkBox_regression->setCheckState(Qt::Checked);
+    if (mainShown) {
+        ui->checkBox_regression->setEnabled(true);
+        ui->checkBox_regression->setCheckState(Qt::Checked);
+    }
     applyArchiveViewLocks();
-    ui->tabWidget_main->setCurrentWidget(ui->tab_mainTests);
+    m_reportPreview->showPastSession(session.title, folder, std::move(pastInput),
+        mainShown ? pastError : (mainNote.isEmpty() ? tr("в сессии нет основного теста")
+                                                    : tr("основной тест не открылся: %1").arg(mainNote)));
 
-    if (m_toastManager)
-        m_toastManager->show(Gui::Style::StatusKind::Info,
-            tr("Сессия %1 — только просмотр. Закрыть — во вкладке «История»").arg(m_archiveView->title));
+    // Вкладка: основной тест, если он есть; иначе первый тест по времени.
+    if (mainShown) {
+        ui->tabWidget_main->setCurrentWidget(ui->tab_mainTests);
+    } else if (shownTests.contains(Widgets::Chart::chartTypeDisplayName(ChartType::Stroke))) {
+        ui->tabWidget_main->setCurrentWidget(ui->tab_strokeTest);
+    } else {
+        ui->tabWidget_main->setCurrentWidget(ui->tab_optionalTests);
+    }
+
+    if (m_toastManager) {
+        QString text = tr("Сессия %1 — только просмотр. Закрыть — во вкладке «История»").arg(m_archiveView->title);
+        QStringList absent = absentTests;
+        if (!mainShown)
+            absent.prepend(tr("Основной тест") + (mainNote.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(mainNote)));
+        if (!absent.isEmpty())
+            text += tr(". Нет в сессии: %1").arg(absent.join(QStringLiteral(", ")));
+        m_toastManager->show(Gui::Style::StatusKind::Info, text);
+    }
 }
 
 void MainWindow::closeArchiveView()
@@ -2615,10 +2946,10 @@ void MainWindow::closeArchiveView()
         return;
     const ArchiveView view = std::move(*m_archiveView);
     m_archiveView.reset();
+    if (m_reportPreview)
+        m_reportPreview->clearPastSession();
 
-    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Pressure), view.pressure);
-    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Task), view.task);
-    ArchivedTest::restoreChart(m_chartManager->chart(ChartType::Friction), view.friction);
+    restoreLiveCharts(view);
 
     for (const auto& [label, text] : view.labels)
         label->setText(text);

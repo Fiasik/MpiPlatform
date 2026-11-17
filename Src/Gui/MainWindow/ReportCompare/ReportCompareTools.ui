@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ReportCompareTools</class>
+ <widget class="QWidget" name="ReportCompareTools">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>520</width>
+    <height>32</height>
+   </rect>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_reportCompareTools">
+   <property name="spacing">
+    <number>6</number>
+   </property>
+   <property name="leftMargin">
+    <number>12</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="label_reportCompareWith_Title">
+     <property name="text">
+      <string>Сравнить с</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboBox_reportCompare_with">
+     <property name="sizeAdjustPolicy">
+      <enum>QComboBox::SizeAdjustPolicy::AdjustToContents</enum>
+     </property>
+     <property name="toolTip">
+      <string>Прошлая сессия этой позиции: её акт встанет слева, текущий — справа, изменившиеся ячейки подсветятся</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="pushButton_reportCompare_pages">
+     <property name="toolTip">
+      <string>Два акта рядом, отличия подсвечены</string>
+     </property>
+     <property name="text">
+      <string>Страницы</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="autoExclusive">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="pushButton_reportCompare_table">
+     <property name="toolTip">
+      <string>Результаты двух сессий в одной таблице: значение, вывод, разница, допуск</string>
+     </property>
+     <property name="text">
+      <string>Таблица</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="autoExclusive">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="pushButton_reportCompare_diffs">
+     <property name="toolTip">
+      <string>Показать или скрыть список отличий</string>
+     </property>
+     <property name="text">
+      <string>Отличия</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

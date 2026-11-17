@@ -138,6 +138,55 @@
     </layout>
    </item>
    <item>
+    <widget class="QFrame" name="frame_reportPreviewPast_Section">
+     <layout class="QHBoxLayout" name="horizontalLayout_reportPreviewPast">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_reportPreviewPast">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::TextFormat::RichText</enum>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_reportPreview_openFolder">
+        <property name="text">
+         <string>Открыть папку</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_reportPreview_openIssued">
+        <property name="text">
+         <string>Открыть выданный отчёт</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_reportPreview_closePast">
+        <property name="toolTip">
+         <string>Вернуть графики и акт текущей сессии (как «Закрыть просмотр» во вкладке «История»)</string>
+        </property>
+        <property name="text">
+         <string>Закрыть просмотр</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QStackedWidget" name="stackedWidget_reportPreview">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">

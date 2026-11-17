@@ -45,7 +45,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>5</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_manual">
        <attribute name="title">
@@ -6300,6 +6300,19 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pushButton_history_compareRepair">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Отметить сессию с меткой «ремонт» и по одной соседней до и после неё: сравнение до / ремонт / после</string>
+              </property>
+              <property name="text">
+               <string>До / ремонт / после</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QListWidget" name="listWidget_history_sessions">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -6327,10 +6340,23 @@
                <bool>false</bool>
               </property>
               <property name="toolTip">
-               <string>Показать графики основного теста выбранной сессии на вкладке «Основной тест» (только просмотр)</string>
+               <string>Показать графики и результаты всех тестов выбранной сессии на вкладках тестов, а её Акт ТО — в «Предпросмотре» (только просмотр)</string>
               </property>
               <property name="text">
-               <string>Открыть графики</string>
+               <string>Открыть сессию</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_history_openFolder">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Открыть папку выбранной сессии (графики, отчёты, CSV) в проводнике</string>
+              </property>
+              <property name="text">
+               <string>Открыть папку</string>
               </property>
              </widget>
             </item>
@@ -7445,8 +7471,33 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springHighValueC_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="3" column="1">
                          <widget class="QLabel" name="label_historyCompare_springHighStatusB">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springHighStatusC">
                           <property name="font">
                            <font>
                             <pointsize>8</pointsize>
@@ -7490,6 +7541,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springHighDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="0" column="0">
                          <widget class="QLabel" name="label_historyCompare_springHigh_Title">
                           <property name="text">
@@ -7524,6 +7585,16 @@
                         </item>
                         <item row="4" column="1">
                          <widget class="QLabel" name="label_historyCompare_springHighNormB_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springHighNormC_Norm">
                           <property name="text">
                            <string/>
                           </property>
@@ -7575,6 +7646,21 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_valveStrokeStatusC">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="3" column="0">
                          <widget class="QLabel" name="label_historyCompare_valveStrokeStatusA">
                           <property name="font">
@@ -7600,8 +7686,28 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_valveStrokeDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="2" column="1">
                          <widget class="QLabel" name="label_historyCompare_valveStrokeValueB_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_valveStrokeValueC_Value">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -7647,6 +7753,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_valveStrokeNormC_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                        </layout>
                       </widget>
                      </item>
@@ -7675,8 +7791,33 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springLowDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="3" column="1">
                          <widget class="QLabel" name="label_historyCompare_springLowStatusB">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springLowStatusC">
                           <property name="font">
                            <font>
                             <pointsize>8</pointsize>
@@ -7707,6 +7848,16 @@
                         </item>
                         <item row="2" column="1">
                          <widget class="QLabel" name="label_historyCompare_springLowValueB_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springLowValueC_Value">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -7762,6 +7913,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_springLowNormC_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                        </layout>
                       </widget>
                      </item>
@@ -7795,6 +7956,21 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_linearCharacteristicStatusC">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="1" column="0">
                          <widget class="QLabel" name="label_historyCompare_linearCharacteristicDateA_DateMono">
                           <property name="text">
@@ -7807,6 +7983,16 @@
                         </item>
                         <item row="2" column="1">
                          <widget class="QLabel" name="label_historyCompare_linearCharacteristicValueB_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_linearCharacteristicValueC_Value">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -7857,6 +8043,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_linearCharacteristicDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="4" column="0">
                          <widget class="QLabel" name="label_historyCompare_linearCharacteristicNormA_Norm">
                           <property name="text">
@@ -7869,6 +8065,16 @@
                         </item>
                         <item row="4" column="1">
                          <widget class="QLabel" name="label_historyCompare_linearCharacteristicNormB_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_linearCharacteristicNormC_Norm">
                           <property name="text">
                            <string/>
                           </property>
@@ -7935,6 +8141,21 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_frictionStatusC">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="2" column="0">
                          <widget class="QLabel" name="label_historyCompare_frictionValueA_Value">
                           <property name="text">
@@ -7955,8 +8176,28 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_frictionValueC_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="1" column="1">
                          <widget class="QLabel" name="label_historyCompare_frictionDateB_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_frictionDateC_DateMono">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -7992,6 +8233,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_frictionNormC_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                        </layout>
                       </widget>
                      </item>
@@ -8019,6 +8270,16 @@
                         </item>
                         <item row="1" column="1">
                          <widget class="QLabel" name="label_historyCompare_dynamicErrorDateB_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_dynamicErrorDateC_DateMono">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -8067,6 +8328,21 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_dynamicErrorStatusC">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="2" column="0">
                          <widget class="QLabel" name="label_historyCompare_dynamicErrorValueA_Value">
                           <property name="text">
@@ -8087,6 +8363,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_dynamicErrorValueC_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="4" column="0">
                          <widget class="QLabel" name="label_historyCompare_dynamicErrorNormA_Norm">
                           <property name="text">
@@ -8099,6 +8385,16 @@
                         </item>
                         <item row="4" column="1">
                          <widget class="QLabel" name="label_historyCompare_dynamicErrorNormB_Norm">
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_historyCompare_dynamicErrorNormC_Norm">
                           <property name="text">
                            <string/>
                           </property>
@@ -9213,6 +9509,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeForwardDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="2" column="0">
                          <widget class="QLabel" name="label_historyCompare_strokeForwardValueA_Value">
                           <property name="text">
@@ -9225,6 +9531,16 @@
                         </item>
                         <item row="2" column="1">
                          <widget class="QLabel" name="label_historyCompare_strokeForwardValueB_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeForwardValueC_Value">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -9250,6 +9566,21 @@
                         </item>
                         <item row="3" column="1">
                          <widget class="QLabel" name="label_historyCompare_strokeForwardStatusB">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeForwardStatusC">
                           <property name="font">
                            <font>
                             <pointsize>8</pointsize>
@@ -9314,6 +9645,16 @@
                           </property>
                          </widget>
                         </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeBackwardDateC_DateMono">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
                         <item row="2" column="0">
                          <widget class="QLabel" name="label_historyCompare_strokeBackwardValueA_Value">
                           <property name="text">
@@ -9326,6 +9667,16 @@
                         </item>
                         <item row="2" column="1">
                          <widget class="QLabel" name="label_historyCompare_strokeBackwardValueB_Value">
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeBackwardValueC_Value">
                           <property name="text">
                            <string>—</string>
                           </property>
@@ -9351,6 +9702,21 @@
                         </item>
                         <item row="3" column="1">
                          <widget class="QLabel" name="label_historyCompare_strokeBackwardStatusB">
+                          <property name="font">
+                           <font>
+                            <pointsize>8</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_historyCompare_strokeBackwardStatusC">
                           <property name="font">
                            <font>
                             <pointsize>8</pointsize>

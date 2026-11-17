@@ -9,6 +9,11 @@
 // Вид панели — в ReportPreviewPanel.ui. Данные снимаются заново при каждом
 // открытии вкладки и по «Обновить»; между обновлениями предпросмотр
 // показывает этот снимок (смена акта в списке его не пересобирает).
+//
+// Пока в главном окне открыт просмотр архива («История» → «Открыть
+// графики»), вместо черновика текущей сессии — Акт ТО той, прошлой: собран
+// заново из базы и её папки (ReportCompare::loadInput), сверху плашка об
+// этом и кнопка открыть настоящий файл отчёта из папки, если он там есть.
 
 #include <QObject>
 #include <QPointer>
@@ -22,6 +27,9 @@ class QPrinter;
 class QPrintPreviewWidget;
 class QWidget;
 class ReportGenerationPresenter;
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+class ReportComparePresenter;
+#endif
 
 namespace Ui { class ReportPreviewPanel; }
 
@@ -35,6 +43,25 @@ public:
 
     // Страница вкладки; владельцем становится QTabWidget, куда её добавят.
     QWidget* panel() const { return m_page; }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // Сравнение отчётов (эксперимент): текущую сессию в «Сравнить с» не
+    // предлагаем.
+    void setCurrentSessionId(qint64 sessionId);
+#endif
+
+    // Акт прошлой сессии вместо черновика текущей. input — nullopt, если
+    // собрать не удалось (причина — error, её покажет пустая страница);
+    // folder — папка сессии, там ищется выданный отчёт.
+    void showPastSession(const QString& title, const QString& folder,
+                         std::optional<ReportGenerationWorker::Input> input, const QString& error);
+    // Снова черновик текущей сессии.
+    void clearPastSession();
+
+signals:
+    // «Закрыть просмотр» на плашке прошлой сессии — закрывать просмотр
+    // архива целиком решает главное окно.
+    void closePastSessionRequested();
 
 public slots:
     // Заново снять данные отчёта и перерисовать выбранный акт.
@@ -54,6 +81,23 @@ private:
     void updatePageControls();
     void showPage(int page);
     void zoomBy(qreal factor);
+    void fitToWidth();
+    void fitInView();
+    // Сейчас на экране сравнение двух сессий (эксперимент) — листание и
+    // масштаб относятся к нему.
+    bool comparing() const;
+    int shownPage() const;
+    void updatePastBanner();
+    // Файл отчёта, записанный «Сформировать отчёт» в папку прошлой сессии:
+    // Акт ТО (PDF), иначе report.xlsx; пусто — в папке его нет.
+    QString issuedReportPath() const;
+
+    struct PastSession {
+        QString title;
+        QString folder;
+        QString error;
+        std::optional<ReportGenerationWorker::Input> input;
+    };
 
     ReportGenerationPresenter* m_report;
     QPointer<QWidget> m_page;
@@ -64,4 +108,10 @@ private:
     // Окно просмотра внутри QPrintPreviewWidget — ловим на нём Ctrl + колесо.
     QPointer<QWidget> m_previewViewport;
     std::optional<ReportGenerationWorker::Input> m_snapshot;
+    std::optional<PastSession> m_past;
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // Виджеты сравнения живут на m_page и удаляются вместе с ней — раньше
+    // этого объекта (см. деструктор).
+    std::unique_ptr<ReportComparePresenter> m_compare;
+#endif
 };

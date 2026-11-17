@@ -126,6 +126,23 @@ const QVector<QString> kUnits = {
 // что уже одобрена пользователем на мокапе сравнения (resolution_compare_mockup).
 const QColor kCompareColorA(0x25, 0x63, 0xEB);
 const QColor kCompareColorB(0xF9, 0x73, 0x16);
+const QColor kCompareColorC(0x8B, 0x5C, 0xF6);
+
+// Сравнивать можно две сессии (А и Б) или три — «до ремонта / ремонт / после»:
+// по времени старшая — «до», новейшая — «после», средняя — та, где поставлена
+// метка ремонта. Сессий в сравнении всегда не меньше двух; колонка Δ в
+// таблицах — «последняя минус первая» (после − до).
+constexpr int kMaxComparedSessions = 3;
+
+// Имя сессии в легенде и подписях: при трёх — по роли, при двух — «Сессия А/Б».
+QString compareSessionName(int index, int count)
+{
+    if (count >= 3) {
+        static const QStringList roles = {QObject::tr("До"), QObject::tr("Ремонт"), QObject::tr("После")};
+        return roles.value(index);
+    }
+    return index == 0 ? QObject::tr("Сессия А") : QObject::tr("Сессия Б");
+}
 
 // Ближайшее предыдущее (по индексу < activeIndex) не-NaN значение — дельта
 // на карточке считается против него, а не обязательно против соседнего по
@@ -193,8 +210,8 @@ HistoryPresenter::HistoryPresenter(Ui::MainWindow* ui)
         {m_ui->label_historyTrend_strokeBackward_Value, m_ui->label_historyTrend_strokeBackward_Unit, m_ui->label_historyTrend_strokeBackward_DeltaSign, m_ui->label_historyTrend_strokeBackward_DeltaValue, m_ui->sparkline_strokeBackward},
     };
 
-    // Шаговый/Чувствительность/Разрешающая способность — 2 сессии как 2
-    // серии на общей оси X (ChartView умеет это из коробки, addSeries можно
+    // Шаговый/Чувствительность/Разрешающая способность — 2–3 сессии как
+    // 2–3 серии на общей оси X (ChartView умеет это из коробки, addSeries можно
     // звать сколько угодно раз). Настройка один раз здесь: addAxis/addSeries
     // создают сами серии и легенду, clear()+addPoint() при каждом сравнении
     // (см. updateOverlayBlock()) НЕ трогают сами серии/оси/легенду — только
@@ -212,6 +229,9 @@ HistoryPresenter::HistoryPresenter(Ui::MainWindow* ui)
         chart->addAxis(yFormat, yTitle);
         chart->addSeries(0, QObject::tr("Сессия А"), kCompareColorA);
         chart->addSeries(0, QObject::tr("Сессия Б"), kCompareColorB);
+        // Третья — только при сравнении «до / ремонт / после» (см. updateOverlayBlock()).
+        chart->addSeries(0, QObject::tr("Сессия В"), kCompareColorC);
+        chart->setSeriesAvailable(2, false);
     };
 
     for (Widgets::Chart::ChartView* chart : { m_ui->chartView_historyCompare_stepTimeUp,
@@ -524,7 +544,7 @@ void HistoryPresenter::setActiveSession(qint64 sessionId)
     updateChipsAndTitle();
     updateReportExtras();
     updateCards();
-    updateOpenChartsButton();
+    updateFolderButtons();
 }
 
 HistoryPresenter::ActiveSessionInfo HistoryPresenter::activeSessionInfo() const
@@ -544,25 +564,32 @@ HistoryPresenter::ActiveSessionInfo HistoryPresenter::activeSessionInfo() const
 void HistoryPresenter::setArchiveViewActive(bool active)
 {
     m_archiveViewActive = active;
-    updateOpenChartsButton();
+    updateFolderButtons();
 }
 
-void HistoryPresenter::updateOpenChartsButton()
+void HistoryPresenter::updateFolderButtons()
 {
+    const int index = indexOfSession(m_activeSessionId);
+    const bool hasFolder = index >= 0 && !m_sessions[index].folderPath.isEmpty();
+
+    // Папку можно открыть всегда, в том числе пока на экране графики архива.
+    m_ui->pushButton_history_openFolder->setEnabled(hasFolder);
+    m_ui->pushButton_history_openFolder->setToolTip(hasFolder
+        ? QObject::tr("Открыть папку выбранной сессии (графики, отчёты, CSV) в проводнике")
+        : QObject::tr("Для этой сессии в базе нет папки"));
+
     QPushButton* button = m_ui->pushButton_history_openCharts;
     if (m_archiveViewActive) {
         button->setText(QObject::tr("Закрыть просмотр"));
         button->setEnabled(true);
-        button->setToolTip(QObject::tr("Вернуть на вкладку «Основной тест» графики текущего теста"));
+        button->setToolTip(QObject::tr("Вернуть на вкладки тестов графики и результаты текущей сессии"));
         return;
     }
 
-    const int index = indexOfSession(m_activeSessionId);
-    const bool hasFolder = index >= 0 && !m_sessions[index].folderPath.isEmpty();
-    button->setText(QObject::tr("Открыть графики"));
+    button->setText(QObject::tr("Открыть сессию"));
     button->setEnabled(hasFolder);
     button->setToolTip(hasFolder
-        ? QObject::tr("Показать графики основного теста выбранной сессии на вкладке «Основной тест» (только просмотр)")
+        ? QObject::tr("Показать графики и результаты всех тестов выбранной сессии на вкладках тестов, а её Акт ТО — в «Предпросмотре» (только просмотр)")
         : QObject::tr("Для этой сессии в базе нет папки с графиками"));
 }
 
@@ -814,6 +841,42 @@ void HistoryPresenter::compareLatestTwo()
     updateResolutionComparison();
 }
 
+int HistoryPresenter::repairTripletIndex() const
+{
+    // Последняя сессия с меткой «ремонт», у которой есть соседи и до, и после.
+    // m_sessions — по времени, от старых к новым.
+    for (int i = int(m_sessions.size()) - 2; i >= 1; --i) {
+        if (m_sessions[i].needsRepair)
+            return i;
+    }
+    return -1;
+}
+
+void HistoryPresenter::compareAroundRepair()
+{
+    const int repair = repairTripletIndex();
+    if (repair < 0)
+        return;
+
+    const QSet<qint64> wanted = {m_sessions[repair - 1].id, m_sessions[repair].id, m_sessions[repair + 1].id};
+    QListWidget* list = m_ui->listWidget_history_sessions;
+    {
+        // Сигнал глушим: иначе промежуточные галочки отклонялись бы как
+        // «больше трёх» и обновление дёргалось бы на каждую (см. compareLatestTwo()).
+        const QSignalBlocker blocker(list);
+        for (int i = 0; i < list->count(); ++i) {
+            const qint64 id = list->item(i)->data(Qt::UserRole).toLongLong();
+            list->item(i)->setCheckState(wanted.contains(id) ? Qt::Checked : Qt::Unchecked);
+        }
+    }
+
+    updateCompareTable();
+    updateCards();
+    updateStepComparison();
+    updateResponseComparison();
+    updateResolutionComparison();
+}
+
 void HistoryPresenter::onSessionItemClicked(QListWidgetItem* item)
 {
     if (!item)
@@ -1030,7 +1093,7 @@ bool HistoryPresenter::onSessionCheckStateChanged(QListWidgetItem* changedItem)
     }
 
     bool rejected = false;
-    if (checkedCount > 2 && changedItem && changedItem->checkState() == Qt::Checked) {
+    if (checkedCount > kMaxComparedSessions && changedItem && changedItem->checkState() == Qt::Checked) {
         // setCheckState() ниже сам порождает itemChanged — блокируем сигнал,
         // иначе повторно войдём в этот же обработчик на отмене.
         const QSignalBlocker blocker(m_ui->listWidget_history_sessions);
@@ -1067,6 +1130,9 @@ void HistoryPresenter::onNeedsRepairToggled(bool checked)
             break;
         }
     }
+    // Кнопка «До / ремонт / после» зависит от меток ремонта.
+    applyCompareAvailability(checkedSessionIndices().size() >= 2
+                             && checkedSessionIndices().size() <= kMaxComparedSessions);
 }
 
 // Значение+статус в одной ячейке карточки сравнения (см. .ui: label_history
@@ -1102,7 +1168,7 @@ void HistoryPresenter::applyCompareAvailability(bool ready)
 {
     const QString hint = m_sessions.size() < 2
         ? QObject::tr("Для сравнения нужно минимум две сессии")
-        : QObject::tr("Выберите две сессии (галочками слева) для детального сравнения");
+        : QObject::tr("Выберите две или три сессии (галочками слева) для детального сравнения");
 
     for (QLabel* label : { m_ui->label_history_compare_Hint, m_ui->label_historyCompare_stroke_Hint,
                            m_ui->label_historyCompare_step_Hint, m_ui->label_historyCompare_response_Hint,
@@ -1117,6 +1183,14 @@ void HistoryPresenter::applyCompareAvailability(bool ready)
     m_ui->widget_history_compare->setVisible(ready);
     m_ui->widget_historyCompare_stroke->setVisible(ready);
     m_ui->pushButton_history_compareLatest->setEnabled(m_sessions.size() >= 2);
+
+    const bool hasRepairTriplet = repairTripletIndex() >= 0;
+    m_ui->pushButton_history_compareRepair->setEnabled(hasRepairTriplet);
+    m_ui->pushButton_history_compareRepair->setToolTip(hasRepairTriplet
+        ? QObject::tr("Отметить последнюю сессию с меткой «ремонт» и по одной соседней до и после неё: "
+                      "сравнение до / ремонт / после")
+        : QObject::tr("Нужна сессия с меткой «ремонт» (галочка «Нужен ремонт» у сессии), "
+                      "до и после которой есть другие сессии"));
 
     QTabWidget* tabs = m_ui->tabWidget_historyCompare;
     const QVector<QWidget*> twoSessionTabs = { m_ui->tab_historyCompare_step, m_ui->tab_historyCompare_response,
@@ -1138,60 +1212,79 @@ void HistoryPresenter::applyCompareAvailability(bool ready)
 void HistoryPresenter::updateCompareTable()
 {
     const QVector<int> checkedIdx = checkedSessionIndices();
-    const bool ready = checkedIdx.size() == 2;
+    const int count = checkedIdx.size();
+    const bool ready = count >= 2 && count <= kMaxComparedSessions;
+    const bool three = ready && count == 3;
     applyCompareAvailability(ready);
 
     // Пустая заглушка вместо указателей/условий в каждом обращении ниже —
     // у SessionEntry уже есть дефолты (qQNaN()/Unknown), этого достаточно
-    // для "нет данных" в карточках, когда отмечено не ровно две сессии.
+    // для "нет данных" в карточках, когда отмечено не 2–3 сессии.
     static const SessionEntry kEmptyEntry;
-    const SessionEntry& a = ready ? m_sessions[checkedIdx[0]] : kEmptyEntry;
-    const SessionEntry& b = ready ? m_sessions[checkedIdx[1]] : kEmptyEntry;
-    const QString dateA = ready ? formatCompareStamp(a.tsDisplay) : QStringLiteral("—");
-    const QString dateB = ready ? formatCompareStamp(b.tsDisplay) : QStringLiteral("—");
-
-    const auto fillCard = [&](QLabel* dateLabelA, QLabel* valueLabelA, QLabel* normLabelA, QLabel* statusLabelA,
-                               QLabel* dateLabelB, QLabel* valueLabelB, QLabel* normLabelB, QLabel* statusLabelB,
-                               double va, double lowerA, double upperA, State sa,
-                               double vb, double lowerB, double upperB, State sb, const QString& unit) {
-        dateLabelA->setText(dateA);
-        dateLabelB->setText(dateB);
-        fillCompareValue(valueLabelA, normLabelA, statusLabelA, va, lowerA, upperA, sa, unit);
-        fillCompareValue(valueLabelB, normLabelB, statusLabelB, vb, lowerB, upperB, sb, unit);
+    const auto entryAt = [&](int k) -> const SessionEntry& {
+        return ready && k < count ? m_sessions[checkedIdx[k]] : kEmptyEntry;
+    };
+    // Подпись колонки: дата и время; при трёх сессиях — ещё и роль.
+    const auto columnDate = [&](int k) {
+        if (!ready || k >= count)
+            return QStringLiteral("—");
+        const QString stamp = formatCompareStamp(entryAt(k).tsDisplay);
+        return three ? QStringLiteral("%1 · %2").arg(compareSessionName(k, count), stamp) : stamp;
     };
 
-    fillCard(m_ui->label_historyCompare_frictionDateA_DateMono, m_ui->label_historyCompare_frictionValueA_Value, m_ui->label_historyCompare_frictionNormA_Norm, m_ui->label_historyCompare_frictionStatusA,
-             m_ui->label_historyCompare_frictionDateB_DateMono, m_ui->label_historyCompare_frictionValueB_Value, m_ui->label_historyCompare_frictionNormB_Norm, m_ui->label_historyCompare_frictionStatusB,
-             a.frictionValue, a.frictionLower, a.frictionUpper, a.frictionState,
-             b.frictionValue, b.frictionLower, b.frictionUpper, b.frictionState, kUnits[0]);
-    fillCard(m_ui->label_historyCompare_valveStrokeDateA_DateMono, m_ui->label_historyCompare_valveStrokeValueA_Value, m_ui->label_historyCompare_valveStrokeNormA_Norm, m_ui->label_historyCompare_valveStrokeStatusA,
-             m_ui->label_historyCompare_valveStrokeDateB_DateMono, m_ui->label_historyCompare_valveStrokeValueB_Value, m_ui->label_historyCompare_valveStrokeNormB_Norm, m_ui->label_historyCompare_valveStrokeStatusB,
-             a.valveStrokeValue, a.valveStrokeLower, a.valveStrokeUpper, a.valveStrokeState,
-             b.valveStrokeValue, b.valveStrokeLower, b.valveStrokeUpper, b.valveStrokeState, kUnits[1]);
-    fillCard(m_ui->label_historyCompare_dynamicErrorDateA_DateMono, m_ui->label_historyCompare_dynamicErrorValueA_Value, m_ui->label_historyCompare_dynamicErrorNormA_Norm, m_ui->label_historyCompare_dynamicErrorStatusA,
-             m_ui->label_historyCompare_dynamicErrorDateB_DateMono, m_ui->label_historyCompare_dynamicErrorValueB_Value, m_ui->label_historyCompare_dynamicErrorNormB_Norm, m_ui->label_historyCompare_dynamicErrorStatusB,
-             a.dynamicErrorValue, a.dynamicErrorLower, a.dynamicErrorUpper, a.dynamicErrorState,
-             b.dynamicErrorValue, b.dynamicErrorLower, b.dynamicErrorUpper, b.dynamicErrorState, kUnits[2]);
-    fillCard(m_ui->label_historyCompare_linearCharacteristicDateA_DateMono, m_ui->label_historyCompare_linearCharacteristicValueA_Value, m_ui->label_historyCompare_linearCharacteristicNormA_Norm, m_ui->label_historyCompare_linearCharacteristicStatusA,
-             m_ui->label_historyCompare_linearCharacteristicDateB_DateMono, m_ui->label_historyCompare_linearCharacteristicValueB_Value, m_ui->label_historyCompare_linearCharacteristicNormB_Norm, m_ui->label_historyCompare_linearCharacteristicStatusB,
-             a.linearCharacteristicValue, a.linearCharacteristicLower, a.linearCharacteristicUpper, a.linearCharacteristicState,
-             b.linearCharacteristicValue, b.linearCharacteristicLower, b.linearCharacteristicUpper, b.linearCharacteristicState, kUnits[3]);
-    fillCard(m_ui->label_historyCompare_springLowDateA_DateMono, m_ui->label_historyCompare_springLowValueA_Value, m_ui->label_historyCompare_springLowNormA_Norm, m_ui->label_historyCompare_springLowStatusA,
-             m_ui->label_historyCompare_springLowDateB_DateMono, m_ui->label_historyCompare_springLowValueB_Value, m_ui->label_historyCompare_springLowNormB_Norm, m_ui->label_historyCompare_springLowStatusB,
-             a.springLowValue, a.springLowLower, a.springLowUpper, a.springLowState,
-             b.springLowValue, b.springLowLower, b.springLowUpper, b.springLowState, kUnits[4]);
-    fillCard(m_ui->label_historyCompare_springHighDateA_DateMono, m_ui->label_historyCompare_springHighValueA_Value, m_ui->label_historyCompare_springHighNormA_Norm, m_ui->label_historyCompare_springHighStatusA,
-             m_ui->label_historyCompare_springHighDateB_DateMono, m_ui->label_historyCompare_springHighValueB_Value, m_ui->label_historyCompare_springHighNormB_Norm, m_ui->label_historyCompare_springHighStatusB,
-             a.springHighValue, a.springHighLower, a.springHighUpper, a.springHighState,
-             b.springHighValue, b.springHighLower, b.springHighUpper, b.springHighState, kUnits[5]);
-    fillCard(m_ui->label_historyCompare_strokeForwardDateA_DateMono, m_ui->label_historyCompare_strokeForwardValueA_Value, nullptr, m_ui->label_historyCompare_strokeForwardStatusA,
-             m_ui->label_historyCompare_strokeForwardDateB_DateMono, m_ui->label_historyCompare_strokeForwardValueB_Value, nullptr, m_ui->label_historyCompare_strokeForwardStatusB,
-             a.forwardTimeS, qQNaN(), qQNaN(), State::Unknown,
-             b.forwardTimeS, qQNaN(), qQNaN(), State::Unknown, kUnits[6]);
-    fillCard(m_ui->label_historyCompare_strokeBackwardDateA_DateMono, m_ui->label_historyCompare_strokeBackwardValueA_Value, nullptr, m_ui->label_historyCompare_strokeBackwardStatusA,
-             m_ui->label_historyCompare_strokeBackwardDateB_DateMono, m_ui->label_historyCompare_strokeBackwardValueB_Value, nullptr, m_ui->label_historyCompare_strokeBackwardStatusB,
-             a.backwardTimeS, qQNaN(), qQNaN(), State::Unknown,
-             b.backwardTimeS, qQNaN(), qQNaN(), State::Unknown, kUnits[7]);
+    // Восемь карточек, в каждой колонки А, Б и (при трёх сессиях) В; виджеты —
+    // в .ui: label_historyCompare_<карточка>{Date,Value,Status,Norm}<А/Б/В>…
+    // (допуска у карточек полного хода нет).
+    struct Card {
+        const char* name;
+        double SessionEntry::*value;
+        double SessionEntry::*lower;
+        double SessionEntry::*upper;
+        State SessionEntry::*state;
+        int unit; // индекс в kUnits
+    };
+    static const Card kCards[] = {
+        {"friction", &SessionEntry::frictionValue, &SessionEntry::frictionLower, &SessionEntry::frictionUpper, &SessionEntry::frictionState, 0},
+        {"valveStroke", &SessionEntry::valveStrokeValue, &SessionEntry::valveStrokeLower, &SessionEntry::valveStrokeUpper, &SessionEntry::valveStrokeState, 1},
+        {"dynamicError", &SessionEntry::dynamicErrorValue, &SessionEntry::dynamicErrorLower, &SessionEntry::dynamicErrorUpper, &SessionEntry::dynamicErrorState, 2},
+        {"linearCharacteristic", &SessionEntry::linearCharacteristicValue, &SessionEntry::linearCharacteristicLower, &SessionEntry::linearCharacteristicUpper, &SessionEntry::linearCharacteristicState, 3},
+        {"springLow", &SessionEntry::springLowValue, &SessionEntry::springLowLower, &SessionEntry::springLowUpper, &SessionEntry::springLowState, 4},
+        {"springHigh", &SessionEntry::springHighValue, &SessionEntry::springHighLower, &SessionEntry::springHighUpper, &SessionEntry::springHighState, 5},
+        {"strokeForward", &SessionEntry::forwardTimeS, nullptr, nullptr, nullptr, 6},
+        {"strokeBackward", &SessionEntry::backwardTimeS, nullptr, nullptr, nullptr, 7},
+    };
+    static const QChar kColumns[] = {QLatin1Char('A'), QLatin1Char('B'), QLatin1Char('C')};
+
+    QWidget* root = m_ui->tabWidget_historyCompare;
+    for (const Card& card : kCards) {
+        const QString base = QStringLiteral("label_historyCompare_") + QLatin1String(card.name);
+        for (int k = 0; k < 3; ++k) {
+            const QString column(kColumns[k]);
+            auto* date = root->findChild<QLabel*>(base + QStringLiteral("Date") + column + QStringLiteral("_DateMono"));
+            auto* value = root->findChild<QLabel*>(base + QStringLiteral("Value") + column + QStringLiteral("_Value"));
+            auto* status = root->findChild<QLabel*>(base + QStringLiteral("Status") + column);
+            auto* norm = root->findChild<QLabel*>(base + QStringLiteral("Norm") + column + QStringLiteral("_Norm")); // у полного хода нет
+            if (!date || !value || !status)
+                continue;
+
+            // Третья колонка — только при трёх сессиях; в сетке карточки скрытая
+            // колонка места не занимает.
+            const bool shown = k < 2 || three;
+            for (QLabel* label : {date, value, status, norm}) {
+                if (label)
+                    label->setVisible(shown);
+            }
+            if (!shown)
+                continue;
+
+            const SessionEntry& entry = entryAt(k);
+            date->setText(columnDate(k));
+            fillCompareValue(value, norm, status, entry.*card.value,
+                             card.lower ? entry.*card.lower : qQNaN(),
+                             card.upper ? entry.*card.upper : qQNaN(),
+                             card.state ? entry.*card.state : State::Unknown, kUnits[card.unit]);
+        }
+    }
 }
 
 QVector<HistoryPresenter::StepCompareRow> HistoryPresenter::stepRowsFor(qint64 sessionId) const
@@ -1328,37 +1421,40 @@ QVector<HistoryPresenter::PercentErrorRow> HistoryPresenter::resolutionRowsFor(q
 // в недостающей ячейке.
 void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTableWidget* table,
                                            const QString& xLabel, const QString& yLabel, const QString& yUnit,
-                                           const QVector<OverlayRow>& rowsA, const QVector<OverlayRow>& rowsB,
-                                           const QString& dateA, const QString& dateB,
-                                           const QString& yLabelB, DeltaColoring coloring) const
+                                           const QVector<QVector<OverlayRow>>& rows, const QStringList& dates,
+                                           const QStringList& yLabels, DeltaColoring coloring) const
 {
+    const int count = int(rows.size()); // две сессии или три (до / ремонт / после)
     chart->clear();
     table->setRowCount(0);
 
     // Колонки допуска появляются, только если допуск есть хотя бы в одной из
-    // двух сессий: у Чувствительности он есть (как и "Допустимая ошибка на
-    // шаг" в отчёте ТЧР), у Шагового и Разрешающей способности — нет.
-    const auto hasAllowed = [](const QVector<OverlayRow>& rows) {
-        for (const OverlayRow& r : rows) {
+    // сессий: у Чувствительности и Разрешающей способности он есть (как и
+    // "Допустимая ошибка на шаг" в отчёте), у Шагового — нет.
+    const auto hasAllowed = [](const QVector<OverlayRow>& sessionRows) {
+        for (const OverlayRow& r : sessionRows) {
             if (!qIsNaN(r.allowed))
                 return true;
         }
         return false;
     };
-    const bool withAllowed = hasAllowed(rowsA) || hasAllowed(rowsB);
-    const int columnCount = withAllowed ? 6 : 4;
+    bool withAllowed = false;
+    for (const QVector<OverlayRow>& sessionRows : rows)
+        withAllowed = withAllowed || hasAllowed(sessionRows);
+    const int columnCount = 1 + count * (withAllowed ? 2 : 1) + 1; // X, по колонке(ам) на сессию, Δ
     table->setColumnCount(columnCount);
 
     // Две строки: сверху сессия (дата и время), снизу величина — на экране
     // 1000 px однострочный заголовок обрезался ("…10.2026, перерегулирование,").
     const QString allowedLabel = QObject::tr("допуск, %");
-    QStringList headers{xLabel, QStringLiteral("%1\n%2").arg(dateA, yLabel)};
-    if (withAllowed)
-        headers << QStringLiteral("%1\n%2").arg(dateA, allowedLabel);
-    headers << QStringLiteral("%1\n%2").arg(dateB, yLabelB.isEmpty() ? yLabel : yLabelB);
-    if (withAllowed)
-        headers << QStringLiteral("%1\n%2").arg(dateB, allowedLabel);
-    headers << QObject::tr("Δ, %1").arg(yUnit);
+    QStringList headers{xLabel};
+    for (int k = 0; k < count; ++k) {
+        const QString label = k < yLabels.size() && !yLabels[k].isEmpty() ? yLabels[k] : yLabel;
+        headers << QStringLiteral("%1\n%2").arg(dates.value(k), label);
+        if (withAllowed)
+            headers << QStringLiteral("%1\n%2").arg(dates.value(k), allowedLabel);
+    }
+    headers << (count >= 3 ? QObject::tr("Δ, %1\nпосле − до").arg(yUnit) : QObject::tr("Δ, %1").arg(yUnit));
     table->setHorizontalHeaderLabels(headers);
 
     if (auto* deltaHeader = table->horizontalHeaderItem(columnCount - 1)) {
@@ -1374,10 +1470,14 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
         }
     }
 
-    for (const auto& p : rowsA)
-        chart->addPoint(0, p.x, p.y);
-    for (const auto& p : rowsB)
-        chart->addPoint(1, p.x, p.y);
+    // Серий на графике три (третья — для «до / ремонт / после»); имена —
+    // по числу сессий.
+    for (int k = 0; k < 3; ++k) {
+        chart->setSeriesName(quint8(k), compareSessionName(k, count));
+        for (const auto& p : rows.value(k))
+            chart->addPoint(quint8(k), p.x, p.y);
+    }
+    chart->setSeriesAvailable(2, count >= 3);
     chart->rescanRange();
 
     // Шаг подписей по X — по реальному размаху данных: 10 % при обычной
@@ -1385,8 +1485,8 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
     // на оси остались бы одна-две подписи).
     {
         double minX = qQNaN(), maxX = qQNaN();
-        for (const auto* rows : { &rowsA, &rowsB }) {
-            for (const OverlayRow& r : *rows) {
+        for (const QVector<OverlayRow>& sessionRows : rows) {
+            for (const OverlayRow& r : sessionRows) {
                 if (qIsNaN(r.x))
                     continue;
                 minX = qIsNaN(minX) ? r.x : qMin(minX, r.x);
@@ -1397,7 +1497,10 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
         chart->setXTickStep(span <= 0.0 ? 0.0 : (span <= 12.0 ? 1.0 : (span <= 40.0 ? 5.0 : 10.0)));
     }
 
-    if (rowsA.isEmpty() && rowsB.isEmpty()) {
+    bool anyRows = false;
+    for (const QVector<OverlayRow>& sessionRows : rows)
+        anyRows = anyRows || !sessionRows.isEmpty();
+    if (!anyRows) {
         table->setRowCount(1);
         auto* item = new QTableWidgetItem(
             QObject::tr("Нет данных для этого теста ни у одной из выбранных сессий"));
@@ -1408,19 +1511,18 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
         return;
     }
 
-    // Объединение X-значений обеих сессий — ключ сравнения, не индекс в
-    // списке (см. StepCompareRow::toPct/PercentErrorRow::selectedPercent):
-    // сессии могли протестировать разные наборы точек. QMap даёт сразу и
-    // дедупликацию, и сортировку по возрастанию X.
-    QMap<double, OverlayRow> byXA, byXB; // x -> строка, только для X, реально присутствующих у этой сессии
-    for (const auto& p : rowsA)
-        byXA[p.x] = p;
-    for (const auto& p : rowsB)
-        byXB[p.x] = p;
-
-    QMap<double, bool> allX; // просто отсортированное множество ключей обеих сессий
-    for (auto it = byXA.cbegin(); it != byXA.cend(); ++it) allX[it.key()] = true;
-    for (auto it = byXB.cbegin(); it != byXB.cend(); ++it) allX[it.key()] = true;
+    // Объединение X-значений сессий — ключ сравнения, не индекс в списке (см.
+    // StepCompareRow::toPct/PercentErrorRow::selectedPercent): сессии могли
+    // протестировать разные наборы точек. QMap даёт сразу и дедупликацию, и
+    // сортировку по возрастанию X.
+    QVector<QMap<double, OverlayRow>> byX(count); // x -> строка, только для X, реально присутствующих у сессии
+    QMap<double, bool> allX;                      // просто отсортированное множество ключей всех сессий
+    for (int k = 0; k < count; ++k) {
+        for (const auto& p : rows[k]) {
+            byX[k][p.x] = p;
+            allX[p.x] = true;
+        }
+    }
 
     const QColor failColor = Gui::Style::crossingStateColor(State::Fail);
 
@@ -1448,18 +1550,22 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
     table->setRowCount(xs.size());
     for (int row = 0; row < xs.size(); ++row) {
         const double x = xs.at(row);
-        const OverlayRow* a = byXA.contains(x) ? &byXA[x] : nullptr;
-        const OverlayRow* b = byXB.contains(x) ? &byXB[x] : nullptr;
+        QVector<const OverlayRow*> cell(count, nullptr);
+        for (int k = 0; k < count; ++k)
+            cell[k] = byX[k].contains(x) ? &byX[k][x] : nullptr;
 
         int column = 0;
         table->setItem(row, column++, new QTableWidgetItem(QString::number(x, 'f', 1)));
-        table->setItem(row, column++, makeValueItem(a));
-        if (withAllowed)
-            table->setItem(row, column++, makeAllowedItem(a));
-        table->setItem(row, column++, makeValueItem(b));
-        if (withAllowed)
-            table->setItem(row, column++, makeAllowedItem(b));
+        for (int k = 0; k < count; ++k) {
+            table->setItem(row, column++, makeValueItem(cell[k]));
+            if (withAllowed)
+                table->setItem(row, column++, makeAllowedItem(cell[k]));
+        }
 
+        // Δ — последняя сессия минус первая (при трёх: после − до; средняя
+        // показана для контекста).
+        const OverlayRow* a = cell.first();
+        const OverlayRow* b = cell.last();
         auto* deltaItem = (a && b)
             ? new QTableWidgetItem(deltaText(a->y, b->y))
             : new QTableWidgetItem(QStringLiteral("—"));
@@ -1485,75 +1591,103 @@ void HistoryPresenter::updateOverlayBlock(Widgets::Chart::ChartView* chart, QTab
 void HistoryPresenter::updateStepComparison()
 {
     const QVector<int> checkedIdx = checkedSessionIndices();
-    const bool ready = checkedIdx.size() == 2;
+    const int checked = int(checkedIdx.size());
+    const bool ready = checked >= 2 && checked <= kMaxComparedSessions;
+    const int count = ready ? checked : 2;
     m_ui->label_historyCompare_step_Hint->setVisible(!ready);
 
-    const QString dateA = ready ? formatCompareStamp(m_sessions[checkedIdx[0]].tsDisplay) : QStringLiteral("—");
-    const QString dateB = ready ? formatCompareStamp(m_sessions[checkedIdx[1]].tsDisplay) : QStringLiteral("—");
+    // По сессиям в хронологическом порядке: подпись колонки, T, строки теста.
+    QStringList dates, fullDates;
+    QVector<double> testValues; // T (порог времени переключения, % хода) бывает разным у разных сессий
+    QVector<QVector<StepCompareRow>> sessionRows;
+    for (int k = 0; k < count; ++k) {
+        const SessionEntry* entry = ready ? &m_sessions[checkedIdx[k]] : nullptr;
+        dates << (entry ? formatCompareStamp(entry->tsDisplay) : QStringLiteral("—"));
+        fullDates << (entry ? formatTimestamp(entry->tsDisplay) : QStringLiteral("—"));
+        testValues << (entry ? stepTestValueFor(entry->id) : qQNaN());
+        sessionRows << (entry ? stepRowsFor(entry->id) : QVector<StepCompareRow>{});
+    }
 
-    // T (порог времени переключения, % хода) бывает разным у разных сессий —
-    // при разных T времена нельзя сравнивать, поэтому T указан в заголовках
+    // При разных T времена нельзя сравнивать, поэтому T указан в заголовках
     // колонок, а несовпадение подсвечено под легендой.
-    const double testValueA = ready ? stepTestValueFor(m_sessions[checkedIdx[0]].id) : qQNaN();
-    const double testValueB = ready ? stepTestValueFor(m_sessions[checkedIdx[1]].id) : qQNaN();
     const auto timeLabel = [](double testValue) {
         return qIsNaN(testValue) ? QObject::tr("T, мс") : QObject::tr("T%1, мс").arg(qRound(testValue));
     };
+    QStringList timeLabels;
+    for (double testValue : std::as_const(testValues))
+        timeLabels << timeLabel(testValue);
+
     // В HTML подряд идущие пробелы схлопываются — разделитель между сессиями
     // задаём явно.
-    QString legend = QObject::tr("Сессия А — %1    Сессия Б — %2")
-                         .arg(ready ? formatTimestamp(m_sessions[checkedIdx[0]].tsDisplay) : dateA,
-                              ready ? formatTimestamp(m_sessions[checkedIdx[1]].tsDisplay) : dateB)
+    QStringList legendParts;
+    for (int k = 0; k < count; ++k)
+        legendParts << QObject::tr("%1 — %2").arg(compareSessionName(k, count), fullDates[k]);
+    QString legend = legendParts.join(QStringLiteral("    "))
                          .toHtmlEscaped()
                          .replace(QStringLiteral("    "), QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"));
-    if (!qIsNaN(testValueA) && !qIsNaN(testValueB) && qRound(testValueA) != qRound(testValueB)) {
+
+    bool sameTestValue = true; // среди сессий, у которых T известен
+    double firstKnown = qQNaN();
+    for (double testValue : std::as_const(testValues)) {
+        if (qIsNaN(testValue))
+            continue;
+        if (qIsNaN(firstKnown))
+            firstKnown = testValue;
+        else if (qRound(testValue) != qRound(firstKnown))
+            sameTestValue = false;
+    }
+    if (!sameTestValue) {
+        QStringList parts;
+        for (int k = 0; k < count; ++k) {
+            if (!qIsNaN(testValues[k]))
+                parts << QObject::tr("%1 — T%2").arg(compareSessionName(k, count)).arg(qRound(testValues[k]));
+        }
         legend += QStringLiteral("<br><span style=\"color:%1\">%2</span>")
             .arg(Gui::Style::statusColor(Gui::Style::StatusKind::Warning).name(),
-                 QObject::tr("⚠ У сессий разное T (А — T%1, Б — T%2): времена переключения сравнивать нельзя")
-                     .arg(qRound(testValueA)).arg(qRound(testValueB)).toHtmlEscaped());
+                 QObject::tr("⚠ У сессий разное T (%1): времена переключения сравнивать нельзя")
+                     .arg(parts.join(QStringLiteral(", "))).toHtmlEscaped());
     }
     m_ui->label_historyCompare_step_Legend->setTextFormat(Qt::RichText);
     m_ui->label_historyCompare_step_Legend->setText(legend);
-
-    const QVector<StepCompareRow> rowsA = ready ? stepRowsFor(m_sessions[checkedIdx[0]].id) : QVector<StepCompareRow>{};
-    const QVector<StepCompareRow> rowsB = ready ? stepRowsFor(m_sessions[checkedIdx[1]].id) : QVector<StepCompareRow>{};
 
     // Лесенка шагового теста проходит одни и те же целевые значения и вверх,
     // и вниз (0→10…90→100, затем 100→90…10→0), поэтому сравнивать "по X"
     // можно только внутри одного направления — иначе значение хода вниз
     // затирало значение хода вверх. Направление — по from/to шага.
     struct Series { QVector<OverlayRow> time, overshoot; };
-    const auto split = [](const QVector<StepCompareRow>& rows, Series& up, Series& down) {
-        for (const auto& r : rows) {
+    QVector<Series> up(count), down(count);
+    for (int k = 0; k < count; ++k) {
+        for (const auto& r : std::as_const(sessionRows[k])) {
             if (qIsNaN(r.fromPct) || qIsNaN(r.toPct) || r.toPct == r.fromPct)
                 continue;
-            Series& target = r.toPct > r.fromPct ? up : down;
+            Series& target = r.toPct > r.fromPct ? up[k] : down[k];
             target.time.append({r.toPct, r.tValueMs});
             target.overshoot.append({r.toPct, r.overshootPct});
         }
+    }
+    const auto collect = [&](const QVector<Series>& series, QVector<OverlayRow> Series::*field) {
+        QVector<QVector<OverlayRow>> out;
+        for (const Series& s : series)
+            out.append(s.*field);
+        return out;
     };
-    Series upA, downA, upB, downB;
-    split(rowsA, upA, downA);
-    split(rowsB, upB, downB);
 
     const QString xLabel = QObject::tr("%, целевое значение");
     // При разном T сравнение времён некорректно само по себе — не красим
     // ("лучше/хуже" там ничего не значит), предупреждение уже показано выше.
-    const bool sameTestValue = qIsNaN(testValueA) || qIsNaN(testValueB)
-        || qRound(testValueA) == qRound(testValueB);
     const DeltaColoring timeColoring = sameTestValue ? DeltaColoring::LowerIsBetter : DeltaColoring::None;
     updateOverlayBlock(m_ui->chartView_historyCompare_stepTimeUp, m_ui->tableWidget_historyCompare_stepTimeUp,
-                        xLabel, timeLabel(testValueA), QObject::tr("мс"), upA.time, upB.time, dateA, dateB,
-                        timeLabel(testValueB), timeColoring);
+                        xLabel, timeLabels[0], QObject::tr("мс"), collect(up, &Series::time), dates,
+                        timeLabels, timeColoring);
     updateOverlayBlock(m_ui->chartView_historyCompare_stepTimeDown, m_ui->tableWidget_historyCompare_stepTimeDown,
-                        xLabel, timeLabel(testValueA), QObject::tr("мс"), downA.time, downB.time, dateA, dateB,
-                        timeLabel(testValueB), timeColoring);
+                        xLabel, timeLabels[0], QObject::tr("мс"), collect(down, &Series::time), dates,
+                        timeLabels, timeColoring);
     updateOverlayBlock(m_ui->chartView_historyCompare_stepOvershootUp, m_ui->tableWidget_historyCompare_stepOvershootUp,
                         xLabel, QObject::tr("перерегулирование, %"), QObject::tr("%"),
-                        upA.overshoot, upB.overshoot, dateA, dateB, QString(), DeltaColoring::CloserToZero);
+                        collect(up, &Series::overshoot), dates, {}, DeltaColoring::CloserToZero);
     updateOverlayBlock(m_ui->chartView_historyCompare_stepOvershootDown, m_ui->tableWidget_historyCompare_stepOvershootDown,
                         xLabel, QObject::tr("перерегулирование, %"), QObject::tr("%"),
-                        downA.overshoot, downB.overshoot, dateA, dateB, QString(), DeltaColoring::CloserToZero);
+                        collect(down, &Series::overshoot), dates, {}, DeltaColoring::CloserToZero);
 }
 
 void HistoryPresenter::updateUpDownComparison(
@@ -1563,17 +1697,21 @@ void HistoryPresenter::updateUpDownComparison(
     const std::function<QVector<PercentErrorRow>(qint64, const QString&)>& rowsFor)
 {
     const QVector<int> checkedIdx = checkedSessionIndices();
-    const bool ready = checkedIdx.size() == 2;
+    const int checked = int(checkedIdx.size());
+    const bool ready = checked >= 2 && checked <= kMaxComparedSessions;
+    const int count = ready ? checked : 2;
     hintLabel->setVisible(!ready);
 
-    const QString dateA = ready ? formatCompareStamp(m_sessions[checkedIdx[0]].tsDisplay) : QStringLiteral("—");
-    const QString dateB = ready ? formatCompareStamp(m_sessions[checkedIdx[1]].tsDisplay) : QStringLiteral("—");
-    legendLabel->setText(QObject::tr("Сессия А — %1    Сессия Б — %2")
-        .arg(ready ? formatTimestamp(m_sessions[checkedIdx[0]].tsDisplay) : dateA,
-             ready ? formatTimestamp(m_sessions[checkedIdx[1]].tsDisplay) : dateB));
-
-    const qint64 idA = ready ? m_sessions[checkedIdx[0]].id : -1;
-    const qint64 idB = ready ? m_sessions[checkedIdx[1]].id : -1;
+    QStringList dates, legendParts;
+    QVector<qint64> ids;
+    for (int k = 0; k < count; ++k) {
+        const SessionEntry* entry = ready ? &m_sessions[checkedIdx[k]] : nullptr;
+        dates << (entry ? formatCompareStamp(entry->tsDisplay) : QStringLiteral("—"));
+        legendParts << QObject::tr("%1 — %2").arg(compareSessionName(k, count),
+                                                  entry ? formatTimestamp(entry->tsDisplay) : QStringLiteral("—"));
+        ids << (entry ? entry->id : -1);
+    }
+    legendLabel->setText(legendParts.join(QStringLiteral("    ")));
 
     const auto toRows = [](const QVector<PercentErrorRow>& rows) {
         QVector<OverlayRow> result;
@@ -1581,15 +1719,19 @@ void HistoryPresenter::updateUpDownComparison(
             result.append({r.selectedPercent, r.errorPercent, r.allowedPercent, r.isOk});
         return result;
     };
+    const auto collect = [&](const QString& direction) {
+        QVector<QVector<OverlayRow>> out;
+        for (qint64 id : std::as_const(ids))
+            out.append(toRows(rowsFor(id, direction)));
+        return out;
+    };
 
     updateOverlayBlock(chartUp, tableUp,
                         QObject::tr("%, задание"), QObject::tr("ошибка, %"), QObject::tr("%"),
-                        toRows(rowsFor(idA, QStringLiteral("up"))), toRows(rowsFor(idB, QStringLiteral("up"))),
-                        dateA, dateB, QString(), DeltaColoring::LowerIsBetter);
+                        collect(QStringLiteral("up")), dates, {}, DeltaColoring::LowerIsBetter);
     updateOverlayBlock(chartDown, tableDown,
                         QObject::tr("%, задание"), QObject::tr("ошибка, %"), QObject::tr("%"),
-                        toRows(rowsFor(idA, QStringLiteral("down"))), toRows(rowsFor(idB, QStringLiteral("down"))),
-                        dateA, dateB, QString(), DeltaColoring::LowerIsBetter);
+                        collect(QStringLiteral("down")), dates, {}, DeltaColoring::LowerIsBetter);
 }
 
 void HistoryPresenter::updateResponseComparison()
@@ -1604,19 +1746,21 @@ void HistoryPresenter::updateResponseComparison()
     // таблицах по шагам нет места, поэтому строкой под легендой.
     QString hysteresis;
     const QVector<int> checkedIdx = checkedSessionIndices();
-    if (checkedIdx.size() == 2) {
-        const SessionEntry& a = m_sessions[checkedIdx[0]];
-        const SessionEntry& b = m_sessions[checkedIdx[1]];
-        const double hysteresisA = responseHysteresisFor(a.id);
-        const double hysteresisB = responseHysteresisFor(b.id);
+    const int count = int(checkedIdx.size());
+    if (count >= 2 && count <= kMaxComparedSessions) {
         const auto format = [](double v) {
             return qIsNaN(v) ? QObject::tr("нет данных") : QString::number(v, 'f', 2);
         };
-        hysteresis = QObject::tr("Гистерезис, %: %1 — %2 · %3 — %4")
-            .arg(formatCompareStamp(a.tsDisplay), format(hysteresisA),
-                 formatCompareStamp(b.tsDisplay), format(hysteresisB));
-        if (!qIsNaN(hysteresisA) && !qIsNaN(hysteresisB))
-            hysteresis += QObject::tr(" · Δ %1").arg(deltaText(hysteresisA, hysteresisB));
+        QStringList parts;
+        QVector<double> values;
+        for (int k = 0; k < count; ++k) {
+            const SessionEntry& entry = m_sessions[checkedIdx[k]];
+            values << responseHysteresisFor(entry.id);
+            parts << QObject::tr("%1 — %2").arg(formatCompareStamp(entry.tsDisplay), format(values.last()));
+        }
+        hysteresis = QObject::tr("Гистерезис, %: %1").arg(parts.join(QStringLiteral(" · ")));
+        if (!qIsNaN(values.first()) && !qIsNaN(values.last()))
+            hysteresis += QObject::tr(" · Δ %1").arg(deltaText(values.first(), values.last()));
     }
     m_ui->label_historyCompare_response_Hysteresis->setText(hysteresis);
 }

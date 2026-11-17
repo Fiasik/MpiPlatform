@@ -2,7 +2,10 @@
 
 #include <QString>
 
+#include <functional>
+
 class QPrinter;
+class RptFieldObject;
 
 namespace Report {
 struct Context;
@@ -48,7 +51,12 @@ public:
     // Файл не пишется. Принтер стоит заводить как для PDF (HighResolution +
     // PdfFormat): QtRPT считает толщину рамок от разрешения, и тогда
     // предпросмотр совпадает с файлом.
-    bool preview(Act act, const Report::Context& ctx, QPrinter* printer);
+    //
+    // field — каждое поле акта перед отрисовкой (QtRPT::setField): так
+    // сравнение отчётов подсвечивает изменившиеся ячейки — меняет фон или
+    // рамку поля, а не данные.
+    using FieldHook = std::function<void(RptFieldObject&)>;
+    bool preview(Act act, const Report::Context& ctx, QPrinter* printer, const FieldHook& field = {});
 };
 
 }

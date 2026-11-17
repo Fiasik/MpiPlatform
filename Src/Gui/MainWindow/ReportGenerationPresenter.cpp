@@ -113,28 +113,52 @@ void ReportGenerationPresenter::collectReportOverrides(Telemetry& telemetry,
     }
 }
 
-void ReportGenerationPresenter::saveReportExtrasToHistory(qint64 sessionId)
+namespace {
+
+// Заключение и ЗИП так, как они сейчас на вкладке отчёта.
+struct ConclusionAndParts {
+    ConclusionRecord conclusion;
+    QVector<SparePartRecord> parts;
+};
+
+ConclusionAndParts readConclusionAndParts(const ConclusionPresenter* conclusionPresenter,
+                                          const SparePartsPresenter* sparePartsPresenter,
+                                          const Ui::MainWindow* ui)
 {
     using Report::Html::ConclusionField;
 
-    const auto answers = m_conclusionPresenter->fieldAnswers();
-    ConclusionRecord conclusion;
-    conclusion.seatingZone = answers.value(ConclusionField::SeatingZone);
-    conclusion.positionerAdaptation = answers.value(ConclusionField::PositionerAdaptation);
-    conclusion.auxiliaryEquipment = answers.value(ConclusionField::AuxiliaryEquipment);
-    conclusion.frictionGraph = answers.value(ConclusionField::FrictionGraph);
-    conclusion.glandLeak = answers.value(ConclusionField::GlandLeak);
-    conclusion.summaryTemplate = m_conclusionPresenter->summaryTemplate();
-    conclusion.additionalNotes = m_conclusionPresenter->summaryText();
+    ConclusionAndParts result;
+    const auto answers = conclusionPresenter->fieldAnswers();
+    result.conclusion.seatingZone = answers.value(ConclusionField::SeatingZone);
+    result.conclusion.positionerAdaptation = answers.value(ConclusionField::PositionerAdaptation);
+    result.conclusion.auxiliaryEquipment = answers.value(ConclusionField::AuxiliaryEquipment);
+    result.conclusion.frictionGraph = answers.value(ConclusionField::FrictionGraph);
+    result.conclusion.glandLeak = answers.value(ConclusionField::GlandLeak);
+    result.conclusion.summaryTemplate = conclusionPresenter->summaryTemplate();
+    result.conclusion.additionalNotes = conclusionPresenter->summaryText();
 
-    QVector<SparePartRecord> parts;
-    for (const QString& text : m_sparePartsPresenter->selectedParts()) {
+    for (const QString& text : sparePartsPresenter->selectedParts()) {
         // Позиция, которой нет в каталоге комбобокса, набрана оператором вручную.
-        const bool freeText = m_ui->comboBox_spareParts_search->findText(text, Qt::MatchExactly) < 0;
-        parts.append({text, freeText});
+        const bool freeText = ui->comboBox_spareParts_search->findText(text, Qt::MatchExactly) < 0;
+        result.parts.append({text, freeText});
     }
+    return result;
+}
 
-    HistoryWriter::writeReportExtras(sessionId, conclusion, parts, m_lastOverrides);
+}
+
+void ReportGenerationPresenter::saveReportExtrasToHistory(qint64 sessionId)
+{
+    const ConclusionAndParts current =
+        readConclusionAndParts(m_conclusionPresenter, m_sparePartsPresenter, m_ui);
+    HistoryWriter::writeReportExtras(sessionId, current.conclusion, current.parts, m_lastOverrides);
+}
+
+void ReportGenerationPresenter::saveConclusionToHistory(qint64 sessionId)
+{
+    const ConclusionAndParts current =
+        readConclusionAndParts(m_conclusionPresenter, m_sparePartsPresenter, m_ui);
+    HistoryWriter::writeConclusionAndParts(sessionId, current.conclusion, current.parts);
 }
 
 void ReportGenerationPresenter::collectRegistryOverrides(

@@ -1,12 +1,17 @@
 #include "ReportPreviewPresenter.h"
 #include "ui_ReportPreviewPanel.h"
 
+#include <QDesktopServices>
+#include <QDir>
 #include <QEvent>
+#include <QFileInfo>
 #include <QGraphicsView>
 #include <QGuiApplication>
 #include <QPrintPreviewWidget>
 #include <QPrinter>
 #include <QSignalBlocker>
+#include <QTimer>
+#include <QUrl>
 #include <QWheelEvent>
 
 #include <cmath>
@@ -14,6 +19,9 @@
 #include "Gui/MainWindow/ReportGenerationPresenter.h"
 #include "Gui/Style/RoleStyler.h"
 #include "Report/Pdf/Builder.h"
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+#include "Gui/MainWindow/ReportCompare/ReportComparePresenter.h"
+#endif
 
 using Report::Pdf::Act;
 
@@ -58,19 +66,50 @@ ReportPreviewPresenter::ReportPreviewPresenter(ReportGenerationPresenter* report
     });
 
     connect(m_ui->pushButton_reportPreview_prevPage, &QPushButton::clicked, this, [this] {
-        showPage(m_preview->currentPage() - 1);
+        showPage(shownPage() - 1);
     });
     connect(m_ui->pushButton_reportPreview_nextPage, &QPushButton::clicked, this, [this] {
-        showPage(m_preview->currentPage() + 1);
+        showPage(shownPage() + 1);
     });
     connect(m_ui->pushButton_reportPreview_zoomIn, &QPushButton::clicked,
             this, [this] { zoomBy(1.2); });
     connect(m_ui->pushButton_reportPreview_zoomOut, &QPushButton::clicked,
             this, [this] { zoomBy(1.0 / 1.2); });
     connect(m_ui->pushButton_reportPreview_fitWidth, &QPushButton::clicked,
-            m_preview, &QPrintPreviewWidget::fitToWidth);
+            this, &ReportPreviewPresenter::fitToWidth);
     connect(m_ui->pushButton_reportPreview_fitPage, &QPushButton::clicked,
-            m_preview, &QPrintPreviewWidget::fitInView);
+            this, &ReportPreviewPresenter::fitInView);
+
+    connect(m_ui->pushButton_reportPreview_openIssued, &QPushButton::clicked, this, [this] {
+        const QString path = issuedReportPath();
+        if (!path.isEmpty())
+            QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    });
+    connect(m_ui->pushButton_reportPreview_openFolder, &QPushButton::clicked, this, [this] {
+        if (m_past && QFileInfo(m_past->folder).isDir())
+            QDesktopServices::openUrl(QUrl::fromLocalFile(m_past->folder));
+    });
+    connect(m_ui->pushButton_reportPreview_closePast, &QPushButton::clicked,
+            this, &ReportPreviewPresenter::closePastSessionRequested);
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // «Сравнить с» — сразу за «Обновить»; страница сравнения — в тот же
+    // стек, что пустая страница и предпросмотр.
+    m_compare = std::make_unique<ReportComparePresenter>();
+    m_ui->horizontalLayout_reportPreviewTools->insertWidget(
+        m_ui->horizontalLayout_reportPreviewTools->indexOf(m_ui->pushButton_reportPreview_refresh) + 1,
+        m_compare->tools());
+    m_ui->stackedWidget_reportPreview->addWidget(m_compare->panel());
+    connect(m_compare.get(), &ReportComparePresenter::activeChanged, this, [this] {
+        render();
+        // Страница сравнения (и полоса предупреждения над ней) только что
+        // показалась — «по ширине» пересчитается при раскладке и сдвинет
+        // прокрутку; начало акта ставим уже после неё.
+        QTimer::singleShot(0, this, [this] { showPage(1); });
+    });
+    connect(m_compare.get(), &ReportComparePresenter::pagesChanged,
+            this, &ReportPreviewPresenter::updatePageControls);
+#endif
 
     // Открыли вкладку — снимаем данные заново; Ctrl + колесо над страницей —
     // масштаб (см. eventFilter()).
@@ -81,6 +120,7 @@ ReportPreviewPresenter::ReportPreviewPresenter(ReportGenerationPresenter* report
     }
 
     m_ui->stackedWidget_reportPreview->setCurrentWidget(m_ui->page_reportPreview_empty);
+    updatePastBanner();
     updatePageControls();
 }
 
@@ -120,9 +160,107 @@ bool ReportPreviewPresenter::eventFilter(QObject* watched, QEvent* event)
 
 void ReportPreviewPresenter::refresh()
 {
+    // Прошлая сессия собрана один раз при открытии архива — её данные от
+    // окна не зависят.
+    if (m_past) {
+        m_snapshot = m_past->input;
+        fillActs();
+        render();
+        return;
+    }
     m_snapshot = m_report->collectInput();
     fillActs();
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    m_compare->setCurrent(*m_snapshot);
+#endif
     render();
+}
+
+void ReportPreviewPresenter::showPastSession(const QString& title, const QString& folder,
+                                             std::optional<ReportGenerationWorker::Input> input,
+                                             const QString& error)
+{
+    m_past = PastSession{title, folder, error, std::move(input)};
+    updatePastBanner();
+    refreshIfVisible(); // иначе — при открытии вкладки
+    showPage(1);
+}
+
+void ReportPreviewPresenter::clearPastSession()
+{
+    if (!m_past)
+        return;
+    m_past.reset();
+    m_snapshot.reset();
+    updatePastBanner();
+    refreshIfVisible();
+}
+
+QString ReportPreviewPresenter::issuedReportPath() const
+{
+    if (!m_past || m_past->folder.isEmpty())
+        return QString();
+    const QDir dir(m_past->folder);
+    for (const QString& name : {Report::Pdf::actTitle(Act::TechnicalInspection) + QStringLiteral(".pdf"),
+                                QStringLiteral("report.xlsx")}) {
+        if (QFileInfo::exists(dir.filePath(name)))
+            return dir.filePath(name);
+    }
+    return QString();
+}
+
+void ReportPreviewPresenter::updatePastBanner()
+{
+    m_ui->frame_reportPreviewPast_Section->setVisible(m_past.has_value());
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // Сравнение — текущей сессии с прошлой; пока на экране прошлая, его нет.
+    m_compare->tools()->setVisible(!m_past);
+#endif
+    if (!m_past)
+        return;
+
+    // Без основного теста акта нет — об «заново собранном» говорить нечего.
+    m_ui->label_reportPreviewPast->setText(m_past->input
+        ? tr("<b>Сессия %1</b> — просмотр архива. Акт ТО собран заново из базы и графиков сессии: "
+             "от выданного может отличаться — ФИО и комментариев в базе нет, расчёт сделан текущей "
+             "версией программы.").arg(m_past->title.toHtmlEscaped())
+        : tr("<b>Сессия %1</b> — просмотр архива.").arg(m_past->title.toHtmlEscaped()));
+
+    const bool hasFolder = QFileInfo(m_past->folder).isDir();
+    m_ui->pushButton_reportPreview_openFolder->setVisible(hasFolder);
+    m_ui->pushButton_reportPreview_openFolder->setToolTip(
+        tr("Папка этой сессии (графики, отчёты, CSV):\n%1").arg(QDir::toNativeSeparators(m_past->folder)));
+
+    const QString issued = issuedReportPath();
+    m_ui->pushButton_reportPreview_openIssued->setVisible(!issued.isEmpty());
+    m_ui->pushButton_reportPreview_openIssued->setToolTip(
+        tr("Файл, записанный кнопкой «Сформировать отчёт» в той сессии:\n%1")
+            .arg(QDir::toNativeSeparators(issued)));
+}
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+void ReportPreviewPresenter::setCurrentSessionId(qint64 sessionId)
+{
+    m_compare->setCurrentSessionId(sessionId);
+}
+#endif
+
+bool ReportPreviewPresenter::comparing() const
+{
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    return m_ui->stackedWidget_reportPreview->currentWidget() == m_compare->panel();
+#else
+    return false;
+#endif
+}
+
+int ReportPreviewPresenter::shownPage() const
+{
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing())
+        return m_compare->currentPage();
+#endif
+    return m_preview->currentPage();
 }
 
 void ReportPreviewPresenter::refreshIfVisible()
@@ -173,15 +311,37 @@ void ReportPreviewPresenter::fillActs()
 
 void ReportPreviewPresenter::render()
 {
+    if (!currentAct() && m_past) {
+        m_ui->label_reportPreview_empty->setText(
+            m_past->input ? tr("У этой сессии нет основного теста — Акт ТО не собрать.")
+                          : tr("Акт сессии %1 не собрать: %2").arg(m_past->title, m_past->error));
+        m_ui->stackedWidget_reportPreview->setCurrentWidget(m_ui->page_reportPreview_empty);
+        updatePageControls();
+        return;
+    }
+
     if (!currentAct()) {
         QString text = tr("PDF-актов пока нет: акт печатается только по тесту, пройденному в этой сессии.");
         if (m_snapshot && m_snapshot->telemetry.testMain && !m_snapshot->buildTechnicalInspectionPdf)
             text += QLatin1Char('\n') + tr("Акт ТО выключен галочкой «Создать PDF отчет ТО».");
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+        if (m_compare->isActive())
+            text += QLatin1Char('\n') + tr("Сравнение с прошлой сессией появится, когда в текущей будет акт.");
+#endif
         m_ui->label_reportPreview_empty->setText(text);
         m_ui->stackedWidget_reportPreview->setCurrentWidget(m_ui->page_reportPreview_empty);
         updatePageControls();
         return;
     }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (!m_past && m_compare->isActive()) {
+        m_compare->render(*currentAct());
+        m_ui->stackedWidget_reportPreview->setCurrentWidget(m_compare->panel());
+        updatePageControls();
+        return;
+    }
+#endif
 
     // Сначала рисуем, потом показываем: при первом показе виджет сам
     // запросил бы перерисовку, и акт собрался бы дважды.
@@ -205,6 +365,13 @@ void ReportPreviewPresenter::paint(QPrinter* printer)
 
 void ReportPreviewPresenter::showPage(int page)
 {
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing()) {
+        m_compare->showPage(page);
+        updatePageControls();
+        return;
+    }
+#endif
     // QPrintPreviewWidget::setCurrentPage() листает, но previewChanged() не
     // шлёт (проверено на Qt 6.8) — счётчик и кнопки обновляем сами.
     m_preview->setCurrentPage(page);
@@ -213,17 +380,45 @@ void ReportPreviewPresenter::showPage(int page)
 
 void ReportPreviewPresenter::zoomBy(qreal factor)
 {
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing())
+        return m_compare->zoomBy(factor);
+#endif
     const qreal target = m_preview->zoomFactor() * factor;
     if ((factor > 1.0 && target > kMaxZoom) || (factor < 1.0 && target < kMinZoom))
         return;
     m_preview->setZoomFactor(target);
 }
 
+void ReportPreviewPresenter::fitToWidth()
+{
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing())
+        return m_compare->fitToWidth();
+#endif
+    m_preview->fitToWidth();
+}
+
+void ReportPreviewPresenter::fitInView()
+{
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing())
+        return m_compare->fitInView();
+#endif
+    m_preview->fitInView();
+}
+
 void ReportPreviewPresenter::updatePageControls()
 {
     const bool shown = m_ui->stackedWidget_reportPreview->currentWidget() == m_ui->page_reportPreview_view;
-    const int count = shown ? m_preview->pageCount() : 0;
-    const int page = count > 0 ? m_preview->currentPage() : 0;
+    int count = shown ? m_preview->pageCount() : 0;
+    int page = count > 0 ? m_preview->currentPage() : 0;
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    if (comparing()) {
+        count = m_compare->pagesShown() ? m_compare->pageCount() : 0;
+        page = count > 0 ? m_compare->currentPage() : 0;
+    }
+#endif
 
     m_ui->label_reportPreview_page->setText(tr("стр. %1 из %2").arg(page).arg(count));
     m_ui->pushButton_reportPreview_prevPage->setEnabled(page > 1);
