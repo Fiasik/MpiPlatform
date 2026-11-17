@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "comment": "Список меток разметчика. Ключи (key) хранятся в labels.sqlite — меняйте title/hint свободно; при изменении ключей поднимайте version. Переименование/объединение: \"aliases\": {\"старый.ключ\": \"новый.ключ\"}. shortcut — одна буква или цифра (раскладка не важна). oneOf — взаимоисключающие метки. isDefect: false — особенность, а не дефект.",
+  "verdicts": [
+    {"key": "normal", "title": "Норма", "shortcut": "N"},
+    {"key": "defect", "title": "Есть дефект", "shortcut": "D"},
+    {"key": "unsure", "title": "Не уверен", "shortcut": "U"},
+    {"key": "unusable", "title": "Непригодно", "shortcut": "X", "hint": "графики испорчены (ноль сдвинут, толкнули датчик, обрыв, пусто, не тот тест) — сессия не пойдёт в обучение"}
+  ],
+  "groups": [
+    {"key": "seat", "title": "Посадка и отрыв", "labels": [
+      {"key": "seat.breakaway_sharp", "title": "Резкий отрыв плунжера от седла", "shortcut": "1"},
+      {"key": "seat.zone_low", "title": "Низкое значение зоны посадки плунжер/седло", "shortcut": "4"},
+      {"key": "seat.zone_absent", "title": "Зона посадки плунжер/седло отсутствует"},
+      {"key": "seat.zone_high", "title": "Высокое значение зоны посадки плунжер/седло"}
+    ]},
+    {"key": "friction", "title": "Трение", "labels": [
+      {"key": "friction.high_0_100", "title": "Высокое трение в диапазоне 0–100 % хода", "shortcut": "2"},
+      {"key": "friction.high_0_50", "title": "Высокое трение в диапазоне 0–50 % хода"},
+      {"key": "friction.high_50_100", "title": "Высокое трение в диапазоне 50–100 % хода"},
+      {"key": "friction.high_mid", "title": "Высокое трение в средней зоне хода"},
+      {"key": "friction.high_breakaway", "title": "Высокое трение при выходе плунжера/диска из седла", "shortcut": "3"}
+    ]},
+    {"key": "feedback", "title": "Обратная связь, привод, шток", "labels": [
+      {"key": "feedback.deformation", "title": "Деформация адаптации/элементов обратной связи"},
+      {"key": "feedback.backlash", "title": "Люфты адаптации/обратной связи", "shortcut": "0"},
+      {"key": "stem.bent", "title": "Искривление штока"}
+    ]},
+    {"key": "positioner", "title": "Позиционер", "labels": [
+      {"key": "positioner.endpoints", "title": "Сбиты крайние точки", "shortcut": "5"},
+      {"key": "positioner.characteristic", "title": "Некорректное отрабатывание заданной характеристики", "shortcut": "6"},
+      {"key": "positioner.inoperative", "title": "Позиционер неработоспособен"}
+    ]},
+    {"key": "tso", "title": "TSO (Tight Shut-Off)", "hint": "Ошибка позиционирования, связанная с настройкой TSO: в одну сторону встаёт нормально, в другую перепрыгивает", "labels": [
+      {"key": "tso.dir_close", "title": "Ошибка при ходе на закрытие", "shortcut": "7", "oneOf": "tso.dir"},
+      {"key": "tso.dir_open", "title": "Ошибка при ходе на открытие", "shortcut": "8", "oneOf": "tso.dir"},
+      {"key": "tso.below", "title": "Встаёт ниже задания", "oneOf": "tso.stop"},
+      {"key": "tso.above", "title": "Встаёт выше задания", "oneOf": "tso.stop"},
+      {"key": "tso.strong", "title": "TSO выражено сильно"}
+    ]},
+    {"key": "leak", "title": "Течь", "labels": [
+      {"key": "leak.visible", "title": "Видимая течь", "shortcut": "9"}
+    ]},
+    {"key": "setup", "title": "Особенности настройки или теста", "isDefect": false, "labels": [
+      {"key": "setup.reverse", "title": "Реверс"},
+      {"key": "setup.range", "title": "Диапазон"},
+      {"key": "setup.characteristic", "title": "Характеристика (ЭПП)"},
+      {"key": "setup.logix", "title": "Привод Logix"}
+    ]}
+  ],
+  "aliases": {}
+}

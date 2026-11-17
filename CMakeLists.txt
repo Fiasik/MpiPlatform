@@ -260,13 +260,20 @@ if(MPIPLATFORM_BUILD_PREVIEW)
     endif()
 endif()
 
-
 # Папки тестовых сессий базы: графики (настоящие или подобранные под числа
 # базы) и отчёты, чтобы «История» и сравнение отчётов было на чём смотреть.
 option(MPIPLATFORM_BUILD_SEED_SESSIONS "Build MpiSeedSessions: chart folders and reports for test sessions of the DB (experiments/seed-sessions)" OFF)
 
 if(MPIPLATFORM_BUILD_SEED_SESSIONS)
     add_subdirectory(experiments/seed-sessions)
+endif()
+
+# Разметчик графиков архива для обучения модели: отдельное приложение,
+# архив только читает, метки пишет в свой labels.sqlite (не в базу MpiPlatform).
+option(MPIPLATFORM_BUILD_LABELER "Build DataLabeler: card-by-card labeling of archived test charts for ML (Labeler/)" OFF)
+
+if(MPIPLATFORM_BUILD_LABELER)
+    add_subdirectory(Labeler)
 endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

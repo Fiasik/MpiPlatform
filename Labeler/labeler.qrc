@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/Labeler">
+        <file>labels.json</file>
+    </qresource>
+</RCC>

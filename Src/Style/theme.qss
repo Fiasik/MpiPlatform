@@ -89,6 +89,18 @@ QWidget {
     border: none;
 }
 
+/* DataLabeler (Labeler/): панель меток — на белом фоне своей секции, без
+ * серого фона QScrollArea; графики карточки — без своей рамки и фона, их
+ * рамка — ChartFrame (QFrame[role="section"]). */
+#scrollArea_labels,
+#widget_labels,
+#chartView_labelerTask,
+#chartView_labelerFriction,
+#chartView_labelerPressure {
+    background: transparent;
+    border: none;
+}
+
 QStatusBar {
     background: @{bgRecessed};
 }
