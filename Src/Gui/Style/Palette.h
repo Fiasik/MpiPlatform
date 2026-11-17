@@ -73,6 +73,7 @@ struct Palette {
     QString iconChevronUpActive;
     QString iconChevronLeft;
     QString iconChevronRight;
+    QString iconChartSettings; // ⚙ настроек графика (ChartView)
 
     static const Palette& forScheme(ColorScheme scheme);
 

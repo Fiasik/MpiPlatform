@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QHash>
+#include <QSet>
 #include <QVector>
 #include <QPointF>
 
@@ -17,6 +18,17 @@ public:
     explicit Manager(QObject* parent = nullptr) : QObject(parent) {}
 
     void duplicateMainChartsSeries();
+
+    // Меню ⚙ всех созданных графиков: какие разделы у какого графика есть,
+    // настройки из settings.ini (у каждого графика свои) и запись туда при
+    // каждом изменении в меню. Вызывается один раз, после create*Chart().
+    void restoreDisplayOptions();
+
+    // Линии графиков — OpenGL (идёт тест, данные поступают) или обычные
+    // элементы сцены (данных нет: подписи, плашки и блок у курсора закрывают
+    // линии под собой, см. ChartView::setLiveRendering()). Тренд и
+    // циклический график — всегда OpenGL: у них много точек и нет разметки.
+    void setLiveRendering(bool live);
 
     QPair<QList<QPointF>, QList<QPointF>> getPoints(Widgets::Chart::ChartType chart, int series);
     void replacePoints(Widgets::Chart::ChartType chart, int series, const QList<QPointF>& points);
@@ -71,5 +83,8 @@ private:
         );
 
     QHash<Widgets::Chart::ChartType, ChartView*> m_charts;
+    // Графики, у которых запись настроек уже подключена (повторный
+    // restoreDisplayOptions() не плодит соединения).
+    QSet<Widgets::Chart::ChartType> m_displayOptionsBound;
 };
 }

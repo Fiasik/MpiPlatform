@@ -1,9 +1,115 @@
 #include "Manager.h"
 
+#include "Storage/AppSettings.h"
+
 namespace Widgets::Chart {
+
+namespace {
+using Options = ChartView::DisplayOptions;
+
+// Какие разделы меню ⚙ есть у графика. Результаты — разметка setAnnotations()
+// (на задании и давлении — точки карточки способов линейности), полосы —
+// setZones() (окно 10–90 % на давлении, первая половина шага на ТЧР/ТРС).
+int displayFeatures(ChartType type)
+{
+    switch (type) {
+    case ChartType::Pressure:
+    case ChartType::Response:
+    case ChartType::Resolution:
+        return ChartView::ResultsFeature | ChartView::ZonesFeature;
+    case ChartType::Task:
+    case ChartType::Stroke:
+    case ChartType::Step:
+        return ChartView::ResultsFeature;
+    default:
+        return 0;
+    }
+}
+
+// Строками, а не числами enum'ов — как тема в AppSettings: порядок enum'а
+// можно менять, сохранённое значение не съедет на другое.
+QString toString(Options::HoverValues v)
+{
+    return v == Options::HoverValues::NearCursor ? QStringLiteral("NearCursor") : QStringLiteral("Legend");
+}
+
+QString toString(Options::Results v)
+{
+    switch (v) {
+    case Options::Results::Hidden: return QStringLiteral("Hidden");
+    case Options::Results::AllLabels: return QStringLiteral("AllLabels");
+    case Options::Results::OnHover: break;
+    }
+    return QStringLiteral("OnHover");
+}
+
+Options readOptions(const AppSettings& settings, const QString& chart)
+{
+    Options o; // незнакомое/пустое значение — по умолчанию
+    const QString hover = settings.chartDisplayOption(chart, QStringLiteral("hoverValues"));
+    // "AtPoints" — прежнее имя режима (подписи над точками), которое он
+    // носил до блока у курсора: у кого оно уже сохранено, получает блок.
+    if (hover == QLatin1String("NearCursor") || hover == QLatin1String("AtPoints"))
+        o.hoverValues = Options::HoverValues::NearCursor;
+
+    const QString results = settings.chartDisplayOption(chart, QStringLiteral("results"));
+    if (results == QLatin1String("Hidden"))
+        o.results = Options::Results::Hidden;
+    else if (results == QLatin1String("AllLabels"))
+        o.results = Options::Results::AllLabels;
+
+    const QString zones = settings.chartDisplayOption(chart, QStringLiteral("zones"));
+    if (zones == QLatin1String("false"))
+        o.zones = false;
+    return o;
+}
+
+void writeOptions(AppSettings& settings, const QString& chart, const Options& o)
+{
+    settings.setChartDisplayOption(chart, QStringLiteral("hoverValues"), toString(o.hoverValues));
+    settings.setChartDisplayOption(chart, QStringLiteral("results"), toString(o.results));
+    settings.setChartDisplayOption(chart, QStringLiteral("zones"),
+                                   o.zones ? QStringLiteral("true") : QStringLiteral("false"));
+}
+}
+
 ChartView* Manager::chart(ChartType type)
 {
     return m_charts.value(type, nullptr);
+}
+
+void Manager::setLiveRendering(bool live)
+{
+    for (auto it = m_charts.cbegin(); it != m_charts.cend(); ++it) {
+        if (it.key() == ChartType::Trend || it.key() == ChartType::Cyclic)
+            continue;
+        if (it.value())
+            it.value()->setLiveRendering(live);
+    }
+}
+
+void Manager::restoreDisplayOptions()
+{
+    const AppSettings settings;
+    for (auto it = m_charts.cbegin(); it != m_charts.cend(); ++it) {
+        ChartView* chart = it.value();
+        if (!chart)
+            continue;
+        // Ключ — имя графика из create*Chart() (Stroke, Pressure, ...):
+        // стабильное английское, не переводимое название вкладки.
+        const QString key = chart->getname();
+
+        chart->setDisplayFeatures(displayFeatures(it.key()));
+        chart->setDisplayOptions(readOptions(settings, key));
+
+        if (m_displayOptionsBound.contains(it.key()))
+            continue;
+        m_displayOptionsBound.insert(it.key());
+        connect(chart, &ChartView::displayOptionsChanged, this, [key](const Options& options) {
+            AppSettings s;
+            writeOptions(s, key, options);
+        });
+    }
 }
 
 void Manager::applyPalette(const Gui::Style::Palette& palette)

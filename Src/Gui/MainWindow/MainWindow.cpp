@@ -954,9 +954,23 @@ void MainWindow::onMainResultUpdated(const Domain::Tests::Main::Result& result)
 
     if (auto* chart = m_chartManager->chart(ChartType::Pressure))
         chart->snapshotDraggableSeries();
+    applyPressureZones(&result);
 
     if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
         m_linearityMethods->refresh();
+}
+
+void MainWindow::applyPressureZones(const Domain::Tests::Main::Result* result)
+{
+    auto* chart = m_chartManager->chart(ChartType::Pressure);
+    if (!chart)
+        return;
+    if (!result) {
+        chart->clearZones();
+        return;
+    }
+    const auto set = Widgets::Chart::buildMainTestZones(*result);
+    chart->setZones(set.zones, set.hint);
 }
 
 void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& result)
@@ -966,6 +980,7 @@ void MainWindow::onMainResultRecalculated(const Domain::Tests::Main::Result& res
 
     m_mapper->updateMainTest(result, m_telemetry.valveStrokeRecord);
     m_mapper->updateCrossingValues(result, m_telemetry.valveStrokeRecord);
+    applyPressureZones(&result);
 
     if (m_linearityMethods) // способы линейности: пересчёт по новым точкам
         m_linearityMethods->refresh();
@@ -994,8 +1009,11 @@ void MainWindow::onResponseResultUpdated(const Domain::Tests::Option::Response::
     m_telemetry.testResponse = result;
     m_mapper->updateResponseTest(result);
 
-    if (auto* chart = m_chartManager->chart(ChartType::Response))
+    if (auto* chart = m_chartManager->chart(ChartType::Response)) {
         chart->setAnnotations(Widgets::Chart::buildResponseAnnotations(result));
+        const auto zones = Widgets::Chart::buildResponseZones(result);
+        chart->setZones(zones.zones, zones.hint);
+    }
 }
 
 void MainWindow::onResolutionResultUpdated(const Domain::Tests::Option::Resolution::Result& result)
@@ -1003,8 +1021,11 @@ void MainWindow::onResolutionResultUpdated(const Domain::Tests::Option::Resoluti
     m_telemetry.testResolution = result;
     m_mapper->updateResolutionTest(result);
 
-    if (auto* chart = m_chartManager->chart(ChartType::Resolution))
+    if (auto* chart = m_chartManager->chart(ChartType::Resolution)) {
         chart->setAnnotations(Widgets::Chart::buildResolutionAnnotations(result));
+        const auto zones = Widgets::Chart::buildResolutionZones(result);
+        chart->setZones(zones.zones, zones.hint);
+    }
 }
 
 void MainWindow::onCrossingStatusUpdated(const CrossingStatus& status)
@@ -1595,6 +1616,13 @@ void MainWindow::setTestState(TestState state)
 
     m_testState = state;
 
+    // Данные поступают только пока тест идёт: тогда линии на OpenGL (быстро
+    // на частых обновлениях), после него — обычные, под плашками подписей.
+    if (m_chartManager) {
+        m_chartManager->setLiveRendering(state == TestState::Starting
+                                         || state == TestState::Running);
+    }
+
     if (state == TestState::Starting)
         m_pendingTestCharts = chartsForCurrentTest();
 
@@ -2080,6 +2108,14 @@ void MainWindow::initCharts()
         cyclicChart->setSeriesMarkersOnly(2, true);
         cyclicChart->setSeriesMarkersOnly(3, true);
     }
+
+    // Меню ⚙ на графиках: разделы и сохранённые настройки (по графику).
+    m_chartManager->restoreDisplayOptions();
+
+    // Линии: идёт тест — OpenGL, иначе (в т.ч. сейчас, до первого теста)
+    // обычные, чтобы подписи/блок закрывали линии под собой.
+    m_chartManager->setLiveRendering(m_testState == TestState::Starting
+                                     || m_testState == TestState::Running);
 
     connect(m_program, &Domain::Program::addPoints,
             m_chartManager.get(), &Widgets::Chart::Manager::addPoints);

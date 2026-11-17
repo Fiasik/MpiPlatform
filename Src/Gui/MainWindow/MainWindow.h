@@ -330,6 +330,10 @@ private:
     // setReportGenerationInProgress()).
     void applyArchiveViewLocks();
     void showArchivedResult();
+    // Серые полосы вне окна 10–90 % на графике давления — по результату,
+    // который сейчас на графике (живой тест или просмотр архива);
+    // nullptr — убрать.
+    void applyPressureZones(const Domain::Tests::Main::Result* result);
 
     void syncTaskChartSeriesVisibility(quint8 sensorCount);
     void displayDependingPattern();

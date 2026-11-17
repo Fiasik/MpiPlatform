@@ -22,6 +22,13 @@ public:
     QString historyArchiveRoot() const;
     void setHistoryArchiveRoot(const QString& path);
 
+    // Настройки отображения графика (меню ⚙ на графике): ключ
+    // "Charts/<chart>/<name>", значение — строкой (что именно — решает
+    // Widgets::Chart::Manager; здесь только хранение, без типов Widgets).
+    // Пусто — не сохранено, берётся значение по умолчанию.
+    QString chartDisplayOption(const QString& chart, const QString& name) const;
+    void setChartDisplayOption(const QString& chart, const QString& name, const QString& value);
+
 private:
     void setValue(const QString& key, const QVariant& val);
 

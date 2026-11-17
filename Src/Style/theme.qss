@@ -433,6 +433,23 @@ QToolButton {
     background: none;
 }
 
+/* ⚙ настроек графика (Widgets::Chart::ChartView, правый верхний угол):
+ * иконка без рамки, подсветка при наведении/открытом меню, без стрелки
+ * меню — по смыслу это просто кнопка-шестерёнка. */
+QToolButton#chartSettingsButton {
+    border-radius: 4px;
+}
+
+QToolButton#chartSettingsButton:hover,
+QToolButton#chartSettingsButton:pressed {
+    background: @{bgHover};
+}
+
+QToolButton#chartSettingsButton::menu-indicator {
+    image: none;
+    width: 0px;
+}
+
 QToolButton#button_C_CVT,
 QToolButton#button_C_SOVT,
 QToolButton#button_B_SACVT,

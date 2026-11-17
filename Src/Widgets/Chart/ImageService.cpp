@@ -41,6 +41,11 @@ QImage ImageService::captureChart(ChartType chart)
             ch->clearAnnotations();
     }
 
+    // Вид снимка не зависит от экранных настроек (меню ⚙): разметка
+    // результата — точки/полосы без подписей, без серых полос "вне
+    // расчёта", без ⚙, крестика и значений под курсором.
+    ch->setReportCapture(true);
+
     const QSize originalSize = ch->size();
     const bool needsUpscale =
         originalSize.width() < kMinCaptureWidth || originalSize.height() < kMinCaptureHeight;
@@ -72,6 +77,8 @@ QImage ImageService::captureChart(ChartType chart)
 
     if (backup)
         restoreSeries(chart, *backup);
+
+    ch->setReportCapture(false);
 
     if (!linearityMarks.isEmpty())
         ch->setAnnotations(linearityMarks); // вернуть разметку карточки

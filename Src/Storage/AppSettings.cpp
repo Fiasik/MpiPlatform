@@ -47,6 +47,16 @@ void AppSettings::setHistoryArchiveRoot(const QString& path)
     setValue("History/archiveRoot", path);
 }
 
+QString AppSettings::chartDisplayOption(const QString& chart, const QString& name) const
+{
+    return m_settings.value(QStringLiteral("Charts/%1/%2").arg(chart, name)).toString();
+}
+
+void AppSettings::setChartDisplayOption(const QString& chart, const QString& name, const QString& value)
+{
+    setValue(QStringLiteral("Charts/%1/%2").arg(chart, name), value);
+}
+
 void AppSettings::setThemePreference(ThemePreference pref)
 {
     const char* value = "System";

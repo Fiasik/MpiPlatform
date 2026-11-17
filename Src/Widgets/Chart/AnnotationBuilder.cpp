@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <cmath>
+#include <limits>
 
 #include "Gui/Style/Palette.h"
 #include "Utils/TimeUtils.h"
@@ -58,6 +59,13 @@ QVector<ChartView::ChartAnnotation> buildStrokeAnnotations(const Domain::Tests::
             QObject::tr("Обратный ход: %1").arg(TimeUtils::msToText(result.backwardTimeMs))
         });
     }
+
+    // Все интервалы здесь — по времени: полосой во всю высоту, а не скобкой.
+    // У скобки "усы" идут от 0 до ~105 % и рядом с фронтом задания
+    // читаются как ещё одна ступенька сигнала (обсуждено на LV-453,
+    // 2026-11-12). Точки начала/конца и подписи по наведению — прежние.
+    for (ChartView::ChartAnnotation& a : annotations)
+        a.rangeStyle = ChartView::ChartAnnotation::RangeStyle::Band;
 
     return annotations;
 }
@@ -129,17 +137,86 @@ QVector<ChartView::ChartAnnotation> buildResolutionAnnotations(const Domain::Tes
 {
     QVector<ChartView::ChartAnnotation> annotations;
 
+    // Как у Response: точка в цвет вердикта по допуску на шаг, без допуска —
+    // нейтральный акцент темы.
     for (const auto& list : { result.upward, result.downward }) {
         for (const auto& item : list) {
+            const QColor color = std::isfinite(item.allowedErrorPercent)
+                ? Gui::Style::statusColor(item.isOk ? Gui::Style::StatusKind::Success
+                                                      : Gui::Style::StatusKind::Error)
+                : QColor();
             annotations.push_back({
                 QPointF(item.timeMs, item.actualPercent),
                 QPointF(item.timeMs, item.actualPercent),
-                QObject::tr("Ошибка: %1%").arg(item.stepErrorPercent, 0, 'f', 2)
+                QObject::tr("Ошибка: %1%").arg(item.stepErrorPercent, 0, 'f', 2),
+                color
             });
         }
     }
 
     return annotations;
+}
+
+ZoneSet buildMainTestZones(const Domain::Tests::Main::Result& result)
+{
+    ZoneSet set;
+    if (result.workWindowHigh <= result.workWindowLow)
+        return set;
+
+    // Ось Y графика давления — положение; полосы во всю ширину, от края
+    // области построения до границы окна.
+    const qreal inf = std::numeric_limits<qreal>::infinity();
+    set.zones = {
+        {Qt::Vertical, -inf, result.workWindowLow},
+        {Qt::Vertical, result.workWindowHigh, inf},
+    };
+    // Честно о том, что НЕ выброшено: диапазоны давлений/пружины [ОТ-12],
+    // [ОТ-13] берут прямые, продолженные до краёв хода, — зоны для них
+    // "вне окна", но не "не учитываются вовсе".
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    const QString inLinearity = QObject::tr(" и в линейность");
+#else
+    const QString inLinearity;
+#endif
+    set.hint = QObject::tr(
+        "Красноватым — края хода вне рабочего окна 10–90 %.\n"
+        "Точки отсюда не входят в прямые МНК%1.\n"
+        "Диапазон давлений и пружины считаются по этим же прямым,\n"
+        "продолженным до краёв хода.").arg(inLinearity);
+    return set;
+}
+
+namespace {
+template <typename Item>
+QVector<ChartView::ChartZone> firstHalfZones(const QVector<Item>& upward, const QVector<Item>& downward)
+{
+    QVector<ChartView::ChartZone> zones;
+    for (const auto* list : {&upward, &downward}) {
+        for (const Item& item : *list) {
+            for (const auto& gap : item.excludedMs)
+                zones.push_back({Qt::Horizontal, qreal(gap.first), qreal(gap.second)});
+        }
+    }
+    return zones;
+}
+
+QString firstHalfHint()
+{
+    return QObject::tr(
+        "Красноватым — первый перескок в начале каждого шага (неверно\n"
+        "откалиброванная функция shutoff позиционера): в расчёт\n"
+        "не входит. Уровень шага — среднее по остальной полке.");
+}
+}
+
+ZoneSet buildResponseZones(const Domain::Tests::Option::Response::Result& result)
+{
+    return {firstHalfZones(result.upward, result.downward), firstHalfHint()};
+}
+
+ZoneSet buildResolutionZones(const Domain::Tests::Option::Resolution::Result& result)
+{
+    return {firstHalfZones(result.upward, result.downward), firstHalfHint()};
 }
 
 }

@@ -36,6 +36,7 @@ Palette lightPalette()
     p.iconChevronUpActive = QStringLiteral(":/Src/Img/ChevronUpActive.svg");
     p.iconChevronLeft = QStringLiteral(":/Src/Img/ChevronLeft.svg");
     p.iconChevronRight = QStringLiteral(":/Src/Img/ChevronRight.svg");
+    p.iconChartSettings = QStringLiteral(":/Src/Img/ChartSettings.svg");
     return p;
 }
 
@@ -72,6 +73,7 @@ Palette darkPalette()
     p.iconChevronUpActive = QStringLiteral(":/Src/Img/ChevronUpActiveDark.svg");
     p.iconChevronLeft = QStringLiteral(":/Src/Img/ChevronLeftDark.svg");
     p.iconChevronRight = QStringLiteral(":/Src/Img/ChevronRightDark.svg");
+    p.iconChartSettings = QStringLiteral(":/Src/Img/ChartSettingsDark.svg");
     return p;
 }
 
@@ -114,6 +116,7 @@ QHash<QString, QString> Palette::tokens() const
         {QStringLiteral("iconChevronUpActive"), iconChevronUpActive},
         {QStringLiteral("iconChevronLeft"), iconChevronLeft},
         {QStringLiteral("iconChevronRight"), iconChevronRight},
+        {QStringLiteral("iconChartSettings"), iconChartSettings},
     };
 }
 
