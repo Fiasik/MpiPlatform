@@ -135,6 +135,12 @@ void TelemetryUiMapper::updateMainTest(
     m_ui->lineEdit_resultsTable_frictionPercentValue->setText(
         QString("%1").arg(mainResult.frictionPercent, 0, 'f', 2));
 
+    auto breakawayText = [](double v) {
+        return std::isfinite(v) ? QString::number(v, 'f', 3) : QStringLiteral("--");
+    };
+    m_ui->label_breakawayForward_Value->setText(breakawayText(mainResult.breakawayForward));
+    m_ui->label_breakawayBackward_Value->setText(breakawayText(mainResult.breakawayBackward));
+
     m_ui->label_dynamicErrorMeanPercent_Value->setText(
         QString("%1").arg(mainResult.dynamicErrorMeanPercent, 0, 'f', 2));
 

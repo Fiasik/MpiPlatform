@@ -864,6 +864,43 @@ void Analyzer::finish()
 
     applyRegressions(regressionFirst, regressionSecond, pressureLimits);
 
+    // Ток страгивания: абсолютное задание (dac), при котором положение
+    // впервые ушло от исходного (медиана первых 5 отсчётов хода) больше чем
+    // на 0.2 % полного хода — и так два отсчёта подряд, чтобы одиночный
+    // шумовой всплеск не считался началом движения. Порог 0.2 % выше шума
+    // датчика положения (~0.1 %). Прямой ход лежит в "Second", обратный в
+    // "First" (см. onSample()).
+    {
+        double lo = m_linearSeriesFirst.first().position;
+        double hi = lo;
+        for (const auto* series : {&m_linearSeriesFirst, &m_linearSeriesSecond}) {
+            for (const LinearPoint& p : *series) {
+                lo = std::min(lo, p.position);
+                hi = std::max(hi, p.position);
+            }
+        }
+        const double threshold = 0.002 * (hi - lo);
+
+        auto breakaway = [threshold](const QVector<LinearPoint>& series) {
+            if (series.size() < 7 || !(threshold > 0.0))
+                return qQNaN();
+            QVector<double> head;
+            for (int i = 0; i < 5; ++i)
+                head.push_back(series.at(i).position);
+            std::sort(head.begin(), head.end());
+            const double start = head.at(2);
+            for (int i = 5; i + 1 < series.size(); ++i) {
+                if (std::abs(series.at(i).position - start) > threshold
+                    && std::abs(series.at(i + 1).position - start) > threshold)
+                    return series.at(i).dac;
+            }
+            return qQNaN();
+        };
+
+        m_result.breakawayForward = breakaway(m_linearSeriesSecond);
+        m_result.breakawayBackward = breakaway(m_linearSeriesFirst);
+    }
+
     // [ОТ-14] Динамическая ошибка — docs/formulas/main_test.md
     const QPair<double, double> dynamic =
         computeDynamicErrorMeanMax(m_linearSeriesFirst, m_linearSeriesSecond);

@@ -94,6 +94,9 @@ void Scenario::onProcessCompleted()
     main.frictionForce = analyzerResult.frictionForce;
     main.frictionPercent = analyzerResult.frictionPercent;
 
+    main.breakawayForward = analyzerResult.breakawayForward;
+    main.breakawayBackward = analyzerResult.breakawayBackward;
+
     main.dynamicErrorMean = analyzerResult.dynamicErrorMean;
     main.dynamicErrorMeanPercent = analyzerResult.dynamicErrorMeanPercent;
 

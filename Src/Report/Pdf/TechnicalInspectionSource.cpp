@@ -1,6 +1,7 @@
 #include "TechnicalInspectionSource.h"
 
 #include <QDebug>
+#include <cmath>
 #include <QTime>
 
 #include "Report/Context.h"
@@ -119,6 +120,14 @@ void TechnicalInspectionSource::buildValues()
         m_values[QStringLiteral("resFrictionPct")] = f2(main->frictionPercent);
         m_values[QStringLiteral("resFrictionPctNote")] = resultLimit(t.crossingStatus.frictionPercent);
         m_values[QStringLiteral("resFrictionAvg")] = f3(main->frictionForce);
+
+        // Ток страгивания, мА — строка под временем срабатывания (Act.xml);
+        // NaN — ход не страгивался или данных нет: прочерк, а не "nan".
+        const auto breakawayText = [](double mA) {
+            return std::isfinite(mA) ? f2(mA) : QStringLiteral("—");
+        };
+        m_values[QStringLiteral("resBreakawayForward")] = breakawayText(main->breakawayForward);
+        m_values[QStringLiteral("resBreakawayBackward")] = breakawayText(main->breakawayBackward);
     } else {
         qWarning() << "Report::Pdf::TechnicalInspectionSource: ctx.telemetry.testMain отсутствует;"
                    << "часть таблицы результатов останется пустой";

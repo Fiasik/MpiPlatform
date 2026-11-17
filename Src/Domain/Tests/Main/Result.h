@@ -3,6 +3,7 @@
 #include <QMetaType>
 #include <QPointF>
 #include <QVector>
+#include <QtGlobal>
 
 namespace Domain::Tests::Main {
     struct Result {
@@ -16,6 +17,12 @@ namespace Domain::Tests::Main {
 
         qreal frictionForce = 0.0; // Н
         qreal frictionPercent = 0.0; // %
+
+        // Ток страгивания: абсолютное задание (dac, мА), при котором положение
+        // впервые ушло от исходного больше чем на 0.2 % хода (два отсчёта
+        // подряд). NaN — ход не страгивался/нет данных.
+        qreal breakawayForward = qQNaN();  // мА
+        qreal breakawayBackward = qQNaN(); // мА
 
         qreal dynamicErrorMean = 0.0; // мА
         qreal dynamicErrorMeanPercent = 0.0; // %
