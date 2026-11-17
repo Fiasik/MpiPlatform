@@ -1213,6 +1213,29 @@ Chart *Worksheet::insertChart(int row, int column, const QSize &size)
 	return chart.data();
 }
 
+Chart *Worksheet::insertChart(const CellRange &range)
+{
+    Q_D(Worksheet);
+
+    if (!range.isValid())
+        return nullptr;
+
+    if (!d->drawing)
+        d->drawing = std::make_shared<Drawing>(this, CreateFlag::F_NewFromScratch);
+
+    DrawingTwoCellAnchor *anchor = new DrawingTwoCellAnchor(d->drawing.get(), DrawingAnchor::Picture);
+
+    // Маркеры 0-based: левый верхний угол первой ячейки — правый нижний угол
+    // последней = левый верхний следующей строки и столбца.
+    anchor->from = XlsxMarker(range.firstRow() - 1, range.firstColumn() - 1, 0, 0);
+    anchor->to = XlsxMarker(range.lastRow(), range.lastColumn(), 0, 0);
+
+    QSharedPointer<Chart> chart = QSharedPointer<Chart>(new Chart(this, CreateFlag::F_NewFromScratch));
+    anchor->setObjectGraphicFrame(chart);
+
+    return chart.data();
+}
+
 /*!
 	Merge a \a range of cells. The first cell should contain the data and the others should
 	be blank. All cells will be applied the same style if a valid \a format is given.

@@ -102,6 +102,10 @@ public:
     uint getImageCount();
 
     Chart *insertChart(int row, int column, const QSize &size);
+    // График точно на ячейки range (1-based, включительно) — twoCellAnchor:
+    // ширина и высота следуют за столбцами и строками в любой программе, а
+    // не фиксируются в пикселях под шрифт Excel по умолчанию.
+    Chart *insertChart(const CellRange &range);
 
     bool mergeCells(const CellRange &range, const Format &format=Format());
     bool unmergeCells(const CellRange &range);

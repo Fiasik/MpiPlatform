@@ -4,6 +4,7 @@
 #define QXLSX_CHART_H
 
 #include <QtGlobal>
+#include <QColor>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
@@ -57,6 +58,14 @@ public:
     // выбирает "круглый" диапазон с запасом — например, для данных 3..21
     // покажет 0..25, съедая четверть площади графика пустым местом).
     void setAxisRange(Chart::ChartAxisPos pos, double min, double max);
+    // Цвет линии серии index (по порядку addSeries()); без него Excel берёт
+    // цвета своей палитры, а не цвета графика приложения.
+    void setSeriesColor(int index, const QColor& color);
+    // Формат подписей делений ("0.00") и шаг между ними. Без них подписи
+    // берут формат ячеек с данными, и при точных границах setAxisRange()
+    // выходят вида 0.49101419.
+    void setAxisNumberFormat(Chart::ChartAxisPos pos, const QString& formatCode);
+    void setAxisMajorUnit(Chart::ChartAxisPos pos, double unit);
 public:
     bool loadFromXmlFile(QIODevice *device) override;
     void saveToXmlFile(QIODevice *device) const override;

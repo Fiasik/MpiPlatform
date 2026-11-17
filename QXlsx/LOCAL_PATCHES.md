@@ -283,6 +283,66 @@ chart->setAxisRange(Chart::Bottom, 3.0, 21.0); // ось X жёстко 3..21
 
 ---
 
+## 7. Цвет серии, стиль scatter «линии», smooth = 0
+
+**Файлы:** `header/xlsxchart.h`, `header/xlsxchart_p.h`, `source/xlsxchart.cpp`.
+
+**Зачем:** нативные графики в отчёте (`Report::Excel::Sheet::chart()`)
+должны быть цветов графиков приложения; библиотека задавала только толщину
+линии. Плюс два места, где поведение зависело от программы просмотра.
+
+- `Chart::setSeriesColor(int index, const QColor&)` — новое поле
+  `XlsxSeries::lineColor`; в `saveXmlSer` блок `c:spPr/a:ln` пишется, если
+  задана толщина ИЛИ цвет, цвет — `<a:solidFill><a:srgbClr val="RRGGBB"/>`
+  первым дочерним элементом `a:ln` (порядок `CT_LineProperties`).
+- `saveXmlScatterChart`: `<c:scatterStyle val="lineMarker"/>` вместо пустого
+  элемента (пустой = `marker`, LibreOffice рисовал только точки).
+- `saveXmlSer`: для scatter после `c:yVal` — `<c:smooth val="0"/>` (порядок
+  `CT_ScatterSer`: ..., xVal, yVal, smooth).
+
+В `xlsxchart.patch` эта правка не входит — переносить по описанию.
+
+---
+
+## 8. Формат подписей и шаг делений оси
+
+**Файлы:** те же три.
+
+**Зачем:** с точными границами `setAxisRange()` подписи делений идут от
+минимума данных с форматом ячеек — «0.49101419», «13.9685211».
+
+- `Chart::setAxisNumberFormat(pos, formatCode)` и
+  `Chart::setAxisMajorUnit(pos, unit)` — карты в `ChartPrivate`
+  (`axisNumberFormats`, `axisMajorUnits`), в `saveXmlScatterChart`
+  переносятся в новые поля `XlsxAxis::numFmt` / `majorUnit` рядом с
+  `axisRangeOverrides` (только scatter).
+- `saveXmlAxisEG_AxShared`: после `c:title` —
+  `<c:numFmt formatCode="0.00" sourceLinked="0"/>` (порядок `EG_AxShared`:
+  ..., title, numFmt, ..., crossAx).
+- `saveXmlAxisValAx`: после `EG_AxShared` — `<c:majorUnit val="..."/>`.
+
+В `xlsxchart.patch` не входит — переносить по описанию.
+
+---
+
+## 9. Вставка графика на диапазон ячеек (twoCellAnchor)
+
+**Файлы:** `header/xlsxworksheet.h`, `source/xlsxworksheet.cpp`.
+
+**Зачем:** `insertChart(row, column, QSize)` ставит `oneCellAnchor` с
+размером в пикселях — под ширину столбцов шрифта Excel по умолчанию. В
+LibreOffice без Calibri столбцы шире, и график выходил заметно уже таблицы
+над ним.
+
+**Правка:** перегрузка `Chart *Worksheet::insertChart(const CellRange &range)`
+— то же, что старая, но `DrawingTwoCellAnchor` с `from` = левый верхний угол
+первой ячейки (0-based `firstRow-1, firstColumn-1`) и `to` = левый верхний
+угол ячейки за последней (`lastRow, lastColumn`), смещения 0.
+
+В `xlsxchart.patch` не входит — переносить по описанию.
+
+---
+
 ## Проверка после переноса
 
 1. Собрать проект целиком (не только новый спайк) — эти файлы общие с

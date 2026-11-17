@@ -216,6 +216,28 @@ void Chart::setAxisRange(Chart::ChartAxisPos pos, double min, double max)
     d->axisRangeOverrides[pos] = qMakePair(min, max);
 }
 
+void Chart::setAxisNumberFormat(Chart::ChartAxisPos pos, const QString& formatCode)
+{
+    Q_D(Chart);
+
+    d->axisNumberFormats[pos] = formatCode;
+}
+
+void Chart::setAxisMajorUnit(Chart::ChartAxisPos pos, double unit)
+{
+    Q_D(Chart);
+
+    d->axisMajorUnits[pos] = unit;
+}
+
+void Chart::setSeriesColor(int index, const QColor& color)
+{
+    Q_D(Chart);
+
+    if (index >= 0 && index < d->seriesList.size())
+        d->seriesList[index]->lineColor = color;
+}
+
 /*!
  * \internal
  *
@@ -1213,7 +1235,11 @@ void ChartPrivate::saveXmlScatterChart(QXmlStreamWriter &writer) const
 
     writer.writeStartElement(name);
 
+    // Пустой <c:scatterStyle/> = "marker" (только точки): LibreOffice тогда
+    // рисует серию точками без линий. Линии + маркеры — по сериям (маркеры
+    // выключает setSeriesLineStyle()).
     writer.writeEmptyElement(QStringLiteral("c:scatterStyle"));
+    writer.writeAttribute(QStringLiteral("val"), QStringLiteral("lineMarker"));
 
     for (int i=0; i<seriesList.size(); ++i)
         saveXmlSer(writer, seriesList[i].get(), i);
@@ -1239,6 +1265,8 @@ void ChartPrivate::saveXmlScatterChart(QXmlStreamWriter &writer) const
             ax->hasMax = true;
             ax->axMax = range.second;
         }
+        ax->numFmt = axisNumberFormats.value(pos);
+        ax->majorUnit = axisMajorUnits.value(pos, 0.0);
     }
 
     int axisListSize = axisList.size();
@@ -1333,12 +1361,23 @@ void ChartPrivate::saveXmlSer(QXmlStreamWriter &writer, XlsxSeries *ser, int id)
     // Порядок по схеме CT_ScatterSer: idx, order, tx, spPr, marker, ...,
     // xVal/cat, yVal/val — spPr и marker обязаны идти именно здесь, до
     // диапазонов данных, иначе Excel вправе просто проигнорировать блок.
-    if (ser->lineWidthPt > 0)
+    if (ser->lineWidthPt > 0 || ser->lineColor.isValid())
     {
-        const int emu = static_cast<int>(ser->lineWidthPt * 12700);
         writer.writeStartElement(QStringLiteral("c:spPr"));
         writer.writeStartElement(QStringLiteral("a:ln"));
-        writer.writeAttribute(QStringLiteral("w"), QString::number(emu));
+        if (ser->lineWidthPt > 0)
+        {
+            const int emu = static_cast<int>(ser->lineWidthPt * 12700);
+            writer.writeAttribute(QStringLiteral("w"), QString::number(emu));
+        }
+        if (ser->lineColor.isValid())
+        {
+            // CT_LineProperties: заливка линии — первым дочерним элементом.
+            writer.writeStartElement(QStringLiteral("a:solidFill"));
+            writer.writeEmptyElement(QStringLiteral("a:srgbClr"));
+            writer.writeAttribute(QStringLiteral("val"), ser->lineColor.name(QColor::HexRgb).mid(1).toUpper());
+            writer.writeEndElement(); // a:solidFill
+        }
         writer.writeEndElement(); // a:ln
         writer.writeEndElement(); // c:spPr
     }
@@ -1387,6 +1426,14 @@ void ChartPrivate::saveXmlSer(QXmlStreamWriter &writer, XlsxSeries *ser, int id)
         writer.writeTextElement(QStringLiteral("c:f"), ser->numberDataSource_numRef);
         writer.writeEndElement();//c:numRef
         writer.writeEndElement();//c:val or c:yVal
+    }
+
+    // Без явного smooth=0 часть программ сглаживает линию scatter-серии
+    // (CT_ScatterSer: ..., xVal, yVal, smooth).
+    if (chartType == Chart::CT_ScatterChart)
+    {
+        writer.writeEmptyElement(QStringLiteral("c:smooth"));
+        writer.writeAttribute(QStringLiteral("val"), QStringLiteral("0"));
     }
 
     writer.writeEndElement();//c:ser
@@ -2098,6 +2145,13 @@ void ChartPrivate::saveXmlAxisValAx(QXmlStreamWriter &writer, XlsxAxis* axis) co
 
     saveXmlAxisEG_AxShared(writer, axis); // EG_AxShared
 
+    // CT_ValAx: EG_AxShared, crossBetween?, majorUnit?, ...
+    if (axis->majorUnit > 0)
+    {
+        writer.writeEmptyElement(QStringLiteral("c:majorUnit"));
+        writer.writeAttribute(QStringLiteral("val"), QString::number(axis->majorUnit));
+    }
+
     //!TODO: write element
     // crossBetween
     // majorUnit
@@ -2171,6 +2225,14 @@ void ChartPrivate::saveXmlAxisEG_AxShared(QXmlStreamWriter &writer, XlsxAxis* ax
     }
 
     saveXmlAxisEG_AxShared_Title(writer, axis); // "c:title" CT_Title
+
+    // EG_AxShared: ..., title?, numFmt?, majorTickMark?, ..., crossAx.
+    if (!axis->numFmt.isEmpty())
+    {
+        writer.writeEmptyElement(QStringLiteral("c:numFmt"));
+        writer.writeAttribute(QStringLiteral("formatCode"), axis->numFmt);
+        writer.writeAttribute(QStringLiteral("sourceLinked"), QStringLiteral("0"));
+    }
 
     writer.writeEmptyElement(QStringLiteral("c:crossAx")); // crossAx (mandatory value)
         writer.writeAttribute(QStringLiteral("val"), QString::number(axis->crossAx));

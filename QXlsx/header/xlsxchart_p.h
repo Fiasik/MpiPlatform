@@ -3,6 +3,7 @@
 #ifndef QXLSX_CHART_P_H
 #define QXLSX_CHART_P_H
 
+#include <QColor>
 #include <QObject>
 #include <QString>
 #include <QVector>
@@ -30,6 +31,7 @@ public:
     bool    swapHeader = false;
     bool    showMarker = true;
     qreal   lineWidthPt = -1; // <0 — не задано явно, оставить дефолт Excel
+    QColor  lineColor;        // невалидный — цвет из палитры Excel
 };
 
 class XlsxAxis
@@ -68,6 +70,8 @@ public:
     double axMin = 0;
     bool hasMax = false;
     double axMax = 0;
+    QString numFmt;        // пусто — формат чисел из данных
+    double majorUnit = 0;  // <=0 — шаг делений выбирает Excel
 };
 
 class ChartPrivate : public AbstractOOXmlFilePrivate
@@ -153,6 +157,8 @@ public:
     // saveXmlScatterChart), потому что сами XlsxAxis обычно лениво
     // создаются только при сохранении, а не сразу после addSeries().
     QMap< Chart::ChartAxisPos, QPair<double, double> > axisRangeOverrides;
+    QMap< Chart::ChartAxisPos, QString > axisNumberFormats;
+    QMap< Chart::ChartAxisPos, double > axisMajorUnits;
 
     QString layout;             // only for storing a readed file
 };
