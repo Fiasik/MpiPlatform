@@ -24,6 +24,12 @@ public:
         m_actions[tab].secondary = button;
     }
 
+    // Кнопки вкладки (для справки по клавишам); пустые, если не назначены.
+    TabActions actions(QWidget* tab) const
+    {
+        return m_actions.value(tab);
+    }
+
     void triggerPrimary(QWidget* tab)
     {
         if (!tab) return;

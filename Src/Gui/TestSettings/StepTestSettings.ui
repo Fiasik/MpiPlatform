@@ -168,7 +168,7 @@ QTimeEdit::down-arrow:pressed {
          <time>
           <hour>0</hour>
           <minute>0</minute>
-          <second>10</second>
+          <second>20</second>
          </time>
         </property>
        </widget>

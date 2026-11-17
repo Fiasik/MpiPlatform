@@ -35,8 +35,12 @@ ToastWidget::ToastWidget(Gui::Style::StatusKind type, const QString& text, QWidg
     m_label->setStyleSheet(QStringLiteral("color: #202020; font-size: 12px; background: none;"));
     layout->addWidget(m_label);
 
+    // Текст переносится по словам, поэтому высота зависит от ширины: adjustSize()
+    // считает её до того, как ширина зафиксирована, и длинный текст обрезался
+    // (две строки места вместо трёх). Высоту берём у раскладки для kWidth.
     setFixedWidth(kWidth);
-    adjustSize();
+    setFixedHeight(layout->hasHeightForWidth() ? layout->heightForWidth(kWidth)
+                                               : layout->sizeHint().height());
 
     m_opacityEffect = new QGraphicsOpacityEffect(this);
     m_opacityEffect->setOpacity(0.0);

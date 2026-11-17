@@ -157,6 +157,7 @@ set(DOMAIN_HEADERS
 
     Utils/NumberUtils.h
     Utils/SignalUtils.h
+    Utils/Shortcuts/LayoutTabOrder.h
     Utils/Shortcuts/TabActionRouter.h
     Utils/Shortcuts/TabBinder.h
     Utils/StyledMessageBox.h

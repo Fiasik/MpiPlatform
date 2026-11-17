@@ -581,7 +581,15 @@ QComboBox::down-arrow {
 QComboBox::down-arrow:on {
     image: url(@{iconChevronDownActive});
 }
-QComboBox QAbstractItemView {
+/* QListView#searchableComboPopup — список подсказок поиска у
+ * Widgets::Combo::SearchableComboBox. Это попап QCompleter, отдельное окно,
+ * а не потомок QComboBox, поэтому "QComboBox QAbstractItemView" его не
+ * задевает — перечислен рядом, чтобы поиск выглядел как обычный список.
+ * color/selection-* на самом виде нужны делегату подсветки совпадения:
+ * он рисует текст сам и берёт цвета из палитры вида. */
+QComboBox QAbstractItemView,
+QListView#searchableComboPopup {
+    color: @{textStrong};
     background: @{bgSurface};
     border: 1px solid @{borderDefault};
     border-radius: 6px;
@@ -590,17 +598,20 @@ QComboBox QAbstractItemView {
     selection-background-color: @{accentPrimary};
     selection-color: @{bgSurface};
 }
-QComboBox QAbstractItemView::item {
+QComboBox QAbstractItemView::item,
+QListView#searchableComboPopup::item {
     color: @{textStrong};
     background: @{bgSurface};
     padding: 2px 4px;
     border-radius: 4px;
     min-height: 22px;
 }
-QComboBox QAbstractItemView::item:hover {
+QComboBox QAbstractItemView::item:hover,
+QListView#searchableComboPopup::item:hover {
     background: @{bgHover};
 }
-QComboBox QAbstractItemView::item:selected {
+QComboBox QAbstractItemView::item:selected,
+QListView#searchableComboPopup::item:selected {
     background: @{accentPrimary};
     color: @{bgSurface};
 }
