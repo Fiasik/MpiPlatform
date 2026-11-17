@@ -292,6 +292,11 @@ void TelemetryUiMapper::updateResolutionTest(
 {
     auto* table = m_ui->tableWidget_resolutionResults;
 
+    // Без собственного делегата тема (QSS QTableWidget::item) не рисует
+    // заливку ячеек "прошло/не прошло" вообще (как у таблицы Response).
+    if (!table->findChild<Widgets::BackgroundRoleDelegate*>(QString(), Qt::FindDirectChildrenOnly))
+        table->setItemDelegate(new Widgets::BackgroundRoleDelegate(table));
+
     const int steps = std::max(result.upward.size(),
                                result.downward.size());
 
@@ -300,12 +305,14 @@ void TelemetryUiMapper::updateResolutionTest(
     const int upTitleRow = 0;
     const int upHeaderRow = 1;
     const int upBaseRow = 2;
-    const int upErrorRow = upBaseRow + 2;
+    const int upAllowedErrorRow = upBaseRow + 2;
+    const int upErrorRow = upBaseRow + 3;
 
-    const int downTitleRow = 5;
+    const int downTitleRow = 6;
     const int downHeaderRow = downTitleRow + 1;
     const int downBaseRow = downHeaderRow + 1;
-    const int downErrorRow = downBaseRow + 2;
+    const int downAllowedErrorRow = downBaseRow + 2;
+    const int downErrorRow = downBaseRow + 3;
 
     const int rows = downErrorRow + 1;
 
@@ -331,6 +338,7 @@ void TelemetryUiMapper::updateResolutionTest(
 
     setupOptionCell(table, upBaseRow, 0, "Задание, %");
     setupOptionCell(table, upBaseRow + 1, 0, "Факт, %");
+    setupOptionCell(table, upAllowedErrorRow, 0, "Допустимая ошибка, %");
     setupOptionCell(table, upErrorRow, 0, "Ошибка на шаг, %");
 
     table->setSpan(downTitleRow, 0, 1, cols);
@@ -350,12 +358,14 @@ void TelemetryUiMapper::updateResolutionTest(
 
     setupOptionCell(table, downBaseRow, 0, "Задание, %");
     setupOptionCell(table, downBaseRow + 1, 0, "Факт, %");
+    setupOptionCell(table, downAllowedErrorRow, 0, "Допустимая ошибка, %");
     setupOptionCell(table, downErrorRow, 0, "Ошибка на шаг, %");
 
     auto fillDirection =
         [&](const auto& data, int baseRow)
     {
-        const int errorRow = baseRow + 2;
+        const int allowedErrorRow = baseRow + 2;
+        const int errorRow = baseRow + 3;
 
         if (std::isfinite(result.baseTask)) {
             setupOptionCell(table,
@@ -382,8 +392,16 @@ void TelemetryUiMapper::updateResolutionTest(
             setupOptionCell(table, baseRow + 1, col,
                             QString::number(step.actualPercent, 'f', 2));
 
-            setupOptionCell(table, errorRow, col,
-                            QString::number(step.stepErrorPercent, 'f', 2));
+            setupOptionCell(table, allowedErrorRow, col,
+                            std::isfinite(step.allowedErrorPercent)
+                                ? QString::number(step.allowedErrorPercent, 'f', 2)
+                                : "");
+
+            setupColoredOptionCell(table, errorRow, col,
+                                   QString::number(step.stepErrorPercent, 'f', 2),
+                                   step.isOk
+                                       ? Gui::Style::passFillColor()
+                                       : Gui::Style::failFillColor());
         }
     };
 

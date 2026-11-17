@@ -111,6 +111,7 @@ set(DOMAIN_HEADERS
     Domain/Tests/Option/Response/Analyzer.h
     Domain/Tests/Option/Response/Result.h
     Domain/Tests/Option/Response/Limits.h
+    Domain/Tests/Option/Resolution/Limits.h
     Domain/Tests/Option/Resolution/Analyzer.h
     Domain/Tests/Option/Resolution/Result.h
     Domain/BuildVariant.h

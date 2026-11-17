@@ -15,10 +15,9 @@ namespace Report::Pdf {
 
 // Источник данных для Trs.xml (ТРС, "Акт теста на разрешающую
 // способность") — читает Domain::Tests::Option::Resolution::Result
-// (ctx.telemetry.testResolution). В отличие от ТЧР/ResponseSource: тут
-// нет allowedErrorPercent/isOk вообще (см. Resolution/Result.h) и нет
-// подсветки — зеркало реального Excel-блока (Report::Excel::Blocks::
-// ResolutionTable), который тоже ничего не подсвечивает.
+// (ctx.telemetry.testResolution). Как ТЧР/ResponseSource: строка «Допустимая
+// ошибка» и подсветка ячейки ошибки по ResultItem::isOk (скрытый
+// плейсхолдер ...ErrorNoteN, см. Trs.xml).
 class ResolutionSource : public QObject
 {
     Q_OBJECT

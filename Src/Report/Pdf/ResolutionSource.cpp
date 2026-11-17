@@ -11,6 +11,15 @@ namespace Report::Pdf {
 
 namespace {
 QString f2(qreal v) { return QString::number(v, 'f', 2); }
+
+// Как у ResponseSource: текст вердикта для скрытого плейсхолдера, по которому
+// Trs.xml красит ячейку ошибки.
+QString verdictFor(const Domain::Tests::Option::Resolution::ResultItem& item)
+{
+    if (!std::isfinite(item.allowedErrorPercent))
+        return QStringLiteral("не определено");
+    return item.isOk ? QStringLiteral("соответствует") : QStringLiteral("не соответствует");
+}
 }
 
 ResolutionSource::ResolutionSource(const Report::Context& ctx, QObject* parent)
@@ -71,7 +80,10 @@ void ResolutionSource::buildValues()
 
                 m_values[prefix + QStringLiteral("Selected") + n] = f2(item.selectedPercent);
                 m_values[prefix + QStringLiteral("Actual") + n] = f2(item.actualPercent);
+                m_values[prefix + QStringLiteral("Allowed") + n] =
+                    std::isfinite(item.allowedErrorPercent) ? f2(item.allowedErrorPercent) : QString();
                 m_values[prefix + QStringLiteral("Error") + n] = f2(item.stepErrorPercent);
+                m_values[prefix + QStringLiteral("ErrorNote") + n] = verdictFor(item);
             }
         };
 

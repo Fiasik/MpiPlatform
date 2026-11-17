@@ -1,4 +1,6 @@
 #include "Analyzer.h"
+#include "Domain/Tests/Option/RobustLevel.h"
+#include "Limits.h"
 
 #include <cmath>
 #include <algorithm>
@@ -233,34 +235,19 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
                 ? baseActualMax + stepSize
                 : baseActualMax - stepSize;
 
-        // Ошибка — не отклонение уже устоявшегося (усреднённого) значения
-        // от идеала, а МАКСИМУМ отклонения за шаг: именно с ним сравнивают
-        // допуск и красят точку красным, если превышен. Берём вторую
-        // половину сегмента, а не весь — в первой половине сразу после
-        // смены задания позиция физически ещё не успела доехать, отклонение
-        // там будет artificially огромным (~100%) у самого начала
-        // практически всегда, это не "динамическая ошибка", а просто
-        // "ещё не доехал".
-        const int scanFrom = (seg.from + seg.to) / 2;
-        double maxError = -1.0;
-        quint64 maxErrorTime = seg.time;
-        double maxErrorPos = stepActual;
+        // Ошибка шага = отклонение СРЕДНЕГО положения по ВСЕМУ уровню (все
+        // отсчёты сегмента, включая переход, перелёт и недоезд) от идеала — так
+        // же, как у Response::Analyzer. Прежний расчёт (максимум по второй
+        // половине сегмента, серая зона "Вне расчёта") заменён.
+        const RobustLevel level = robustLevel(m_samples, seg.from, seg.to);
+        if (level.kept == 0)
+            continue;
 
-        for (int k = scanFrom; k <= seg.to; ++k) {
-            // r2() — та же точность, что и у task/actual/idealStep выше,
-            // см. тот же комментарий в Response::Analyzer::calculate().
-            const double pos = r2(m_samples.at(k).positionPercent);
-            if (!std::isfinite(pos))
-                continue;
-
-            const double instantError = std::abs(pos - idealStep) / stepSize * 100.0;
-            if (instantError > maxError) {
-                maxError = instantError;
-                maxErrorTime = m_samples.at(k).testTime;
-                maxErrorPos = pos;
-            }
-        }
-        maxError = r2(maxError);
+        const int scanFrom = seg.from; // граница не режется: выбросы вырезаются по отсчётам
+        const double levelAvg = r2(level.mean);
+        const quint64 maxErrorTime = seg.time;
+        const double maxErrorPos = levelAvg;
+        double maxError = r2(std::abs(levelAvg - idealStep) / stepSize * 100.0);
 
         if (!std::isfinite(maxError) || maxError < 0.0)
             continue;
@@ -270,6 +257,9 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
         rec.actualPercent = maxErrorPos;
         rec.stepErrorPercent = maxError;
         rec.timeMs = maxErrorTime;
+        rec.stepStartMs = m_samples.at(seg.from).testTime;
+        rec.scanFromMs = m_samples.at(scanFrom).testTime;
+        rec.excludedMs = level.excludedMs;
 
         bool upward = stepTask > baseTask;
 
@@ -293,6 +283,17 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
 
     if (m_cfg.normalOpen)
         std::swap(result.upward, result.downward);
+
+    // Допуск — по номеру шага в направлении, поэтому после обмена направлений
+    // (как у Response: номер считается уже в итоговом направлении).
+    for (QVector<ResultItem>* list : {&result.upward, &result.downward}) {
+        for (int i = 0; i < list->size(); ++i) {
+            ResultItem& item = (*list)[i];
+            item.allowedErrorPercent = allowedErrorForStep(i);
+            item.isOk = std::isfinite(item.allowedErrorPercent)
+                        && item.stepErrorPercent <= item.allowedErrorPercent;
+        }
+    }
 
     return result;
 }

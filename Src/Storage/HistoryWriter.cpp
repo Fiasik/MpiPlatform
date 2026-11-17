@@ -831,12 +831,12 @@ bool HistoryWriter::writeResolutionResults(qint64 sessionId, const Domain::Tests
 
                 if (ok) {
                     QSqlQuery insertRow(db);
-                    // allowed_pct/is_ok — у Resolution::ResultItem этих полей нет
-                    // (допуск не считается, см. Result.h) — всегда SQL NULL.
+                    // allowed_pct/is_ok — допуск на шаг, как у теста на чувствительность.
+                    // У строк, записанных до появления допуска (2026-11-13), там NULL.
                     insertRow.prepare(QStringLiteral(
                         "INSERT INTO resolution_result_rows("
                         "session_id, direction, row_index, selected_pct, actual_pct, error_pct, allowed_pct, is_ok"
-                        ") VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)"));
+                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)"));
                     const struct { const QVector<Domain::Tests::Option::Resolution::ResultItem>& items; QString direction; }
                         directions[2] = { { result.upward, QStringLiteral("up") },
                                           { result.downward, QStringLiteral("down") } };
@@ -849,6 +849,8 @@ bool HistoryWriter::writeResolutionResults(qint64 sessionId, const Domain::Tests
                             insertRow.addBindValue(optionalReal(item.selectedPercent));
                             insertRow.addBindValue(optionalReal(item.actualPercent));
                             insertRow.addBindValue(optionalReal(item.stepErrorPercent));
+                            insertRow.addBindValue(optionalReal(item.allowedErrorPercent));
+                            insertRow.addBindValue(item.isOk ? 1 : 0);
                             ok = insertRow.exec();
                         }
                     }

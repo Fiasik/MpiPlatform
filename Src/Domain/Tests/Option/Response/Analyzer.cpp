@@ -1,4 +1,5 @@
 #include "Analyzer.h"
+#include "Domain/Tests/Option/RobustLevel.h"
 #include "Limits.h"
 
 #include <QDebug>
@@ -262,6 +263,21 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
                 ? prevActualMax + stepSize
                 : prevActualMax - stepSize;
 
+        // Ошибка шага = отклонение СРЕДНЕГО положения по ВСЕМУ уровню (все
+        // отсчёты сегмента, включая переход, перелёт и недоезд) от идеала.
+        // Прежний расчёт (максимум по второй половине сегмента, серая
+        // зона "Вне расчёта") закомментирован ниже.
+        const RobustLevel level = robustLevel(m_samples, seg.from, seg.to);
+        if (level.kept == 0)
+            continue;
+
+        const int scanFrom = seg.from; // граница не режется: выбросы вырезаются по отсчётам
+        const double levelAvg = r2(level.mean);
+        const quint64 maxErrorTime = seg.time;
+        const double maxErrorPos = levelAvg;
+        double maxError = r2(std::abs(levelAvg - ideal) / stepSize * 100.0);
+
+        /* --- прежний расчёт (максимум по второй половине шага) ---
         // Ошибка — не отклонение уже устоявшегося (усреднённого) значения
         // от идеала, а МАКСИМУМ отклонения за шаг: именно с ним сравнивают
         // допуск (allowedErrorForStep() ниже) и красят точку красным, если
@@ -270,12 +286,12 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
         // физически ещё не успела доехать, отклонение там будет
         // artificially огромным (~100%) у самого начала практически всегда,
         // это не "динамическая ошибка", а просто "ещё не доехал".
-        const int scanFrom = (seg.from + seg.to) / 2;
-        double maxError = -1.0;
-        quint64 maxErrorTime = seg.time;
-        double maxErrorPos = stepActual;
+        // const int scanFrom = (seg.from + seg.to) / 2;
+        // double maxError = -1.0;
+        // quint64 maxErrorTime = seg.time;
+        // double maxErrorPos = stepActual;
 
-        for (int k = scanFrom; k <= seg.to; ++k) {
+        // for (int k = scanFrom; k <= seg.to; ++k) {
             // r2() — та же точность (2 знака), что и у task/actual/ideal
             // выше: без этого сравнение "по сырым отсчётам" даёт крохотное
             // расхождение с ручным пересчётом по округлённым цифрам из
@@ -291,8 +307,9 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
                 maxErrorTime = m_samples.at(k).testTime;
                 maxErrorPos = pos;
             }
-        }
-        maxError = r2(maxError);
+        // }
+        // maxError = r2(maxError);
+        --- */
 
         if (!std::isfinite(maxError) || maxError < 0.0)
             continue;
@@ -302,6 +319,9 @@ Result Analyzer::calculate(const QVector<Segment>& segments) const
         rec.actualPercent = maxErrorPos;
         rec.stepErrorPercent = maxError;
         rec.timeMs = maxErrorTime;
+        rec.stepStartMs = m_samples.at(seg.from).testTime;
+        rec.scanFromMs = m_samples.at(scanFrom).testTime;
+        rec.excludedMs = level.excludedMs;
 
         bool upward = stepTask > prevTask;
 
