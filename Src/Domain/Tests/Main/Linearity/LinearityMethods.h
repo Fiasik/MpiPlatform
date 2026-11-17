@@ -1,11 +1,12 @@
 #pragma once
 
-// Способы расчёта линейности характеристики «давление -> положение» для
-// сравнения (лекции 12–13 в ~/Documents/Work/Mpi/Лекции).
+// Способы расчёта линейности характеристики «давление -> положение»
+// (лекции 12–13 в ~/Documents/Work/Mpi/Лекции).
 //
-// Нужны раскрывающейся карточке линейности в блоке Pass|Fail
-// (Gui/MainWindow/Linearity/). НЕ влияют на Result::linearityError,
-// Pass|Fail, отчёт и базу: официальный расчёт — Analyzer.
+// Официальный способ (Result::linearityError -> Pass|Fail, отчёт, база) —
+// прямая минимакс, худший из двух ходов: Analyzer вызывает minimaxLinearity(),
+// тот же расчёт, что способ IntegralMinimax здесь. Остальные способы — только
+// для сравнения в раскрывающейся карточке линейности (Gui/MainWindow/Linearity/).
 
 #include <QPointF>
 #include <QtNumeric>
@@ -14,13 +15,14 @@
 
 namespace Domain::Tests::Main::Linearity {
 
-// Формулы [ЭЛ-1]…[ЭЛ-6] — docs/formulas/main_test.md, раздел «Способы линейности для сравнения»
+// Формулы [ЭЛ-1]…[ЭЛ-6] — docs/formulas/main_test.md, раздел «Способы линейности для сравнения».
+// [ЭЛ-3] (прежний официальный дифференциальный расчёт с фильтром участков)
+// удалён 2026-11-12; номера формул не сдвигаем.
 enum class LinearityMethod {
     IntegralLeastSquares, // [ЭЛ-1] 1. без дифференциала, прямая МНК (как считалось раньше)
-    IntegralMinimax,      // [ЭЛ-2] 2. без дифференциала, прямая минимакс (как ISA-51.1 «independent linearity», см. [ЭЛ-6])
-    DifferentialCurrent,  // [ЭЛ-3] 3. с дифференциалом — копия Analyzer::computeDifferentialLinearityError()
-    DifferentialByStroke, // [ЭЛ-4] 4. с дифференциалом, окно = 10 % хода, а не 10 % точек
-    SlopeVariation        // [ЭЛ-5] 5. коэффициент вариации наклона по тем же окнам, что в 4
+    IntegralMinimax,      // [ЭЛ-2] 2. без дифференциала, прямая минимакс = официальный [ОТ-7] (ISA-51.1 «independent linearity», см. [ЭЛ-6])
+    DifferentialByStroke, // [ЭЛ-4] 3. с дифференциалом, участок = 10 % хода, без фильтра
+    SlopeVariation        // [ЭЛ-5] 4. коэффициент вариации наклона по тем же участкам, что в 3
 };
 
 // По какому ходу считать. Официальный расчёт (Analyzer) — худший из двух.
@@ -48,12 +50,11 @@ QString linearityMethodDescription(LinearityMethod method);
 // от общего наклона: числа несопоставимы.
 bool isPercentOfStroke(LinearityMethod method);
 
-// Окно, в котором считается местный наклон (способы 3–5).
+// Участок, на котором считается местный наклон (способы 3–4).
 struct SlopeWindow {
-    QPointF low;  // (давление, положение) точки окна с наименьшим положением
+    QPointF low;  // (давление, положение) точки участка с наименьшим положением
     QPointF high; // ... с наибольшим
     double slope = 0.0; // мм/бар
-    bool used = true;   // false — отброшено фильтром (только способ 3)
 };
 
 struct StrokeLinearity {
@@ -62,22 +63,20 @@ struct StrokeLinearity {
     double k = 0.0;       // прямая y = k·x + b, от которой меряем
     double b = 0.0;
     // Малый график: x = положение, мм; y = отклонение от прямой, мм
-    // (способы 1–2) или наклон, мм/бар (способы 3–5).
+    // (способы 1–2) или наклон, мм/бар (способы 3–4).
     QVector<QPointF> profile;
     QVector<SlopeWindow> windows;
     // Худшее место. Способы 1–2: точка worstLow == worstHigh.
     QPointF worstLow;
     QPointF worstHigh;
     double worstResidual = 0.0; // мм, со знаком (способы 1–2)
-    double worstSlope = 0.0;    // мм/бар (способы 3–5)
-    int usedWindows = 0;
+    double worstSlope = 0.0;    // мм/бар (способы 3–4)
     int totalWindows = 0;
     // Для подсказки ⓘ «на каких данных посчитано».
     int totalPoints = 0;    // точек хода на графике
     int windowPoints = 0;   // из них в рабочем окне 10–90 %
     double lsqSlope = 0.0;  // наклон прямой МНК по рабочему окну, мм/бар
-    double slopeWindowMm = 0.0;   // ширина окна наклона, мм (способы 4–5)
-    int slopeWindowPoints = 0;    // ширина окна наклона, точек (способ 3)
+    double slopeWindowMm = 0.0;   // ширина участка, мм (способы 3–4)
     // Тот же ход, прорежённый полосами 0,5 % как средняя кривая — чтобы видеть,
     // сколько в разнице «ход / средняя» даёт само сглаживание, а не гистерезис.
     double binnedValue = qQNaN();
@@ -114,6 +113,12 @@ LinearityMethodsResult computeLinearity(LinearityMethod method,
 // оценки, сколько даёт само сглаживание).
 QVector<QPointF> averageCurve(const QVector<QPointF>& forward,
                               const QVector<QPointF>& backward);
+
+// [ОТ-7] Официальная линейность одного хода (её берёт Analyzer): прямая
+// минимакс по рабочему окну 10–90 % хода, наибольшее отклонение точки от
+// прямой в % ширины окна. points — один ход (x = давление, y = положение);
+// strokeMin / strokeMax — границы хода по ОБОИМ ходам. Нет данных — 0.
+double minimaxLinearity(const QVector<QPointF>& points, double strokeMin, double strokeMax);
 
 // Положение -> % хода (0 % = strokeMin, 100 % = strokeMax).
 double strokePercent(const LinearityMethodsResult& result, double position);

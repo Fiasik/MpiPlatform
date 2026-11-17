@@ -35,9 +35,33 @@
 //   --shots <папка>     — скриншоты и выход (offscreen: линии графиков
 //                         OpenGL не рисуются);
 //   --gl                — вместе с --shots: снимать на настоящем экране;
+//   --generate          — с --open report: нажать «Сформировать отчёт»
+//                         (report.xlsx и PDF — рядом с exe превьюера; с
+//                         --shots копии кладутся в папку скриншотов);
 //   --linearity-table   — таблица «способ × ход» и проверка сглаживания
 //                         полосами средней кривой в консоль, без окна;
-//   --dark              — тёмная тема.
+//   --dark              — тёмная тема;
+//   --valve-tab-order   — окно карточки клапана (ValveWindow) offscreen: по
+//                         каждой видимой вкладке — поля в порядке Tab, без
+//                         главного окна;
+//   --compare-sessions <id,id[,id]|repair> — «История»: отметить 2–3 сессии
+//                         (или нажать «До / ремонт / после») и снять вкладки
+//                         сравнения (с --shots), таблицы — в консоль;
+//   --conclusion-autosave <id> — сделать id текущей сессией, поменять заключение
+//                         и ЗИП на вкладке отчёта и подождать запись в базу (проверка
+//                         скриптом по /tmp/mpi-preview/preview.db);
+//   --help-dialog       — нажать «?» в строке состояния: справка (оба
+//                         раздела — в консоль текстом, с --shots — снимки);
+//   --archive <id>      — «История»: выбрать сессию id (той же позиции, что
+//                         --session) и нажать «Открыть графики» — просмотр
+//                         архива; с --open report — её акт в «Предпросмотре»;
+//   --size <Ш>x<В>      — размер окна (по умолчанию 1600x1000; ноутбук
+//                         1366x768 за вычетом панели задач — 1366x728);
+//   --compare <id>      — с --open report: в «Сравнить с» выбрать сессию id
+//                         (сравнение отчётов, эксперимент
+//                         MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE): отличия и
+//                         таблица — в консоль, с --shots — снимки страниц,
+//                         выбранного отличия и таблицы.
 //
 // Песочница: настройки (QSettings) — во временной папке; база — копия
 // рабочей (для --session) или своя пустая, рабочая Database/mpiplatform.db
@@ -50,15 +74,25 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QDirIterator>
 #include <QEventLoop>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFontDatabase>
 #include <QOpenGLWidget>
 #include <QPainter>
 #include <QPushButton>
 #include <QStatusBar>
+#include <QTextBrowser>
+#include <QDialog>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QGridLayout>
+#include <QTextEdit>
 #include <QTextStream>
+
+#include <functional>
 #include <QFrame>
 #include <QGraphicsView>
 #include <QLabel>
@@ -70,7 +104,12 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStyleFactory>
+#include <QListWidget>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QTabBar>
 #include <QTabWidget>
+#include <QTableWidget>
 #include <QTimer>
 #include <QToolButton>
 #include <QWheelEvent>
@@ -79,14 +118,21 @@
 #include <optional>
 
 #include "Domain/DeviceConfig.h"
+#include "Domain/Measurement/Sample.h"
+#include "Domain/Tests/Option/Step/Analyzer.h"
+#include "Gui/Help/HelpDialog.h"
 #include "Gui/MainWindow/ArchivedTest.h"
+#include "Utils/SignalUtils.h"
 #include "Domain/Tests/Main/Linearity/LinearityMethods.h"
 #include "Domain/Tests/Main/Result.h"
 #include "Domain/Tests/Stroke/Result.h"
 #include "Gui/MainWindow/MainWindow.h"
 #include "Gui/Setup/SelectTests.h"
+#include "Gui/Setup/ValveWindow/ValveWindow.h"
+#include "Utils/Shortcuts/LayoutTabOrder.h"
 #include "Gui/Setup/ValveWindow/Logic.h"
 #include "Gui/Style/ThemeManager.h"
+#include "Storage/AppSettings.h"
 #include "Storage/HistoryDb.h"
 #include "Storage/Registry.h"
 #include "Storage/SessionFolders.h"
@@ -200,8 +246,8 @@ Domain::Tests::Main::Result makeResult(const QVector<QPointF>& forward, const QV
     Domain::Tests::Main::Result r;
     r.pressureSeriesForward = forward;
     r.pressureSeriesBackward = backward;
-    // Официальная линейность = способ 3 (точная копия Analyzer).
-    r.linearityError = computeLinearity(LinearityMethod::DifferentialCurrent, forward, backward).value;
+    // Официальная линейность = минимакс по худшему ходу (тот же расчёт, что Analyzer).
+    r.linearityError = computeLinearity(LinearityMethod::IntegralMinimax, forward, backward).value;
     r.linearity = 100.0 - r.linearityError;
     r.linearityErrorIntegral = computeLinearity(LinearityMethod::IntegralLeastSquares, forward, backward).value;
     // Остальное — правдоподобные константы, только чтобы карточки были заполнены.
@@ -289,11 +335,7 @@ QPixmap grabWithGl(QWidget* window)
 
 QComboBox* methodCombo(QWidget* window)
 {
-    for (QComboBox* c : window->findChildren<QComboBox*>()) {
-        if (c->count() == 5 && c->itemText(0).startsWith(QStringLiteral("1. Без дифференциала")))
-            return c;
-    }
-    return nullptr;
+    return window->findChild<QComboBox*>(QStringLiteral("comboBox_linearityMethod"));
 }
 
 QLabel* infoLabel(QWidget* window)
@@ -440,6 +482,15 @@ int main(int argc, char* argv[])
     bool dark = false;
     bool gl = false;
     bool linearityTable = false;
+    bool valveTabOrder = false;
+    bool helpDialog = false;
+    bool generate = false;
+    QString compareArg;
+    QString archiveArg;
+    QString conclusionAutosave; // id сессии: проверка записи заключения по ходу работы
+    QString compareSessions; // "id,id[,id]" или "repair" — кнопка «До / ремонт / после»
+    QString stepData;
+    QSize windowSize(1600, 1000);
     // Карточка клапана для архивного испытания (в .data её нет): значения из
     // отчёта испытания; по умолчанию — как у синтетики.
     int run = 0;
@@ -483,12 +534,33 @@ int main(int argc, char* argv[])
             gl = true;
         else if (a == QStringLiteral("--linearity-table"))
             linearityTable = true;
+        else if (a == QStringLiteral("--valve-tab-order"))
+            valveTabOrder = true;
+        else if (a == QStringLiteral("--help-dialog"))
+            helpDialog = true;
+        else if (a == QStringLiteral("--generate"))
+            generate = true;
+        else if (a == QStringLiteral("--compare") && i + 1 < argc)
+            compareArg = next();
+        else if (a == QStringLiteral("--compare-sessions") && i + 1 < argc)
+            compareSessions = next();
+        else if (a == QStringLiteral("--conclusion-autosave") && i + 1 < argc)
+            conclusionAutosave = next();
+        else if (a == QStringLiteral("--archive") && i + 1 < argc)
+            archiveArg = next();
+        else if (a == QStringLiteral("--step-data") && i + 1 < argc)
+            stepData = next();
+        else if (a == QStringLiteral("--size") && i + 1 < argc) {
+            const QStringList wh = next().split(QLatin1Char('x'));
+            if (wh.size() == 2)
+                windowSize = QSize(wh[0].toInt(), wh[1].toInt());
+        }
     }
     if (open != QStringLiteral("linearity") && open != QStringLiteral("report")) {
         qCritical().noquote() << "--open: linearity или report";
         return 1;
     }
-    if ((!shotsDir.isEmpty() && !gl) || linearityTable)
+    if ((!shotsDir.isEmpty() && !gl) || linearityTable || valveTabOrder || helpDialog)
         qputenv("QT_QPA_PLATFORM", "offscreen");
 
     // Изоляция от настоящих настроек и данных пользователя.
@@ -530,6 +602,45 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // Порядок Tab карточки клапана: что получит фокус при каждом нажатии Tab
+    // (видимые, включённые, принимающие фокус по Tab — как и сам Qt).
+    if (valveTabOrder) {
+        ValveWindow window;
+        window.show();
+        QCoreApplication::processEvents();
+        auto* tabs = window.findChild<QTabWidget*>(QStringLiteral("tabWidget"));
+        QTextStream out(stdout);
+        // Вся цепочка, как её строит LayoutTabOrder (вместе со скрытыми
+        // сейчас полями: в пустой карточке часть полей появляется позже).
+        {
+            QList<QWidget*> chain;
+            LayoutTabOrder::Detail::collectLayout(window.layout(), chain);
+            out << "== цепочка целиком\n";
+            for (QWidget* w : std::as_const(chain))
+                out << "   " << w->objectName() << (w->isVisibleTo(&window) ? "" : "  (скрыто)") << "\n";
+        }
+        for (int i = 0; tabs && i < tabs->count(); ++i) {
+            if (!tabs->isTabVisible(i))
+                continue;
+            tabs->setCurrentIndex(i);
+            QCoreApplication::processEvents();
+            out << "== " << tabs->tabText(i) << "\n";
+            QWidget* start = tabs->tabBar();
+            int n = 0;
+            for (QWidget* w = start->nextInFocusChain(); w && w != start && n < 300;
+                 w = w->nextInFocusChain(), ++n) {
+                // Как QWidget::focusNextPrevChild: виджет с focus proxy (поле
+                // редактируемого списка) отдельной остановкой не считается.
+                // Выключенные поля (пустая карточка) Tab пропустит, но
+                // показываем их, чтобы был виден порядок целиком.
+                if (w->window() == &window && w->isVisibleTo(&window) && !w->focusProxy()
+                    && (w->focusPolicy() & Qt::TabFocus))
+                    out << "   " << w->objectName() << (w->isEnabled() ? "" : "  (выкл)") << "\n";
+            }
+        }
+        return 0;
+    }
+
     std::optional<SessionData> session;
     if (!sessionArg.isEmpty()) {
         session = loadSession(dbPath, sessionArg, QStringLiteral(MPIPLATFORM_APP_DIR));
@@ -539,6 +650,14 @@ int main(int argc, char* argv[])
         qInfo().noquote() << QStringLiteral("Сессия %1: %2, папка %3")
                                  .arg(session->id).arg(session->valve.positionNumber, session->folder);
     }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+    // Папки сессий в базе — от папки приложения (сборки), а exe превьюера
+    // лежит глубже. Сравнение (как и «Открыть графики») тогда ищет их от
+    // корня архива из настроек — его и задаём (settings.ini превьюера).
+    if (!compareArg.isEmpty())
+        AppSettings().setHistoryArchiveRoot(QStringLiteral(MPIPLATFORM_APP_DIR));
+#endif
 
     static Registry registry;
     registry.loadObjectInfo(); // цвета датчиков (из песочницы — значения по умолчанию)
@@ -578,7 +697,7 @@ int main(int argc, char* argv[])
     window.setBlockCTS({});
     window.setRegistry(&registry);
     window.setThemeManager(&themeManager);
-    window.resize(1600, 1000);
+    window.resize(windowSize);
     window.show();
     app.processEvents();
 
@@ -646,6 +765,24 @@ int main(int argc, char* argv[])
             t.crossingStatus = status;
             t.valveStrokeRecord.real = measuredStroke;
             t.testStroke = session->stroke;
+            // Остальные тесты по времени — теми же Analyzer'ами из файлов папки
+            // (как «Открыть сессию»): акты ТШР/ТЧР/ТРС собираются из них.
+            if (!folder.isEmpty()) {
+                const auto cfg = deviceConfig(valve);
+                const bool inverted = SignalUtils::isTaskInverted(
+                    cfg.safePosition == SafePosition::NormallyOpen, cfg.positionerScale);
+                const auto load = [&](Widgets::Chart::ChartType type) -> std::optional<ArchivedTest::DataFile> {
+                    const int timeRun = ArchivedTest::pickTimeRun(folder, type);
+                    return timeRun > 0 ? ArchivedTest::readDataFile(ArchivedTest::chartFile(folder, type, timeRun))
+                                       : std::nullopt;
+                };
+                if (const auto d = load(Widgets::Chart::ChartType::Step))
+                    t.testStep = ArchivedTest::analyzeStep(*d, 86.0);
+                if (const auto d = load(Widgets::Chart::ChartType::Response))
+                    t.testResponse = ArchivedTest::analyzeResponse(*d, inverted);
+                if (const auto d = load(Widgets::Chart::ChartType::Resolution))
+                    t.testResolution = ArchivedTest::analyzeResolution(*d, inverted);
+            }
             QMetaObject::invokeMethod(&window, "onTelemetryUpdated", Qt::DirectConnection, Q_ARG(Telemetry, t));
         } else {
             QMetaObject::invokeMethod(&window, "onMainResultUpdated", Qt::DirectConnection,
@@ -653,7 +790,7 @@ int main(int argc, char* argv[])
         }
         QMetaObject::invokeMethod(&window, "onCrossingStatusUpdated", Qt::DirectConnection,
                                   Q_ARG(CrossingStatus, status));
-        qInfo().noquote() << QStringLiteral("%1%2: линейность (текущий способ) %3 %, интегральная %4 %")
+        qInfo().noquote() << QStringLiteral("%1%2: линейность (минимакс, как в отчёте) %3 %, прямая МНК %4 %")
                                  .arg(folder.isEmpty() ? QStringLiteral("синтетика") : folder)
                                  .arg(n > 0 ? QStringLiteral(", испытание %1").arg(n) : QString())
                                  .arg(result.linearityError, 0, 'f', 2)
@@ -723,10 +860,315 @@ int main(int argc, char* argv[])
 
     auto shot = [&](const QString& name) {
         wait(150);
+        QDir().mkpath(shotsDir); // снимки архива идут раньше остальных — папки ещё может не быть
         const QString path = shotsDir + QStringLiteral("/") + name + QStringLiteral(".png");
         (gl ? grabWithGl(&window) : window.grab()).save(path);
         qInfo().noquote() << "Сохранено:" << path;
     };
+
+    if (!conclusionAutosave.isEmpty()) {
+        window.setSessionId(conclusionAutosave.toLongLong());
+        auto* seating = window.findChild<QComboBox*>(QStringLiteral("comboBox_conclusion_seatingZone"));
+        auto* templ = window.findChild<QComboBox*>(QStringLiteral("comboBox_conclusion_summaryTemplate"));
+        auto* notes = window.findChild<QTextEdit*>(QStringLiteral("textEdit_conclusion_additionalNotes"));
+        if (seating && seating->count() > 1)
+            seating->setCurrentIndex(seating->count() - 1);
+        if (templ)
+            templ->setCurrentIndex(templ->count() - 1); // «Ручной ввод»
+        if (notes)
+            notes->setPlainText(QStringLiteral("Проверка записи заключения по ходу работы"));
+        qInfo().noquote() << "Зона посадки:" << (seating ? seating->currentText() : QString());
+        wait(1500); // таймер записи — 700 мс
+        return 0;
+    }
+    if (helpDialog) {
+        // «?» открывает модальную справку; пока она открыта, таймер снимает
+        // оба раздела и закрывает окно.
+        QTimer::singleShot(500, &window, [&] {
+            auto* dialog = window.findChild<QDialog*>(QStringLiteral("HelpDialog"));
+            if (!dialog) {
+                qWarning() << "Справка не открылась";
+                return;
+            }
+            auto* tabs = dialog->findChild<QTabWidget*>(QStringLiteral("tabWidget_help"));
+            QDir().mkpath(shotsDir);
+            for (int i = 0; tabs && i < tabs->count(); ++i) {
+                tabs->setCurrentIndex(i);
+                app.processEvents();
+                if (!shotsDir.isEmpty())
+                    dialog->grab().save(shotsDir + QStringLiteral("/help_%1.png").arg(i + 1));
+            }
+            if (auto* text = dialog->findChild<QTextBrowser*>(QStringLiteral("textBrowser_helpControls")))
+                qInfo().noquote() << text->toPlainText();
+            if (auto* help = dynamic_cast<HelpDialog*>(dialog))
+                qInfo().noquote() << "--- для поддержки ---\n" << help->supportText();
+            dialog->accept();
+        });
+        window.findChild<QToolButton*>(QStringLiteral("helpButton"))->click();
+        return 0;
+    }
+
+    if (!compareSessions.isEmpty()) {
+        mainTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_history")));
+        app.processEvents();
+        auto* list = window.findChild<QListWidget*>(QStringLiteral("listWidget_history_sessions"));
+        auto* repairButton = window.findChild<QPushButton*>(QStringLiteral("pushButton_history_compareRepair"));
+        qInfo().noquote() << "«До / ремонт / после»:" << (repairButton && repairButton->isEnabled() ? "доступна" : "выключена")
+                          << "·" << (repairButton ? repairButton->toolTip() : QString());
+        if (compareSessions == QStringLiteral("repair")) {
+            if (repairButton)
+                repairButton->click();
+        } else {
+            QStringList wanted = compareSessions.split(QLatin1Char(','));
+            for (int i = 0; list && i < list->count(); ++i) {
+                if (wanted.contains(list->item(i)->data(Qt::UserRole).toString()))
+                    list->item(i)->setCheckState(Qt::Checked);
+            }
+        }
+        app.processEvents();
+        QStringList checked;
+        for (int i = 0; list && i < list->count(); ++i) {
+            if (list->item(i)->checkState() == Qt::Checked)
+                checked << list->item(i)->data(Qt::UserRole).toString();
+        }
+        qInfo().noquote() << "Отмечены:" << checked.join(QStringLiteral(", "));
+
+        auto* tabs = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_historyCompare"));
+        for (int i = 0; tabs && i < tabs->count(); ++i) {
+            if (!tabs->isTabVisible(i) || !tabs->isTabEnabled(i))
+                continue;
+            tabs->setCurrentIndex(i);
+            app.processEvents();
+            qInfo().noquote() << "== вкладка сравнения:" << tabs->tabText(i);
+            for (auto* table : tabs->widget(i)->findChildren<QTableWidget*>()) {
+                if (!table->isVisible())
+                    continue;
+                QStringList header;
+                for (int c = 0; c < table->columnCount(); ++c)
+                    header << table->horizontalHeaderItem(c)->text().replace(QLatin1Char('\n'), QLatin1Char(' '));
+                qInfo().noquote() << " " << table->objectName() << ":" << header.join(QStringLiteral(" | "));
+                for (int r = 0; r < qMin(table->rowCount(), 3); ++r) {
+                    QStringList cells;
+                    for (int c = 0; c < table->columnCount(); ++c)
+                        cells << (table->item(r, c) ? table->item(r, c)->text() : QString());
+                    qInfo().noquote() << "    " << cells.join(QStringLiteral(" | "));
+                }
+            }
+            if (!shotsDir.isEmpty()) {
+                QDir().mkpath(shotsDir);
+                shot(QStringLiteral("compare_%1").arg(i + 1));
+                // Карточки сравнения лежат ниже тренд-карточек — прокрутить вниз.
+                if (auto* scroll = window.findChild<QScrollArea*>(QStringLiteral("scrollArea_history_details"))) {
+                    // Карточки значений — widget_history_compare (основной) и
+                    // widget_historyCompare_stroke (полный ход).
+                    QWidget* cards = window.findChild<QWidget*>(QStringLiteral("widget_history_compare"));
+                    if (!cards || !cards->isVisible())
+                        cards = window.findChild<QWidget*>(QStringLiteral("widget_historyCompare_stroke"));
+                    if (cards && cards->isVisible())
+                        scroll->ensureWidgetVisible(cards, 0, 0);
+                    else
+                        scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
+                    app.processEvents();
+                    shot(QStringLiteral("compare_%1_bottom").arg(i + 1));
+                    scroll->verticalScrollBar()->setValue(0);
+                }
+            }
+        }
+        return 0;
+    }
+
+    std::function<void(const char*)> dumpState; // состояние тестов по времени (после «Открыть сессию» и после закрытия)
+    if (!stepData.isEmpty()) {
+        // График шагового теста из архива (Step_N.data: «Задание» и «Датчик
+        // линейных перемещений» по времени): точки на график, разметка — от
+        // настоящего Step::Analyzer через тот же слот MainWindow, что и у
+        // живого теста. «Все подписи сразу» — самый плотный случай; снимки
+        // при обычной отрисовке линий (как после теста) и при OpenGL (как
+        // во время него).
+        auto* stepChart = window.findChild<ChartView*>(QStringLiteral("Chart_step"));
+        const auto file = ArchivedTest::readDataFile(stepData);
+        if (!stepChart || !file || file->live.size() < 2) {
+            qCritical().noquote() << "Нет графика шагового теста в" << stepData;
+            return 1;
+        }
+        stepChart->clear();
+        const QList<QPointF>& taskPts = file->live[0];
+        const QList<QPointF>& posPts = file->live[1];
+        for (const QPointF& p : taskPts)
+            stepChart->addPoint(0, p.x(), p.y());
+        for (const QPointF& p : posPts)
+            stepChart->addPoint(1, p.x(), p.y());
+
+        Domain::Tests::Option::Step::Analyzer analyzer;
+        Domain::Tests::Option::Step::Analyzer::Config stepCfg;
+        stepCfg.T_value = 86;
+        analyzer.setConfig(stepCfg);
+        analyzer.start();
+        for (qsizetype i = 0; i < qMin(taskPts.size(), posPts.size()); ++i) {
+            Domain::Measurement::Sample s;
+            s.testTime = qint64(taskPts[i].x());
+            s.taskPercent = taskPts[i].y();
+            s.positionPercent = posPts[i].y();
+            analyzer.onSample(s);
+        }
+        analyzer.finish();
+        const auto stepResult = analyzer.result();
+        qInfo().noquote() << QStringLiteral("Шаговый тест: %1 точек, шагов %2")
+                                 .arg(taskPts.size()).arg(stepResult.steps.size());
+        QMetaObject::invokeMethod(&window, "onStepResultUpdated", Qt::DirectConnection,
+                                  Q_ARG(Domain::Tests::Option::Step::Result, stepResult));
+
+        mainTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_optionalTests")));
+        auto* optionalTabs = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_optionalTests"));
+        optionalTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_optionalTests_step")));
+        app.processEvents();
+
+        auto options = stepChart->displayOptions();
+        options.results = ChartView::DisplayOptions::Results::AllLabels;
+        stepChart->setDisplayOptions(options);
+        qInfo() << "Линии на OpenGL:" << stepChart->liveRendering();
+        if (!shotsDir.isEmpty()) {
+            shot(QStringLiteral("07_step_all_labels_plain_lines"));
+            stepChart->setLiveRendering(true);
+            wait(300);
+            shot(QStringLiteral("07_step_all_labels_opengl_lines"));
+
+            // Туда-обратно ещё раз и наведение: после пересоздания OpenGL-
+            // виджета мышь должна проходить сквозь него (setLiveRendering()),
+            // подпись по наведению — с плашкой. Курсор — на первой точке разметки.
+            stepChart->setLiveRendering(false);
+            wait(300);
+            stepChart->setLiveRendering(true);
+            wait(300);
+            auto hoverOptions = stepChart->displayOptions();
+            hoverOptions.results = ChartView::DisplayOptions::Results::OnHover;
+            stepChart->setDisplayOptions(hoverOptions);
+            if (!stepChart->annotations().isEmpty()) {
+                const QPointF chartPos = stepChart->chart()->mapToPosition(
+                    stepChart->annotations().first().from, stepChart->series().value(1));
+                const QPoint pos = stepChart->mapFromScene(stepChart->chart()->mapToScene(chartPos));
+                const auto sendMove = [&] {
+                    QMouseEvent move(QEvent::MouseMove, QPointF(pos),
+                                     QPointF(stepChart->viewport()->mapToGlobal(pos)),
+                                     Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+                    QApplication::sendEvent(stepChart->viewport(), &move);
+                };
+                sendMove();
+                shot(QStringLiteral("08_step_hover_label_opengl_after_toggles"));
+                stepChart->setLiveRendering(false);
+                wait(300);
+                sendMove();
+                shot(QStringLiteral("08_step_hover_label_plain"));
+            }
+        }
+        return 0;
+    }
+
+    if (!archiveArg.isEmpty()) {
+        // Список «Истории» заполняется при открытии вкладки — как у оператора.
+        mainTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_history")));
+        app.processEvents();
+        auto* list = window.findChild<QListWidget*>(QStringLiteral("listWidget_history_sessions"));
+        QListWidgetItem* item = nullptr;
+        for (int i = 0; list && i < list->count(); ++i) {
+            if (list->item(i)->data(Qt::UserRole).toLongLong() == archiveArg.toLongLong())
+                item = list->item(i);
+        }
+        if (!item) {
+            qCritical().noquote() << "Сессии" << archiveArg << "нет в списке «Истории»:";
+            for (int i = 0; list && i < list->count(); ++i)
+                qInfo().noquote() << "  " << list->item(i)->data(Qt::UserRole).toLongLong()
+                                  << list->item(i)->text().replace(QLatin1Char('\n'), QStringLiteral(" | "));
+            return 1;
+        }
+        list->setCurrentItem(item);
+        emit list->itemClicked(item);
+        app.processEvents();
+        if (auto* folderButton = window.findChild<QPushButton*>(QStringLiteral("pushButton_history_openFolder")))
+            qInfo().noquote() << "«Открыть папку» в «Истории»:" << (folderButton->isEnabled() ? "доступна" : "выключена")
+                              << "·" << folderButton->toolTip();
+        window.findChild<QPushButton*>(QStringLiteral("pushButton_history_openCharts"))->click();
+        app.processEvents();
+
+        // Что показал просмотр сессии: тесты по времени — точки графиков,
+        // разметка, таблицы, тексты (сверяется с базой скриптом).
+        dumpState = [&](const char* title) {
+            QTextStream out(stdout);
+            out << "=== " << title << " ===\n";
+            for (const char* name : {"Chart_stroke", "Chart_step", "Chart_response", "Chart_resolution",
+                                     "Chart_pressure", "Chart_task", "Chart_friction"}) {
+                auto* chart = window.findChild<ChartView*>(QString::fromLatin1(name));
+                if (!chart)
+                    continue;
+                out << name << ": точек";
+                for (int i = 0; i < chart->seriesCount(); ++i) {
+                    const auto p = chart->getPoints(quint8(i));
+                    out << " " << (p.first.size() + p.second.size());
+                }
+                out << "\n";
+            }
+            for (const char* name : {"tableWidget_stepResults", "tableWidget_responseResults",
+                                     "tableWidget_resolutionResults"}) {
+                auto* table = window.findChild<QTableWidget*>(QString::fromLatin1(name));
+                if (!table)
+                    continue;
+                out << name << " " << table->rowCount() << "x" << table->columnCount() << "\n";
+                for (int r = 0; r < table->rowCount(); ++r) {
+                    QStringList cells;
+                    bool any = false;
+                    for (int c = 0; c < table->columnCount(); ++c) {
+                        const auto* item = table->item(r, c);
+                        const QString text = item ? item->text() : QString();
+                        any = any || !text.isEmpty();
+                        cells << text;
+                    }
+                    if (any)
+                        out << "  | " << cells.join(QStringLiteral(" | ")) << "\n";
+                }
+            }
+            for (const char* name : {"label_strokeTest_forwardTime_Value", "label_strokeTest_backwardTime_Value",
+                                     "label_strokeTest_respondingReactionForwardTime_Value",
+                                     "label_strokeTest_respondingReactionBackwardTime_Value"}) {
+                if (auto* label = window.findChild<QLabel*>(QString::fromLatin1(name)))
+                    out << name << " = " << label->text() << "\n";
+            }
+            out << "Сохранение: " << "main=" << window.findChild<QPushButton*>(QStringLiteral("pushButton_mainTest_save"))->isEnabled()
+                << " stroke=" << window.findChild<QPushButton*>(QStringLiteral("pushButton_strokeTest_save"))->isEnabled()
+                << " optional=" << window.findChild<QPushButton*>(QStringLiteral("pushButton_optionalTests_save"))->isEnabled() << "\n";
+            out.flush();
+        };
+        dumpState("Просмотр сессии");
+
+        if (!shotsDir.isEmpty()) {
+            // Вкладки тестов по времени.
+            auto selectTab = [&](const char* name) {
+                if (auto* w = window.findChild<QWidget*>(QString::fromLatin1(name))) {
+                    for (QWidget* p = w; p && p->parentWidget(); p = p->parentWidget()) {
+                        if (auto* tabs = qobject_cast<QTabWidget*>(p->parentWidget()->parentWidget()))
+                            tabs->setCurrentWidget(p);
+                    }
+                }
+            };
+            for (const auto& [tab, shotName] : {std::pair<const char*, const char*>{"tab_strokeTest", "archive_stroke"},
+                                                {"tab_optionalTests_response", "archive_response"},
+                                                {"tab_optionalTests_resolution", "archive_resolution"},
+                                                {"tab_optionalTests_step", "archive_step"},
+                                                {"tab_resolutionResults", "archive_resolution_table"},
+                                                {"tab_responseResults", "archive_response_table"}}) {
+                selectTab(tab);
+                app.processEvents();
+                shot(QString::fromLatin1(shotName));
+            }
+            mainTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_mainTests")));
+        }
+        if (!shotsDir.isEmpty()) {
+            auto* tests = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_mainTests"));
+            tests->setCurrentIndex(tests->count() - 1); // «Результаты»
+            app.processEvents();
+            shot(QStringLiteral("archive_results"));
+            tests->setCurrentIndex(0);
+        }
+    }
 
     if (open == QStringLiteral("report")) {
         auto* reportTabs = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_reportGeneration"));
@@ -734,6 +1176,121 @@ int main(int argc, char* argv[])
         app.processEvents();
         reportTabs->setCurrentIndex(reportTabs->count() - 1); // «Предпросмотр» — последняя
         app.processEvents();
+        if (!archiveArg.isEmpty()) {
+            auto* past = window.findChild<QLabel*>(QStringLiteral("label_reportPreviewPast"));
+            auto* issued = window.findChild<QPushButton*>(QStringLiteral("pushButton_reportPreview_openIssued"));
+            auto* empty = window.findChild<QLabel*>(QStringLiteral("label_reportPreview_empty"));
+            qInfo().noquote() << "Плашка:" << (past && past->isVisible() ? past->text() : QStringLiteral("нет"));
+            qInfo().noquote() << "Выданный отчёт:" << (issued && issued->isVisible() ? issued->toolTip() : QStringLiteral("нет"));
+            auto* folder = window.findChild<QPushButton*>(QStringLiteral("pushButton_reportPreview_openFolder"));
+            qInfo().noquote() << "Папка на плашке:" << (folder && folder->isVisible() ? folder->toolTip() : QStringLiteral("нет"));
+            if (empty && empty->isVisible())
+                qInfo().noquote() << "Пусто:" << empty->text();
+            if (!shotsDir.isEmpty())
+                shot(QStringLiteral("archive_preview"));
+            // «Закрыть просмотр» на плашке — снова черновик текущей.
+            window.findChild<QPushButton*>(QStringLiteral("pushButton_reportPreview_closePast"))->click();
+            app.processEvents();
+            if (dumpState)
+                dumpState("После «Закрыть просмотр»");
+            qInfo().noquote() << "После «Закрыть просмотр»: плашка"
+                              << (past && past->isVisible() ? "видна" : "скрыта") << "· кнопка «Истории»:"
+                              << window.findChild<QPushButton*>(QStringLiteral("pushButton_history_openCharts"))->text();
+            if (!shotsDir.isEmpty())
+                shot(QStringLiteral("archive_closed"));
+        }
+
+        if (generate) {
+            // Готово, когда окно включает «Открыть отчёт» (Excel записан).
+            auto* openReport = window.findChild<QPushButton*>(QStringLiteral("pushButton_report_open"));
+            QMetaObject::invokeMethod(&window, "generateReportClicked", Qt::DirectConnection);
+            for (int i = 0; i < 300 && openReport && !openReport->isEnabled(); ++i)
+                wait(100);
+            wait(500);
+            QString folder;
+            QDateTime newest;
+            QDirIterator it(QCoreApplication::applicationDirPath(), {QStringLiteral("report.xlsx")},
+                            QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                const QFileInfo info(it.next());
+                if (!newest.isValid() || info.lastModified() > newest) {
+                    newest = info.lastModified();
+                    folder = info.absolutePath();
+                }
+            }
+            qInfo().noquote() << "Отчёт:" << (folder.isEmpty() ? QStringLiteral("не сформирован") : folder);
+            if (!folder.isEmpty() && !shotsDir.isEmpty()) {
+                QDir().mkpath(shotsDir);
+                for (const QFileInfo& f : QDir(folder).entryInfoList({QStringLiteral("*.xlsx"), QStringLiteral("*.pdf")}, QDir::Files)) {
+                    QFile::remove(shotsDir + QLatin1Char('/') + f.fileName());
+                    QFile::copy(f.absoluteFilePath(), shotsDir + QLatin1Char('/') + f.fileName());
+                }
+            }
+        }
+
+#ifdef MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE
+        if (!compareArg.isEmpty()) {
+            auto* with = window.findChild<QComboBox*>(QStringLiteral("comboBox_reportCompare_with"));
+            const int index = with ? with->findData(compareArg.toLongLong()) : -1;
+            if (index < 0) {
+                qCritical().noquote() << "Сессии" << compareArg << "нет в «Сравнить с»:"
+                                      << (with ? with->toolTip() : QStringLiteral("нет списка"));
+                for (int i = 0; with && i < with->count(); ++i)
+                    qInfo().noquote() << "  " << with->itemData(i).toLongLong() << with->itemText(i);
+                return 1;
+            }
+            with->setCurrentIndex(index);
+            app.processEvents();
+
+            auto* warning = window.findChild<QLabel*>(QStringLiteral("label_reportCompare_warning"));
+            if (warning && !warning->text().isEmpty())
+                qInfo().noquote() << "Предупреждение:" << warning->text();
+            auto* diffs = window.findChild<QListWidget*>(QStringLiteral("listWidget_reportCompare_diffs"));
+            qInfo().noquote() << "Отличий:" << diffs->count();
+            for (int i = 0; i < diffs->count(); ++i)
+                qInfo().noquote() << "  " << diffs->item(i)->text().replace(QLatin1Char('\n'), QStringLiteral(" | "));
+            auto* table = window.findChild<QTableWidget*>(QStringLiteral("tableWidget_reportCompare"));
+            QStringList header;
+            for (int c = 0; c < table->columnCount(); ++c)
+                header << table->horizontalHeaderItem(c)->text();
+            qInfo().noquote() << "Таблица:" << header.join(QStringLiteral(" | "));
+            for (int r = 0; r < table->rowCount(); ++r) {
+                QStringList cells;
+                for (int c = 0; c < table->columnCount(); ++c)
+                    cells << (table->item(r, c) ? table->item(r, c)->text() : QString());
+                qInfo().noquote() << "  " << cells.join(QStringLiteral(" | "));
+            }
+
+            if (!shotsDir.isEmpty()) {
+                QDir().mkpath(shotsDir);
+                wait(4000); // уведомления уходят
+                auto* nextPage = window.findChild<QPushButton*>(QStringLiteral("pushButton_reportPreview_nextPage"));
+                auto* diffsButton = window.findChild<QPushButton*>(QStringLiteral("pushButton_reportCompare_diffs"));
+                shot(QStringLiteral("compare_p1"));
+                if (diffsButton && !diffsButton->isChecked()) {
+                    diffsButton->click();
+                    app.processEvents();
+                }
+                if (diffs->count() > 0) {
+                    diffs->setCurrentRow(0);
+                    emit diffs->itemClicked(diffs->item(0)); // как щелчок оператора
+                    app.processEvents();
+                }
+                shot(QStringLiteral("compare_p1_diffs"));
+                if (nextPage && nextPage->isEnabled()) {
+                    nextPage->click();
+                    app.processEvents();
+                    shot(QStringLiteral("compare_p2"));
+                }
+                if (auto* tableButton = window.findChild<QPushButton*>(QStringLiteral("pushButton_reportCompare_table"))) {
+                    tableButton->click();
+                    app.processEvents();
+                    shot(QStringLiteral("compare_table"));
+                }
+                return 0;
+            }
+        }
+#endif
 
         if (shotsDir.isEmpty())
             return app.exec();
@@ -805,11 +1362,98 @@ int main(int argc, char* argv[])
         strokeCombo->setCurrentIndex(0);
     }
     if (combo)
-        combo->setCurrentIndex(3);
+        combo->setCurrentIndex(2); // участки по ходу
     testTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_mainTests_pressure")));
     shot(QStringLiteral("03_pressure_marks"));
+
+    // Меню ⚙ графика (ChartView::DisplayOptions): блок значений у курсора —
+    // синтетическое движение мыши к середине области построения; все
+    // подписи разметки сразу; само меню. Настройки после — как были.
+    {
+        const auto saved = pressure->displayOptions();
+        auto o = saved;
+        o.hoverValues = ChartView::DisplayOptions::HoverValues::NearCursor;
+        pressure->setDisplayOptions(o);
+        const QPointF plotCenter = pressure->chart()->mapToScene(pressure->chart()->plotArea().center());
+        const QPoint pos = pressure->mapFromScene(plotCenter);
+        wait(150);
+        QMouseEvent move(QEvent::MouseMove, QPointF(pos), QPointF(pressure->viewport()->mapToGlobal(pos)),
+                         Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+        QApplication::sendEvent(pressure->viewport(), &move);
+        shot(QStringLiteral("03b_pressure_hover_block"));
+
+        o.results = ChartView::DisplayOptions::Results::AllLabels;
+        pressure->setDisplayOptions(o);
+        shot(QStringLiteral("03c_pressure_all_labels"));
+
+        if (auto* gear = pressure->findChild<QToolButton*>(QStringLiteral("chartSettingsButton")); gear && gear->menu()) {
+            gear->menu()->popup(gear->mapToGlobal(QPoint(0, gear->height())));
+            wait(200);
+            gear->menu()->grab().save(shotsDir + QStringLiteral("/03d_settings_menu.png"));
+            qInfo().noquote() << "Сохранено: меню ⚙";
+            gear->menu()->hide();
+        }
+        QEvent leave(QEvent::Leave);
+        QApplication::sendEvent(pressure, &leave);
+        pressure->setDisplayOptions(saved);
+    }
     testTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_mainTests_task")));
     shot(QStringLiteral("04_task_marks"));
+
+    // Блок значений у курсора на графике задания — самый плотный случай (до
+    // семи значений): курсор на линии положения в трёх местах по оси мА.
+    // Оффскрин-снимок линий не рисует (OpenGL) — блок и точки видно, линии
+    // только с --gl на настоящем экране.
+    {
+        const auto saved = task->displayOptions();
+        auto o = saved;
+        o.hoverValues = ChartView::DisplayOptions::HoverValues::NearCursor;
+        task->setDisplayOptions(o);
+        const auto livePoints = task->getPoints(1).first; // положение, обратный ход
+        Widgets::Chart::Series* axisSeries = task->series().value(1);
+        const auto hoverShots = [&](const QString& prefix) {
+            int n = 0;
+            for (const double mA : {16.27, 19.27, 7.5}) {
+                QPointF nearest;
+                double best = 1e18;
+                for (const QPointF& p : livePoints) {
+                    if (std::abs(p.x() - mA) < best) {
+                        best = std::abs(p.x() - mA);
+                        nearest = p;
+                    }
+                }
+                const QPointF chartPos = task->chart()->mapToPosition(nearest, axisSeries);
+                const QPoint pos = task->mapFromScene(task->chart()->mapToScene(chartPos));
+                QMouseEvent move(QEvent::MouseMove, QPointF(pos), QPointF(task->viewport()->mapToGlobal(pos)),
+                                 Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+                QApplication::sendEvent(task->viewport(), &move);
+                shot(QStringLiteral("%1_%2").arg(prefix).arg(++n));
+            }
+        };
+        hoverShots(QStringLiteral("04b_task_hover_block"));
+
+        // Снимок для отчёта в режиме setReportCapture() при обычных линиях
+        // (как после теста): линии на месте, без ⚙, крестика и блока.
+        {
+            QEvent leaveCapture(QEvent::Leave);
+            QApplication::sendEvent(task, &leaveCapture);
+            qInfo() << "Задание: линии на OpenGL:" << task->liveRendering();
+            task->setReportCapture(true);
+            task->grab().save(shotsDir + QStringLiteral("/09_task_report_capture.png"));
+            task->setReportCapture(false);
+        }
+
+
+        // Те же положения курсора в режиме «В легенде над графиком»: значение
+        // X слева от первого чипа, у серий с двумя ходами «обр · пр».
+        o.hoverValues = ChartView::DisplayOptions::HoverValues::Legend;
+        task->setDisplayOptions(o);
+        hoverShots(QStringLiteral("04a_task_hover_legend"));
+
+        QEvent leave(QEvent::Leave);
+        QApplication::sendEvent(task, &leave);
+        task->setDisplayOptions(saved);
+    }
 
     testTabs->setCurrentWidget(resultTab);
     if (QLabel* info = infoLabel(&window)) {

@@ -140,12 +140,10 @@ private:
         const Regression& regression,
         const Limits& limits) const;
 
-    // Дифференциальная линейность: локальный наклон d(положение)/d(давление)
-    // в скользящем окне (МНК по ~10 % точек), отклонение от наклона
-    // regression.k в %, берётся максимум по окнам.
-    double computeDifferentialLinearityError(
+    // Линейность для Pass|Fail — прямая минимакс:
+    // Linearity::minimaxLinearity() (Linearity/LinearityMethods.h).
+    double computeMinimaxLinearityError(
         const QVector<PressurePoint>& points,
-        const Regression& regression,
         const Limits& limits) const;
 
     double computePressureDiff(

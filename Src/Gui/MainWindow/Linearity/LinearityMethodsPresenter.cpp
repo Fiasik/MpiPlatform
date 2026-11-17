@@ -28,15 +28,14 @@ using Widgets::Chart::ChartView;
 namespace {
 
 // Серии малого графика: по линии на ход (отклонение от прямой, мм — способы
-// 1–2; отклонение наклона участка от общего, % — способы 3–5), затем
+// 1–2; отклонение наклона участка от общего, % — способы 3–4), затем
 // служебные — у выбранного хода.
 enum ProfileSeries : quint8 {
     ProfileForward = 0,
     ProfileBackward = 1,
     ProfileAverage = 2,
-    ProfileDropped = 3, // участки, которые текущий расчёт не учитывает (только способ 3)
-    ProfileLevel = 4,   // ноль
-    ProfileWorst = 5,   // худшее место
+    ProfileLevel = 3,   // ноль
+    ProfileWorst = 4,   // худшее место
 };
 
 const QColor kMarkColor(214, 39, 40);
@@ -83,7 +82,7 @@ LinearityMethodsPresenter::LinearityMethodsPresenter(Widgets::Chart::Manager* ch
     for (LinearityMethod method : allLinearityMethods())
         m_ui->comboBox_linearityMethod->addItem(linearityMethodTitle(method), int(method));
     m_ui->comboBox_linearityMethod->setCurrentIndex(
-        m_ui->comboBox_linearityMethod->findData(int(LinearityMethod::DifferentialCurrent)));
+        m_ui->comboBox_linearityMethod->findData(int(LinearityMethod::IntegralMinimax)));
     for (StrokeBasis basis : allStrokeBases())
         m_ui->comboBox_linearityStroke->addItem(strokeBasisTitle(basis), int(basis));
 
@@ -95,10 +94,8 @@ LinearityMethodsPresenter::LinearityMethodsPresenter(Widgets::Chart::Manager* ch
     profile->addSeries(0, tr("Прямой"), QColor(31, 111, 235));
     profile->addSeries(0, tr("Обратный"), QColor(232, 89, 12));
     profile->addSeries(0, tr("Средняя"), QColor(43, 138, 62));
-    profile->addSeries(0, tr("Не учтено текущим расчётом"), QColor(154, 165, 177));
     profile->addSeries(0, tr("Ноль"), QColor(112, 72, 232));
     profile->addSeries(0, tr("Худшее место"), kMarkColor);
-    profile->setSeriesMarkersOnly(ProfileDropped, true, 8.0);
     profile->setSeriesMarkersOnly(ProfileWorst, true, 12.0);
     profile->setAllowNegativeY(true);
 
@@ -194,17 +191,12 @@ void LinearityMethodsPresenter::render()
 {
     const bool valid = m_result.valid;
     const bool integral = isPercentOfStroke(m_result.method);
-    const bool current = m_result.method == LinearityMethod::DifferentialCurrent;
-
-    m_ui->label_linearityWindows_Title->setVisible(current);
-    m_ui->label_linearityWindows_Value->setVisible(current);
 
     if (!valid) {
         const QString dash = QStringLiteral("—");
         m_ui->label_linearityWorstRange_Value->setText(dash);
         m_ui->label_linearityWorstStroke_Value->setText(dash);
         m_ui->label_linearityStrokes_Value->setText(dash);
-        m_ui->label_linearityWindows_Value->setText(dash);
         m_ui->label_linearityCalcRange_Norm->setText(tr("нет данных графика «давление от перемещения»"));
         for (quint8 s = ProfileForward; s <= ProfileWorst; ++s)
             m_ui->chartView_linearityProfile->replacePoints(s, {});
@@ -229,8 +221,6 @@ void LinearityMethodsPresenter::render()
         perStroke << (stroke.valid ? num(stroke.value, 2) : QStringLiteral("—"));
     m_ui->label_linearityStrokes_Value->setText(perStroke.join(QStringLiteral(" / ")));
 
-    m_ui->label_linearityWindows_Value->setText(tr("%1 из %2").arg(s.usedWindows).arg(s.totalWindows));
-
     m_ui->label_linearityCalcRange_Norm->setText(tr("расчёт по 10–90 % хода: %1–%2 мм")
         .arg(num(m_result.windowMin, 1), num(m_result.windowMax, 1)));
 
@@ -251,8 +241,8 @@ void LinearityMethodsPresenter::render()
 
 void LinearityMethodsPresenter::reapplyCardOverride()
 {
-    // Официальный = текущий способ по худшему из двух ходов.
-    const bool official = m_result.method == LinearityMethod::DifferentialCurrent
+    // Официальный = минимакс по худшему из двух ходов (как Analyzer).
+    const bool official = m_result.method == LinearityMethod::IntegralMinimax
         && m_result.basis == StrokeBasis::WorstOfTwo;
     const bool wanted = m_active && m_result.valid && !official
         && m_registry && m_card.value && m_card.status && m_card.bar
@@ -300,14 +290,14 @@ void LinearityMethodsPresenter::fillInfoPopup()
     set(ui.label_infoInRangeBackward_Data, b, QString::number(b.windowPoints));
     set(ui.label_infoSlopeForward_Data, f, num(f.lsqSlope, 2));
     set(ui.label_infoSlopeBackward_Data, b, num(b.lsqSlope, 2));
-    set(ui.label_infoWindowsForward_Data, f, QStringLiteral("%1 / %2").arg(f.usedWindows).arg(f.totalWindows));
-    set(ui.label_infoWindowsBackward_Data, b, QStringLiteral("%1 / %2").arg(b.usedWindows).arg(b.totalWindows));
+    set(ui.label_infoWindowsForward_Data, f, QString::number(f.totalWindows));
+    set(ui.label_infoWindowsBackward_Data, b, QString::number(b.totalWindows));
     set(ui.label_infoResultForward_Data, f, f.valid ? num(f.value, 2) : QStringLiteral("—"));
     set(ui.label_infoResultBackward_Data, b, b.valid ? num(b.value, 2) : QStringLiteral("—"));
     set(ui.label_infoPointsAverage_Data, a, QString::number(a.totalPoints));
     set(ui.label_infoInRangeAverage_Data, a, QString::number(a.windowPoints));
     set(ui.label_infoSlopeAverage_Data, a, num(a.lsqSlope, 2));
-    set(ui.label_infoWindowsAverage_Data, a, QStringLiteral("%1 / %2").arg(a.usedWindows).arg(a.totalWindows));
+    set(ui.label_infoWindowsAverage_Data, a, QString::number(a.totalWindows));
     set(ui.label_infoResultAverage_Data, a, a.valid ? num(a.value, 2) : QStringLiteral("—"));
     auto binned = [](const StrokeLinearity& s) {
         return qIsNaN(s.binnedValue) ? QStringLiteral("—") : num(s.binnedValue, 2);
@@ -326,9 +316,7 @@ void LinearityMethodsPresenter::fillInfoPopup()
         .arg(num(m_result.strokeMin, 2), num(m_result.strokeMax, 2),
              num(m_result.windowMin, 2), num(m_result.windowMax, 2));
     const StrokeLinearity& any = m_result.strokes[m_result.worstStroke];
-    if (any.slopeWindowPoints > 0)
-        footer += tr(" · участок %1 точек").arg(any.slopeWindowPoints);
-    else if (any.slopeWindowMm > 0.0)
+    if (any.slopeWindowMm > 0.0)
         footer += tr(" · участок %1 мм").arg(num(any.slopeWindowMm, 2));
     ui.label_infoRange_Norm->setText(footer);
     m_popup->adjustSize();
@@ -340,8 +328,7 @@ void LinearityMethodsPresenter::updateProfileChart()
     const int selected = m_result.worstStroke;
     const bool integral = isPercentOfStroke(m_result.method);
 
-    // Линия на каждый ход; отброшенные участки и худшее место — у выбранного.
-    QList<QPointF> dropped;
+    // Линия на каждый ход; худшее место — у выбранного.
     for (int i = 0; i < 3; ++i) {
         const StrokeLinearity& s = m_result.strokes[i];
         QList<QPointF> line;
@@ -349,13 +336,8 @@ void LinearityMethodsPresenter::updateProfileChart()
             if (integral) {
                 line = s.profile;
             } else {
-                for (int j = 0; j < s.windows.size() && j < s.profile.size(); ++j) {
-                    const QPointF p(s.profile.at(j).x(), slopeDeviation(s, s.profile.at(j).y()));
-                    if (s.windows.at(j).used)
-                        line.push_back(p);
-                    else if (i == selected)
-                        dropped.push_back(p);
-                }
+                for (int j = 0; j < s.windows.size() && j < s.profile.size(); ++j)
+                    line.push_back({s.profile.at(j).x(), slopeDeviation(s, s.profile.at(j).y())});
             }
         }
         chart->replacePoints(quint8(ProfileForward + i), line);
@@ -369,10 +351,8 @@ void LinearityMethodsPresenter::updateProfileChart()
     else
         worst.push_back({(s.worstLow.y() + s.worstHigh.y()) / 2.0, slopeDeviation(s, s.worstSlope)});
 
-    chart->replacePoints(ProfileDropped, dropped);
     chart->replacePoints(ProfileLevel, {{m_result.windowMin, 0.0}, {m_result.windowMax, 0.0}});
     chart->replacePoints(ProfileWorst, worst);
-    chart->visible(ProfileDropped, !dropped.isEmpty());
     chart->rescanRange();
 }
 

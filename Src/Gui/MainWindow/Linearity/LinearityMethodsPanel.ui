@@ -63,7 +63,7 @@
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>По какому ходу считать: худший из двух (как сейчас), прямой, обратный или средняя кривая обоих ходов (как в IEC 61987 / IEC 61298-2)</string>
+        <string>По какому ходу считать: худший из двух (как в отчёте), прямой, обратный или средняя кривая обоих ходов (как в IEC 61987 / IEC 61298-2)</string>
        </property>
       </widget>
      </item>
@@ -223,36 +223,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_linearityWindows_Title">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Участков учтено</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="label_linearityWindows_Value">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>5 из 19</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="3">
+      <item row="3" column="0" colspan="3">
        <widget class="QLabel" name="label_linearityCalcRange_Norm">
         <property name="text">
          <string>расчёт по 10–90 % хода</string>

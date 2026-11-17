@@ -1,4 +1,5 @@
 #include "Analyzer.h"
+#include "Linearity/LinearityMethods.h"
 
 #include <algorithm>
 #include <cmath>
@@ -7,6 +8,13 @@
 #include <QPointF>
 
 namespace Domain::Tests::Main {
+
+namespace {
+// [ОТ-3] Рабочее окно: по 10 % хода отрезается с каждого края. Та же доля —
+// kWindowFrac в Linearity/LinearityMethods.cpp (минимакс [ОТ-7]); границы
+// окна уходят в Result::workWindowLow/High для серых полос на графике.
+constexpr double kWorkWindowFrac = 0.10;
+}
 
 void Analyzer::setConfig(const Config& cfg)
 {
@@ -141,7 +149,7 @@ Analyzer::Regression Analyzer::calculateRegression(
     if (points.isEmpty())
         return result;
 
-    const double range = 0.10;
+    const double range = kWorkWindowFrac;
 
     const double minY =
         (limits.maxY - limits.minY) * range + limits.minY;
@@ -193,7 +201,7 @@ double Analyzer::computeLinearityError(
     if (!regression.valid || points.isEmpty())
         return 0.0;
 
-    const double frac = 0.10;
+    const double frac = kWorkWindowFrac;
 
     const double pMin =
         limits.minY + (limits.maxY - limits.minY) * frac;
@@ -222,87 +230,18 @@ double Analyzer::computeLinearityError(
     return (maxDiff / pRange) * 100.0;
 }
 
-// [ОТ-7] Линейность, дифференциальная (Pass|Fail) — docs/formulas/main_test.md
-double Analyzer::computeDifferentialLinearityError(
+// [ОТ-7] Линейность, прямая минимакс (Pass|Fail) — docs/formulas/main_test.md
+double Analyzer::computeMinimaxLinearityError(
     const QVector<PressurePoint>& points,
-    const Regression& regression,
     const Limits& limits) const
 {
-    if (!regression.valid || qFuzzyIsNull(regression.k) || points.isEmpty())
-        return 0.0;
+    QVector<QPointF> xy;
+    xy.reserve(points.size());
+    for (const PressurePoint& p : points)
+        xy.push_back({p.pressure, p.position});
 
-    // Тот же рабочий диапазон, что и у регрессии: средние 80 % хода, края
-    // (разгон и упоры) не участвуют.
-    const double frac = 0.10;
-    const double pMin = limits.minY + (limits.maxY - limits.minY) * frac;
-    const double pMax = limits.maxY - (limits.maxY - limits.minY) * frac;
-    if (pMax - pMin <= 0.0)
-        return 0.0;
-
-    // Точки окна в порядке записи (по времени): производная берётся вдоль
-    // хода, а не по отсортированному давлению.
-    QVector<PressurePoint> window;
-    window.reserve(points.size());
-    double xMin = 0.0, xMax = 0.0;
-    for (const PressurePoint& p : points) {
-        if (p.position < pMin || p.position > pMax)
-            continue;
-        if (window.isEmpty()) {
-            xMin = xMax = p.pressure;
-        } else {
-            xMin = qMin(xMin, p.pressure);
-            xMax = qMax(xMax, p.pressure);
-        }
-        window.push_back(p);
-    }
-
-    const int n = window.size();
-    // Окно скользящего МНК — 10 % точек (не меньше 8): производная усиливает
-    // шум, и на 2-3 соседних отсчётах наклон ничего не значит.
-    const int w = qMax(8, n / 10);
-    if (n < 2 * w)
-        return 0.0;
-
-    const double xSpan = xMax - xMin;
-    if (xSpan <= 0.0)
-        return 0.0;
-
-    // Префиксные суммы: наклон любого окна за O(1).
-    QVector<double> sx(n + 1, 0.0), sy(n + 1, 0.0), sxy(n + 1, 0.0), sxx(n + 1, 0.0);
-    for (int i = 0; i < n; ++i) {
-        const double x = window[i].pressure;
-        const double y = window[i].position;
-        sx[i + 1] = sx[i] + x;
-        sy[i + 1] = sy[i] + y;
-        sxy[i + 1] = sxy[i] + x * y;
-        sxx[i + 1] = sxx[i] + x * x;
-    }
-
-    double maxDeviation = 0.0;
-    const int step = qMax(1, w / 2);
-    for (int start = 0; start + w <= n; start += step) {
-        const int end = start + w;
-        const double cx = sx[end] - sx[start];
-        const double cy = sy[end] - sy[start];
-        const double cxy = sxy[end] - sxy[start];
-        const double cxx = sxx[end] - sxx[start];
-
-        const double denominator = w * cxx - cx * cx;
-        // Окно, в котором давление почти не менялось, наклон не определяет
-        // (стоп/реверс хода) — пропускаем: иначе деление на ~0 даёт выброс.
-        const double windowSpan = std::sqrt(qMax(0.0, denominator)) / w * std::sqrt(12.0);
-        if (windowSpan < 0.10 * xSpan)
-            continue;
-
-        const double kLocal = (w * cxy - cx * cy) / denominator;
-        if (!std::isfinite(kLocal))
-            continue;
-
-        const double deviation = qAbs(kLocal - regression.k) / qAbs(regression.k) * 100.0;
-        maxDeviation = qMax(maxDeviation, deviation);
-    }
-
-    return maxDeviation;
+    // Тот же расчёт, что способ «минимакс» в карточке линейности.
+    return Linearity::minimaxLinearity(xy, limits.minY, limits.maxY);
 }
 
 // [ОТ-8] Разность давлений ходов на середине хода — docs/formulas/main_test.md
@@ -692,6 +631,12 @@ void Analyzer::applyRegressions(
     const Regression& regressionSecond,
     const Limits& pressureLimits)
 {
+    // [ОТ-3] — то же окно, по которому только что построены прямые и
+    // считается линейность ниже; на график — серыми полосами.
+    const double strokeRange = pressureLimits.maxY - pressureLimits.minY;
+    m_result.workWindowLow = pressureLimits.minY + strokeRange * kWorkWindowFrac;
+    m_result.workWindowHigh = pressureLimits.maxY - strokeRange * kWorkWindowFrac;
+
     const double linearityForward =
         computeLinearityError(m_pressureSeriesFirst, regressionFirst, pressureLimits);
 
@@ -702,16 +647,16 @@ void Analyzer::applyRegressions(
     m_result.linearityErrorIntegral =
         qMax(linearityForward, linearityBackward);
 
-    // Допуск проверяется по дифференциальной линейности (см. Result::linearityError).
-    const double differentialForward =
-        computeDifferentialLinearityError(m_pressureSeriesFirst, regressionFirst, pressureLimits);
+    // Допуск проверяется по линейности с прямой минимакс (см. Result::linearityError).
+    const double minimaxForward =
+        computeMinimaxLinearityError(m_pressureSeriesFirst, pressureLimits);
 
-    const double differentialBackward =
-        computeDifferentialLinearityError(m_pressureSeriesSecond, regressionSecond, pressureLimits);
+    const double minimaxBackward =
+        computeMinimaxLinearityError(m_pressureSeriesSecond, pressureLimits);
 
     // [ОТ-7] — docs/formulas/main_test.md
     m_result.linearityError =
-        qMax(differentialForward, differentialBackward);
+        qMax(minimaxForward, minimaxBackward);
 
     m_result.linearity =
         100.0 - m_result.linearityError;
