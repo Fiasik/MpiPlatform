@@ -1,7 +1,9 @@
 #include "ViewerWindow.h"
 #include "ui_ViewerWindow.h"
+#include "PressureAnalysis.h"
 
 #include <QCoreApplication>
+#include <QClipboard>
 #include <QDataStream>
 #include <QDir>
 #include <QFile>
@@ -12,12 +14,14 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QOpenGLWidget>
-#include <QPageLayout>
-#include <QPainter>
-#include <QPrinter>
+#include <QPushButton>
+#include <QApplication>
+#include <QGridLayout>
+#include <QLabel>
+#include <QThread>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QToolButton>
+#include <QRegularExpression>
 
 #include "Gui/Style/Palette.h"
 #include "Gui/Style/RoleStyler.h"
@@ -186,7 +190,8 @@ ViewerWindow::ViewerWindow(Gui::Style::ThemeManager* themeManager, QWidget* pare
     // Скрытый QOpenGLWidget-потомок здесь, до первого show(), заставляет Qt
     // создать нативное окно сразу под OpenGL — переоткрывать его при первом
     // графике уже не нужно.
-    (new QOpenGLWidget(this))->hide();
+    if (QApplication::platformName() != QStringLiteral("offscreen"))
+        (new QOpenGLWidget(this))->hide();
 
     // Позволяет использовать в .ui тот же приём именования, что и в
     // MainWindow/ObjectWindow — QFrame с суффиксом "_Section"/"_Card" и
@@ -217,27 +222,11 @@ ViewerWindow::ViewerWindow(Gui::Style::ThemeManager* themeManager, QWidget* pare
 
     connect(ui->tabWidget_charts, &QTabWidget::tabCloseRequested, this, &ViewerWindow::closeTab);
 
-    connect(ui->actionOpenFolder, &QAction::triggered, this, &ViewerWindow::chooseRootFolder);
-    connect(ui->actionExportChart, &QAction::triggered, this, &ViewerWindow::exportCurrentChart);
-
-    // Не в .ui — иконка/подсказка зависят от текущей темы в рантайме (см.
-    // комментарий у m_themeToggleButton в заголовке).
-    auto* spacer = new QWidget(ui->toolBar);
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    ui->toolBar->addWidget(spacer);
-
-    m_themeToggleButton = new QToolButton(ui->toolBar);
-    m_themeToggleButton->setCursor(Qt::PointingHandCursor);
-    connect(m_themeToggleButton, &QToolButton::clicked, this, [this] {
-        if (m_themeManager)
-            m_themeManager->toggle();
-    });
-    ui->toolBar->addWidget(m_themeToggleButton);
+    connect(ui->button_openFolder, &QPushButton::clicked, this, &ViewerWindow::chooseRootFolder);
 
     ui->statusbar->showMessage(tr("Откройте папку с сохранёнными графиками (.data)"));
 
     if (m_themeManager) {
-        updateThemeToggleIcon(m_themeManager->currentScheme());
         connect(m_themeManager, &Gui::Style::ThemeManager::schemeChanged,
                 this, &ViewerWindow::onSchemeChanged);
     }
@@ -344,6 +333,7 @@ void ViewerWindow::openFile(const QString& path)
     stream.setVersion(QDataStream::Qt_6_2);
 
     auto* chartView = new Widgets::Chart::ChartView(ui->tabWidget_charts);
+    chartView->setLiveRendering(false);
     if (m_themeManager)
         chartView->applyPalette(m_themeManager->currentPalette());
 
@@ -359,33 +349,120 @@ void ViewerWindow::openFile(const QString& path)
     hideEmptySeries(chartView);
     addRecomputedAnnotations(chartView);
 
-    chartView->setProperty("filePath", path);
+    QWidget* tab = chartView;
+    Widgets::Chart::ChartView* pressure = nullptr;
+    QString pressurePath;
+    const auto isPressure = [](Widgets::Chart::ChartView* c) {
+        return c->getname() == QStringLiteral("Pressure") && c->seriesCount() > 0
+            && c->series().first()->name().contains(QStringLiteral("давлен"), Qt::CaseInsensitive);
+    };
+    if (isPressure(chartView)) {
+        pressure = chartView;
+        pressurePath = QFileInfo(path).absoluteFilePath();
+    } else if (chartView->getname() == QStringLiteral("Task") || chartView->getname() == QStringLiteral("Friction")) {
+        const QFileInfo info(path);
+        const auto match = QRegularExpression(QStringLiteral("(?:_|\\()(\\d+)\\)?\\.data$"))
+            .match(info.fileName());
+        if (match.hasMatch()) {
+            const QString number = match.captured(1);
+            QStringList candidates;
+            const QDir folder = info.dir();
+            for (const auto& name : folder.entryList({QStringLiteral("*.data")}, QDir::Files)) {
+                if (!QRegularExpression(QStringLiteral("(?:_|\\()%1\\)?\\.data$").arg(number)).match(name).hasMatch()) continue;
+                QFile companion(folder.filePath(name));
+                if (!companion.open(QIODevice::ReadOnly)) continue;
+                QDataStream probe(&companion);
+                probe.setVersion(QDataStream::Qt_6_2);
+                QString type;
+                probe >> type;
+                if (probe.status() == QDataStream::Ok && type == QStringLiteral("Pressure")) candidates.append(companion.fileName());
+            }
+            // Ambiguous siblings must not be silently matched to one another.
+            if (candidates.size() == 1) {
+                QFile companion(candidates.first());
+                if (companion.open(QIODevice::ReadOnly)) {
+                    QDataStream input(&companion);
+                    input.setVersion(QDataStream::Qt_6_2);
+                    auto* loaded = new Widgets::Chart::ChartView;
+                    loaded->setLiveRendering(false);
+                    loaded->loadFromStream(input);
+                    if (input.status() == QDataStream::Ok && isPressure(loaded)) {
+                        pressure = loaded;
+                        pressurePath = QFileInfo(companion.fileName()).absoluteFilePath();
+                    } else delete loaded;
+                }
+            }
+        }
+    }
+    if (pressure) {
+        auto* analysis = new PressureAnalysis(pressure, ui->tabWidget_charts, chartView);
+        analysis->setProperty("pressurePath", pressurePath);
+        analysis->setToolTip(tr("Расчёт по %1").arg(QFileInfo(pressurePath).fileName()));
+        for (int i = 0; i < ui->tabWidget_charts->count(); ++i) {
+            auto* sibling = qobject_cast<PressureAnalysis*>(ui->tabWidget_charts->widget(i));
+            if (sibling && sibling->property("pressurePath").toString() == pressurePath) {
+                const auto selection = sibling->selection();
+                analysis->applySelection(selection[0], selection[1], selection[2]);
+                break;
+            }
+        }
+        connect(analysis, &PressureAnalysis::selectionChanged, this, [this, analysis, pressurePath](int method, int basis, int row) {
+            for (int i = 0; i < ui->tabWidget_charts->count(); ++i) {
+                auto* sibling = qobject_cast<PressureAnalysis*>(ui->tabWidget_charts->widget(i));
+                if (sibling && sibling != analysis && sibling->property("pressurePath").toString() == pressurePath)
+                    sibling->applySelection(method, basis, row);
+            }
+        });
+        if (m_themeManager)
+            for (auto* chart : analysis->findChildren<Widgets::Chart::ChartView*>())
+                chart->applyPalette(m_themeManager->currentPalette());
+        tab = analysis;
+    }
+    tab->setProperty("filePath", path);
 
     const QString title = QFileInfo(path).completeBaseName();
-    const int idx = ui->tabWidget_charts->addTab(chartView, title);
+    const int idx = ui->tabWidget_charts->addTab(tab, title);
     ui->tabWidget_charts->setTabToolTip(idx, path);
     ui->tabWidget_charts->setCurrentIndex(idx);
 }
 
 void ViewerWindow::showTreeContextMenu(const QPoint& pos)
 {
+    const QModelIndex clicked = ui->treeView_files->indexAt(pos);
+    if (!clicked.isValid())
+        return;
+    // Right-clicking another row should act on that row, while preserving
+    // an existing multi-selection when one of its rows was clicked.
+    if (!ui->treeView_files->selectionModel()->isSelected(clicked))
+        ui->treeView_files->selectionModel()->setCurrentIndex(clicked,
+            QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    const QFileInfo info(m_fsModel->filePath(clicked));
+    const QString folderName = m_fsModel->isDir(clicked)
+        ? info.fileName() : info.dir().dirName();
+
     QStringList filePaths;
     for (const QModelIndex& idx : ui->treeView_files->selectionModel()->selectedRows()) {
         if (!m_fsModel->isDir(idx))
             filePaths << m_fsModel->filePath(idx);
     }
 
-    if (filePaths.isEmpty())
-        return;
-
     QMenu menu(this);
+    QAction* copyFolderAction = menu.addAction(tr("Копировать название папки"));
+    copyFolderAction->setEnabled(!folderName.isEmpty());
     // Показываем пункт и на одном выбранном файле (просто неактивным) —
     // иначе саму возможность сравнения из этого меню никак не узнать.
-    QAction* compareAction = menu.addAction(tr("Сравнить выбранные файлы"));
-    compareAction->setEnabled(filePaths.size() == 2);
+    QAction* compareAction = nullptr;
+    if (!filePaths.isEmpty()) {
+        menu.addSeparator();
+        compareAction = menu.addAction(tr("Сравнить выбранные файлы"));
+        compareAction->setEnabled(filePaths.size() == 2);
+    }
 
     QAction* chosen = menu.exec(ui->treeView_files->viewport()->mapToGlobal(pos));
-    if (chosen == compareAction)
+    if (chosen == copyFolderAction) {
+        QApplication::clipboard()->setText(folderName);
+        ui->statusbar->showMessage(tr("Скопировано: %1").arg(folderName), 2500);
+    } else if (compareAction && chosen == compareAction)
         compareFiles(filePaths.at(0), filePaths.at(1));
 }
 
@@ -491,65 +568,6 @@ void ViewerWindow::compareFiles(const QString& pathA, const QString& pathB)
     ui->tabWidget_charts->setCurrentIndex(idx);
 }
 
-void ViewerWindow::exportCurrentChart()
-{
-    auto* chartView = qobject_cast<Widgets::Chart::ChartView*>(ui->tabWidget_charts->currentWidget());
-    if (!chartView) {
-        ui->statusbar->showMessage(tr("Нет открытого графика для экспорта"), 3000);
-        return;
-    }
-
-    const QString tabTitle =
-        ui->tabWidget_charts->tabText(ui->tabWidget_charts->currentIndex());
-
-    QString selectedFilter;
-    const QString path = QFileDialog::getSaveFileName(this, tr("Экспорт графика"),
-        tabTitle, tr("Изображение PNG (*.png);;Документ PDF (*.pdf)"), &selectedFilter);
-
-    if (path.isEmpty())
-        return;
-
-    // getSaveFileName не гарантированно дописывает расширение выбранного
-    // фильтра сама (зависит от платформы/стиля диалога) — решаем однозначно
-    // по самому фильтру, а не по тому, что пользователь мог напечатать.
-    const bool exportPdf = selectedFilter.contains(QStringLiteral("*.pdf"));
-    QString finalPath = path;
-    const QString wantedSuffix = exportPdf ? QStringLiteral(".pdf") : QStringLiteral(".png");
-    if (!finalPath.endsWith(wantedSuffix, Qt::CaseInsensitive))
-        finalPath += wantedSuffix;
-
-    // grab() — то же самое изображение, что сейчас реально на экране (с
-    // текущей темой/разметкой/легендой), а не отдельный, потенциально
-    // разъехавшийся рендер сцены под печать.
-    const QPixmap pixmap = chartView->grab();
-
-    bool ok = false;
-
-    if (exportPdf) {
-        QPrinter printer(QPrinter::HighResolution);
-        printer.setOutputFormat(QPrinter::PdfFormat);
-        printer.setOutputFileName(finalPath);
-        printer.setPageOrientation(QPageLayout::Landscape);
-
-        QPainter painter(&printer);
-        const QRectF pageRect = painter.viewport();
-        QRectF targetRect(QPointF(0, 0), QSizeF(pixmap.size()).scaled(pageRect.size(), Qt::KeepAspectRatio));
-        targetRect.moveCenter(pageRect.center());
-        painter.drawPixmap(targetRect, pixmap, QRectF(pixmap.rect()));
-        ok = painter.end();
-    } else {
-        ok = pixmap.save(finalPath, "PNG");
-    }
-
-    if (!ok) {
-        QMessageBox::warning(this, tr("Не удалось сохранить"),
-            tr("Не удалось сохранить график в %1").arg(finalPath));
-        return;
-    }
-
-    ui->statusbar->showMessage(tr("Сохранено: %1").arg(finalPath), 4000);
-}
-
 void ViewerWindow::closeTab(int index)
 {
     QWidget* w = ui->tabWidget_charts->widget(index);
@@ -557,29 +575,72 @@ void ViewerWindow::closeTab(int index)
     delete w;
 }
 
+bool ViewerWindow::captureReview(const QStringList& files, const QString& outputFolder)
+{
+    if (files.size() != 3 || !QDir().mkpath(outputFolder)) return false;
+    while (ui->tabWidget_charts->count()) closeTab(0);
+    const QStringList titles = {tr("Давление"), tr("Задание"), tr("Трение")};
+    const QStringList names = {QStringLiteral("04_Давление.png"), QStringLiteral("05_Задание.png"), QStringLiteral("06_Трение.png")};
+    QList<QWidget*> views;
+    resize(1800, 1050);
+    show();
+    for (int i = 0; i < 3; ++i) {
+        if (files[i].isEmpty()) { views.append(nullptr); continue; }
+        const int before = ui->tabWidget_charts->count();
+        openPath(files[i]);
+        if (ui->tabWidget_charts->count() != before+1) return false;
+        QApplication::processEvents();
+        QThread::msleep(60);
+        QApplication::processEvents();
+        if (!grab().save(QDir(outputFolder).filePath(names[i]))) return false;
+        views.append(ui->tabWidget_charts->currentWidget());
+    }
+    QWidget overview;
+    auto* grid = new QGridLayout(&overview);
+    for (int i = 0; i < 3; ++i) {
+        auto* block = new QWidget(&overview);
+        auto* layout = new QVBoxLayout(block);
+        layout->setContentsMargins(0, 0, 0, 0);
+        auto* title = new QLabel(titles[i], block);
+        title->setAlignment(Qt::AlignCenter);
+        title->setFixedHeight(22);
+        layout->addWidget(title);
+        if (views[i]) {
+            ui->tabWidget_charts->removeTab(ui->tabWidget_charts->indexOf(views[i]));
+            layout->addWidget(views[i], 1);
+            views[i]->show();
+        } else {
+            auto* missing = new QLabel(tr("Исходный график отсутствует в архиве"), block);
+            missing->setAlignment(Qt::AlignCenter);
+            missing->setWordWrap(true);
+            layout->addWidget(missing, 1);
+        }
+        grid->addWidget(block, i == 0 ? 0 : 1, i == 2 ? 1 : 0, 1, i == 0 ? 2 : 1);
+    }
+    grid->setRowStretch(0, 3);
+    grid->setRowStretch(1, 2);
+    grid->setColumnStretch(0, 1);
+    grid->setColumnStretch(1, 1);
+    overview.resize(1800, 1400);
+    overview.show();
+    QApplication::processEvents();
+    QThread::msleep(80);
+    QApplication::processEvents();
+    return overview.grab().save(QDir(outputFolder).filePath(QStringLiteral("07_Общий_вид.png")));
+}
+
 void ViewerWindow::onSchemeChanged(Gui::Style::ColorScheme scheme)
 {
-    updateThemeToggleIcon(scheme);
+    Q_UNUSED(scheme);
 
     if (!m_themeManager)
         return;
 
     for (int i = 0; i < ui->tabWidget_charts->count(); ++i) {
-        if (auto* chartView = qobject_cast<Widgets::Chart::ChartView*>(ui->tabWidget_charts->widget(i)))
+        QWidget* tab = ui->tabWidget_charts->widget(i);
+        if (auto* chartView = qobject_cast<Widgets::Chart::ChartView*>(tab))
+            chartView->applyPalette(m_themeManager->currentPalette());
+        for (auto* chartView : tab->findChildren<Widgets::Chart::ChartView*>())
             chartView->applyPalette(m_themeManager->currentPalette());
     }
-}
-
-void ViewerWindow::updateThemeToggleIcon(Gui::Style::ColorScheme scheme)
-{
-    if (!m_themeToggleButton)
-        return;
-
-    const bool dark = scheme == Gui::Style::ColorScheme::Dark;
-    m_themeToggleButton->setIcon(QIcon(dark
-        ? QStringLiteral(":/Src/Img/ThemeSun.svg")
-        : QStringLiteral(":/Src/Img/ThemeMoon.svg")));
-    m_themeToggleButton->setToolTip(dark
-        ? tr("Переключить на светлую тему")
-        : tr("Переключить на тёмную тему"));
 }

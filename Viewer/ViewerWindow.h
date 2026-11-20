@@ -3,7 +3,6 @@
 #include <QMainWindow>
 
 class QFileSystemModel;
-class QToolButton;
 class QModelIndex;
 
 namespace Ui {
@@ -35,6 +34,7 @@ public:
     // файл открывает только его, папка открывает в ней все .data сразу
     // (тем же путём, что и активация в дереве слева).
     void openPath(const QString& path);
+    bool captureReview(const QStringList& files, const QString& outputFolder);
 
 private slots:
     void chooseRootFolder();
@@ -42,23 +42,16 @@ private slots:
     void closeTab(int index);
     void onSchemeChanged(Gui::Style::ColorScheme scheme);
     void showTreeContextMenu(const QPoint& pos);
-    void exportCurrentChart();
 
 private:
     void setRootFolder(const QString& path);
     void openFile(const QString& path);
     void openFolder(const QString& path);
     void compareFiles(const QString& pathA, const QString& pathB);
-    void updateThemeToggleIcon(Gui::Style::ColorScheme scheme);
 
     QString lastRootFolderKey() const;
 
     Ui::ViewerWindow* ui = nullptr;
     Gui::Style::ThemeManager* m_themeManager = nullptr;
     QFileSystemModel* m_fsModel = nullptr;
-    // Не в .ui: иконка/подсказка меняются в рантайме по текущей теме —
-    // тот же приём, что и у StatusBarPresenter::buildThemeToggle() в
-    // основном приложении (тот тоже строит такую кнопку в коде, не в .ui,
-    // ровно по этой же причине).
-    QToolButton* m_themeToggleButton = nullptr;
 };

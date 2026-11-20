@@ -10,6 +10,8 @@ qt_add_executable(DataViewer
     ViewerWindow.h
     ViewerWindow.cpp
     ViewerWindow.ui
+    PressureAnalysis.cpp
+    PressureAnalysis.h
     ${CMAKE_SOURCE_DIR}/img.qrc
     ${CMAKE_SOURCE_DIR}/fonts.qrc
     ${CMAKE_SOURCE_DIR}/style.qrc
@@ -18,6 +20,13 @@ qt_add_executable(DataViewer
 set_target_properties(DataViewer PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
+
+# The viewer can analyze saved data even when the main application's
+# experimental card is disabled. Compile the same domain implementation.
+if(NOT MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+    target_sources(DataViewer PRIVATE
+        ${CMAKE_SOURCE_DIR}/Src/Domain/Tests/Main/Linearity/LinearityMethods.cpp)
+endif()
 
 target_link_libraries(DataViewer
     PRIVATE
@@ -56,3 +65,15 @@ if(_mpiplatform_viewer_qt_core_type STREQUAL "STATIC_LIBRARY")
     target_compile_definitions(DataViewer PRIVATE MPIPLATFORM_STATIC_QT_PLUGINS)
 endif()
 unset(_mpiplatform_viewer_qt_core_type)
+
+if(MPIPLATFORM_BUILD_TESTS)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    qt_add_executable(PressureAnalysisTests PressureAnalysisTest.cpp PressureAnalysis.cpp PressureAnalysis.h
+        ViewerWindow.cpp ViewerWindow.h ViewerWindow.ui
+        ${CMAKE_SOURCE_DIR}/img.qrc)
+    target_link_libraries(PressureAnalysisTests PRIVATE Gui Qt6::Test)
+    if(NOT MPIPLATFORM_EXPERIMENTAL_LINEARITY)
+        target_sources(PressureAnalysisTests PRIVATE
+            ${CMAKE_SOURCE_DIR}/Src/Domain/Tests/Main/Linearity/LinearityMethods.cpp)
+    endif()
+endif()

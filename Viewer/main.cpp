@@ -3,6 +3,12 @@
 #include <QIcon>
 #include <QStyleFactory>
 #include <QtPlugin>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QTimer>
+#include <QDebug>
 
 #include "Gui/Style/ThemeManager.h"
 #include "ViewerWindow.h"
@@ -45,6 +51,26 @@ int main(int argc, char* argv[])
     Gui::Style::ThemeManager themeManager(app);
 
     ViewerWindow window(&themeManager);
+    if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--capture-review")) {
+        QFile manifest(QString::fromLocal8Bit(argv[2]));
+        if (!manifest.open(QIODevice::ReadOnly)) return 2;
+        QJsonParseError error;
+        const auto document = QJsonDocument::fromJson(manifest.readAll(), &error);
+        if (error.error != QJsonParseError::NoError || !document.isArray()) return 2;
+        const auto cases = document.array();
+        QTimer::singleShot(0, &window, [&window, &app, cases] {
+            for (const auto& entry : cases) {
+                const auto object = entry.toObject();
+                QStringList files;
+                for (const auto& value : object.value(QStringLiteral("files")).toArray()) files.append(value.toString());
+                const QString output = object.value(QStringLiteral("output")).toString();
+                if (!window.captureReview(files, output)) { app.exit(3); return; }
+                qInfo().noquote() << "Captured:" << output;
+            }
+            app.exit(0);
+        });
+        return app.exec();
+    }
     window.show();
 
     // Двойной клик по .data (или по папке с ними) в проводнике/файловом
