@@ -111,3 +111,9 @@ qtcreator.lock
 # — Windows — 
 Thumbs.db
 ehthumbs.db
+
+# Local editor backups and generated validation artifacts
+CMakeLists.txt.user*
+__pycache__/
+*.py[cod]
+experiments/report-generator/out/
