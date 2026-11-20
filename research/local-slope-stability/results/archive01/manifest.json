@@ -1,0 +1,16 @@
+{
+  "archive": "/media/vladislav-b/Tree/Library/рез",
+  "status_counts": {
+    "other_chart": 1673,
+    "included": 671,
+    "missing_direction": 86,
+    "invalid_baseline": 4,
+    "duplicate_measurements": 35
+  },
+  "script_sha256": "0bbea13da6f7e3682407644e8de71c0884923b57a287ea3af0c398a8a2e650f4",
+  "numpy": "1.26.4",
+  "pilot_sha256": "d7535100edcba8ee372ee1c1f338fd6963a61da407b6f2cc2433e368e921b94f",
+  "comparisons_to_scalar": "4 widths of PV-2223, tolerance 1e-8 absolute / 1e-9 relative",
+  "inclusion": "parsed semantic Pressure chart; numeric pressure axis in bar; two finite directions; nonzero span; dedup exact coordinate arrays; both baseline computations valid",
+  "formula_source_sha256": "5842db1af7ac10d15f65963cacc5b4974852878b621f8699cd7167d30a2de25c"
+}

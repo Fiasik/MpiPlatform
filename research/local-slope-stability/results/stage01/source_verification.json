@@ -1,0 +1,59 @@
+{
+  "raw": "/media/vladislav-b/Tree/Library/рез/ЛУКОЙЛ-УНП/ВИСБРЕКИНГ/-/PV-2223/03_10_2024/Pressure_1.data",
+  "sha256": "db7d17100ecfb4dfbf5f3165a270c679e7e8c7b5a4a163d40a15cd570da05d71",
+  "bytes": 94176,
+  "consumed_bytes": 94176,
+  "chart": "Pressure",
+  "numeric_x": true,
+  "x_format": "%.2f bar",
+  "y_format": "%.2f deg",
+  "series": [
+    {
+      "axis": 0,
+      "name": "Перемещение от давления",
+      "color_hex": "01ffffffff000000000000"
+    },
+    {
+      "axis": 0,
+      "name": "Линейная регрессия",
+      "color_hex": "01ffff0000000000000000"
+    }
+  ],
+  "points_visible": false,
+  "comparisons": [
+    {
+      "csv": "/home/vladislav-b/Documents/Математика_основы/_данные/PV-2223/Pressure_1__0.csv",
+      "count": 2932,
+      "exact_numeric_match": true,
+      "sha256": "2aec6a7e64f31082768460badc0b6ff28a6e80b5120fe4b07ebe003063af8737",
+      "duplicate_layer": false,
+      "series": 0
+    },
+    {
+      "csv": "/home/vladislav-b/Documents/Математика_основы/_данные/PV-2223/Pressure_1__1.csv",
+      "count": 9,
+      "exact_numeric_match": true,
+      "sha256": "501ce7540ec580df3637b1d5c7bee7bc46cfb9bea8080e89b213942ff71b1370",
+      "duplicate_layer": false,
+      "series": 1
+    },
+    {
+      "csv": "/home/vladislav-b/Documents/Математика_основы/_данные/PV-2223/Pressure_1__dubl0.csv",
+      "count": 2932,
+      "exact_numeric_match": true,
+      "sha256": "6ecab827199f721687391f6ce4d5b581c02b2e294938c17275067aae67b864e1",
+      "duplicate_layer": true,
+      "series": 0
+    },
+    {
+      "csv": "/home/vladislav-b/Documents/Математика_основы/_данные/PV-2223/Pressure_1__dubl1.csv",
+      "count": 0,
+      "exact_numeric_match": true,
+      "sha256": "9c6536d38fa37da58fac066342747e6d20fdace12ab5b287cf04506f2afe95b0",
+      "duplicate_layer": true,
+      "series": 1
+    }
+  ],
+  "unit_status": "UNRESOLVED: serialized y format says deg; teaching materials say mm",
+  "direction_status": "duplicate layer interpreted as forward per application documentation; physical run log not independently checked"
+}

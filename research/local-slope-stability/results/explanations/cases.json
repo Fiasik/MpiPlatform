@@ -1,0 +1,1037 @@
+[
+  {
+    "case": "small_reference",
+    "path": "/media/vladislav-b/Tree/Library/рез/2024/ЛУКРЙЛ-УНП/ППНН/АТ-1/pм 7254a/16_05_2024/Pressure_1.data",
+    "direction": "forward",
+    "x_format": "%.2f bar",
+    "y_formats": [
+      "%.2f mm"
+    ],
+    "full": {
+      "valid": true,
+      "reason": null,
+      "points": 2932,
+      "windows": [
+        {
+          "low_position": 0.5554212454212462,
+          "high_position": 1.2363614163614174,
+          "points": 255,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -4.828893297435098,
+          "signed_deviation_pct": 42.09925175986539,
+          "delta_k_position_per_bar": 3.5110564341434856
+        },
+        {
+          "low_position": 0.7256562881562889,
+          "high_position": 1.4065964590964601,
+          "points": 241,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -3.004267172863019,
+          "signed_deviation_pct": 63.97739471393227,
+          "delta_k_position_per_bar": 5.335682558715565
+        },
+        {
+          "low_position": 0.8958913308913317,
+          "high_position": 1.576831501831503,
+          "points": 247,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -0.7215644647671534,
+          "signed_deviation_pct": 91.34809575608107,
+          "delta_k_position_per_bar": 7.61838526681143
+        },
+        {
+          "low_position": 1.0661263736263744,
+          "high_position": 1.7470665445665456,
+          "points": 257,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 1.4348948078975834,
+          "signed_deviation_pct": 117.20507741748688,
+          "delta_k_position_per_bar": 9.774844539476167
+        },
+        {
+          "low_position": 1.2363614163614172,
+          "high_position": 1.9173015873015884,
+          "points": 275,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -0.35973675950088707,
+          "signed_deviation_pct": 95.68658359967361,
+          "delta_k_position_per_bar": 7.980212972077696
+        },
+        {
+          "low_position": 1.40659645909646,
+          "high_position": 2.087536630036631,
+          "points": 271,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 0.16066301933793722,
+          "signed_deviation_pct": 101.92642671129776,
+          "delta_k_position_per_bar": 8.50061275091652
+        },
+        {
+          "low_position": 1.5768315018315027,
+          "high_position": 2.257771672771674,
+          "points": 259,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -0.7272994876807004,
+          "signed_deviation_pct": 91.27933007885125,
+          "delta_k_position_per_bar": 7.612650243897883
+        },
+        {
+          "low_position": 1.7470665445665454,
+          "high_position": 2.428006715506717,
+          "points": 245,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 2.9906204906203944,
+          "signed_deviation_pct": 135.85897501631982,
+          "delta_k_position_per_bar": 11.330570222198977
+        },
+        {
+          "low_position": 1.9173015873015882,
+          "high_position": 2.5982417582417594,
+          "points": 245,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 2.710322093263025,
+          "signed_deviation_pct": 132.49806270415036,
+          "delta_k_position_per_bar": 11.050271824841609
+        },
+        {
+          "low_position": 2.087536630036631,
+          "high_position": 2.768476800976802,
+          "points": 252,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -1.3680682510661126,
+          "signed_deviation_pct": 83.5962050720039,
+          "delta_k_position_per_bar": 6.9718814805124705
+        },
+        {
+          "low_position": 2.257771672771674,
+          "high_position": 2.938711843711845,
+          "points": 262,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": -2.0295961058599388,
+          "signed_deviation_pct": 75.66416859594455,
+          "delta_k_position_per_bar": 6.310353625718644
+        },
+        {
+          "low_position": 2.428006715506717,
+          "high_position": 3.108946886446888,
+          "points": 269,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 1.2564396812417895,
+          "signed_deviation_pct": 115.06531480021248,
+          "delta_k_position_per_bar": 9.596389412820372
+        },
+        {
+          "low_position": 2.59824175824176,
+          "high_position": 3.279181929181931,
+          "points": 266,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 2.925296263247549,
+          "signed_deviation_pct": 135.0757061780737,
+          "delta_k_position_per_bar": 11.265245994826133
+        },
+        {
+          "low_position": 2.768476800976803,
+          "high_position": 3.449416971916974,
+          "points": 260,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 2.0749804937503797,
+          "signed_deviation_pct": 124.8800119968784,
+          "delta_k_position_per_bar": 10.414930225328963
+        },
+        {
+          "low_position": 2.938711843711846,
+          "high_position": 3.619652014652017,
+          "points": 244,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -0.06760129409949349,
+          "signed_deviation_pct": 99.18942803883427,
+          "delta_k_position_per_bar": 8.27234843747909
+        },
+        {
+          "low_position": 3.1089468864468888,
+          "high_position": 3.7898870573870598,
+          "points": 249,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 2.343735571151559,
+          "signed_deviation_pct": 128.1025143626128,
+          "delta_k_position_per_bar": 10.683685302730142
+        },
+        {
+          "low_position": 3.2791819291819317,
+          "high_position": 3.9601221001221028,
+          "points": 253,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -3.1276446613535924,
+          "signed_deviation_pct": 62.498039412503836,
+          "delta_k_position_per_bar": 5.212305070224991
+        },
+        {
+          "low_position": 3.4494169719169747,
+          "high_position": 4.130357142857146,
+          "points": 254,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -3.550747273648534,
+          "signed_deviation_pct": 57.424836025043405,
+          "delta_k_position_per_bar": 4.789202457930049
+        },
+        {
+          "low_position": 3.6196520146520177,
+          "high_position": 4.300592185592189,
+          "points": 272,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -2.7377666964846497,
+          "signed_deviation_pct": 67.17286333131834,
+          "delta_k_position_per_bar": 5.602183035093933
+        },
+        {
+          "low_position": 3.7898870573870607,
+          "high_position": 4.470827228327232,
+          "points": 270,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 6.10478105451307,
+          "signed_deviation_pct": 173.19925480363247,
+          "delta_k_position_per_bar": 14.444730786091654
+        },
+        {
+          "low_position": 3.9601221001221036,
+          "high_position": 4.641062271062275,
+          "points": 261,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 2.299850335119293,
+          "signed_deviation_pct": 127.57630932008001,
+          "delta_k_position_per_bar": 10.639800066697877
+        },
+        {
+          "low_position": 4.130357142857147,
+          "high_position": 4.811297313797318,
+          "points": 268,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 1.0141762536712573,
+          "signed_deviation_pct": 112.16046003048623,
+          "delta_k_position_per_bar": 9.35412598524984
+        },
+        {
+          "low_position": 4.30059218559219,
+          "high_position": 4.981532356532361,
+          "points": 256,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -2.192424821949905,
+          "signed_deviation_pct": 73.71177414117432,
+          "delta_k_position_per_bar": 6.147524909628679
+        },
+        {
+          "low_position": 4.470827228327233,
+          "high_position": 5.151767399267404,
+          "points": 260,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -0.5204094474976991,
+          "signed_deviation_pct": 93.7600409565155,
+          "delta_k_position_per_bar": 7.819540284080884
+        },
+        {
+          "low_position": 4.6410622710622755,
+          "high_position": 5.3220024420024465,
+          "points": 268,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -0.9586218222079768,
+          "signed_deviation_pct": 88.50566426583809,
+          "delta_k_position_per_bar": 7.381327909370606
+        },
+        {
+          "low_position": 4.8112973137973185,
+          "high_position": 5.4922374847374895,
+          "points": 268,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 2.630514241051954,
+          "signed_deviation_pct": 131.54112825274848,
+          "delta_k_position_per_bar": 10.970463972630537
+        },
+        {
+          "low_position": 4.9815323565323615,
+          "high_position": 5.6624725274725325,
+          "points": 275,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -0.7310183985488149,
+          "signed_deviation_pct": 91.23473855266934,
+          "delta_k_position_per_bar": 7.608931333029768
+        },
+        {
+          "low_position": 5.1517673992674045,
+          "high_position": 5.8327075702075755,
+          "points": 263,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -1.5512997073505743,
+          "signed_deviation_pct": 81.39917197010557,
+          "delta_k_position_per_bar": 6.788650024228009
+        },
+        {
+          "low_position": 5.322002442002447,
+          "high_position": 6.002942612942618,
+          "points": 264,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -2.591982427237743,
+          "signed_deviation_pct": 68.92088668804081,
+          "delta_k_position_per_bar": 5.74796730434084
+        }
+      ],
+      "d_max_pct": 173.19925480363247,
+      "d_rms_pct": 102.9746754106191,
+      "work_points": 2087,
+      "work_low": 0.5554212454212462,
+      "work_high": 6.002942612942616,
+      "k": -8.339949731578583,
+      "b": 31.832732223676377,
+      "attempted_windows": 29,
+      "skipped_windows": 0,
+      "worst_window": {
+        "low_position": 3.7898870573870607,
+        "high_position": 4.470827228327232,
+        "points": 270,
+        "pressure_span_bar": 0.025103785103784304,
+        "k_position_per_bar": 6.10478105451307,
+        "signed_deviation_pct": 173.19925480363247,
+        "delta_k_position_per_bar": 14.444730786091654
+      },
+      "delta_k_max_position_per_bar": 14.444730786091654,
+      "delta_k_rms_position_per_bar": 8.588036165501844
+    },
+    "decimated_offset1": {
+      "valid": true,
+      "reason": null,
+      "points": 1466,
+      "windows": [
+        {
+          "low_position": 0.5554212454212462,
+          "high_position": 1.2363614163614174,
+          "points": 127,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -6.39229910714265,
+          "signed_deviation_pct": -6282.9892604310035,
+          "delta_k_position_per_bar": -6.495684360422178
+        },
+        {
+          "low_position": 0.7256562881562889,
+          "high_position": 1.4065964590964601,
+          "points": 120,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -6.227417059016736,
+          "signed_deviation_pct": -6123.50612052892,
+          "delta_k_position_per_bar": -6.330802312296265
+        },
+        {
+          "low_position": 0.8958913308913317,
+          "high_position": 1.576831501831503,
+          "points": 124,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -5.929836512261952,
+          "signed_deviation_pct": -5835.669570039269,
+          "delta_k_position_per_bar": -6.03322176554148
+        },
+        {
+          "low_position": 1.0661263736263744,
+          "high_position": 1.7470665445665456,
+          "points": 130,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 3.971548574551688,
+          "signed_deviation_pct": 3741.503936556196,
+          "delta_k_position_per_bar": 3.868163321272159
+        },
+        {
+          "low_position": 1.2363614163614172,
+          "high_position": 1.9173015873015884,
+          "points": 139,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 2.1509411764705626,
+          "signed_deviation_pct": 1980.5106223949933,
+          "delta_k_position_per_bar": 2.047555923191034
+        },
+        {
+          "low_position": 1.40659645909646,
+          "high_position": 2.087536630036631,
+          "points": 136,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -2.313011002321615,
+          "signed_deviation_pct": -2337.2736236064475,
+          "delta_k_position_per_bar": -2.4163962556011436
+        },
+        {
+          "low_position": 1.5768315018315027,
+          "high_position": 2.257771672771674,
+          "points": 132,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -5.491016342131753,
+          "signed_deviation_pct": -5411.218155345014,
+          "delta_k_position_per_bar": -5.594401595411282
+        },
+        {
+          "low_position": 1.7470665445665454,
+          "high_position": 2.428006715506717,
+          "points": 122,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": 6.758044822560773,
+          "signed_deviation_pct": 6436.758974985201,
+          "delta_k_position_per_bar": 6.654659569281245
+        },
+        {
+          "low_position": 1.9173015873015882,
+          "high_position": 2.5982417582417594,
+          "points": 122,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": 6.352970723306909,
+          "signed_deviation_pct": 6044.948647685774,
+          "delta_k_position_per_bar": 6.24958547002738
+        },
+        {
+          "low_position": 2.087536630036631,
+          "high_position": 2.768476800976802,
+          "points": 126,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": 0.23627035881007205,
+          "signed_deviation_pct": 128.5339072210369,
+          "delta_k_position_per_bar": 0.1328851055305434
+        },
+        {
+          "low_position": 2.257771672771674,
+          "high_position": 2.938711843711845,
+          "points": 129,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": -0.638683960019023,
+          "signed_deviation_pct": -717.7708519919918,
+          "delta_k_position_per_bar": -0.7420692132985516
+        },
+        {
+          "low_position": 2.428006715506717,
+          "high_position": 3.108946886446888,
+          "points": 134,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 1.9203655352479077,
+          "signed_deviation_pct": 1757.4849645681134,
+          "delta_k_position_per_bar": 1.816980281968379
+        },
+        {
+          "low_position": 2.59824175824176,
+          "high_position": 3.279181929181931,
+          "points": 133,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 0.8758090614884563,
+          "signed_deviation_pct": 747.1315141246313,
+          "delta_k_position_per_bar": 0.7724238082089276
+        },
+        {
+          "low_position": 2.768476800976803,
+          "high_position": 3.449416971916974,
+          "points": 129,
+          "pressure_span_bar": 0.03137973137973127,
+          "k_position_per_bar": 0.8723814163601121,
+          "signed_deviation_pct": 743.8161040254012,
+          "delta_k_position_per_bar": 0.7689961630805835
+        },
+        {
+          "low_position": 2.938711843711846,
+          "high_position": 3.619652014652017,
+          "points": 122,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 5.005208333333211,
+          "signed_deviation_pct": 4741.317474746947,
+          "delta_k_position_per_bar": 4.901823080053683
+        },
+        {
+          "low_position": 3.1089468864468888,
+          "high_position": 3.7898870573870598,
+          "points": 124,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 6.60131542474112,
+          "signed_deviation_pct": 6285.161534491543,
+          "delta_k_position_per_bar": 6.497930171461592
+        },
+        {
+          "low_position": 3.2791819291819317,
+          "high_position": 3.9601221001221028,
+          "points": 126,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -2.5619038557596783,
+          "signed_deviation_pct": -2578.0167136921464,
+          "delta_k_position_per_bar": -2.665289109039207
+        },
+        {
+          "low_position": 3.4494169719169747,
+          "high_position": 4.130357142857146,
+          "points": 128,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -4.529394128093142,
+          "signed_deviation_pct": -4481.083359970844,
+          "delta_k_position_per_bar": -4.6327793813726705
+        },
+        {
+          "low_position": 3.6196520146520177,
+          "high_position": 4.300592185592189,
+          "points": 136,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": -0.8518391494469714,
+          "signed_deviation_pct": -923.9464744007588,
+          "delta_k_position_per_bar": -0.9552244027265
+        },
+        {
+          "low_position": 3.7898870573870607,
+          "high_position": 4.470827228327232,
+          "points": 135,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 5.7366325369739615,
+          "signed_deviation_pct": 5448.791877951392,
+          "delta_k_position_per_bar": 5.633247283694433
+        },
+        {
+          "low_position": 3.9601221001221036,
+          "high_position": 4.641062271062275,
+          "points": 131,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 1.4873231750829392,
+          "signed_deviation_pct": 1338.6221708637474,
+          "delta_k_position_per_bar": 1.3839379218034105
+        },
+        {
+          "low_position": 4.130357142857147,
+          "high_position": 4.811297313797318,
+          "points": 133,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -0.446207749381548,
+          "signed_deviation_pct": -531.5970945828323,
+          "delta_k_position_per_bar": -0.5495930026610767
+        },
+        {
+          "low_position": 4.30059218559219,
+          "high_position": 4.981532356532361,
+          "points": 128,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": -4.313031161473149,
+          "signed_deviation_pct": -4271.804996029518,
+          "delta_k_position_per_bar": -4.416416414752677
+        },
+        {
+          "low_position": 4.470827228327233,
+          "high_position": 5.151767399267404,
+          "points": 132,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": -0.43273305084758623,
+          "signed_deviation_pct": -518.5636124308569,
+          "delta_k_position_per_bar": -0.5361183041271149
+        },
+        {
+          "low_position": 4.6410622710622755,
+          "high_position": 5.3220024420024465,
+          "points": 134,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": -2.0961643835615895,
+          "signed_deviation_pct": -2127.5274442613872,
+          "delta_k_position_per_bar": -2.1995496368411183
+        },
+        {
+          "low_position": 4.8112973137973185,
+          "high_position": 5.4922374847374895,
+          "points": 134,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 3.730996621621516,
+          "signed_deviation_pct": 3508.8286320040297,
+          "delta_k_position_per_bar": 3.627611368341987
+        },
+        {
+          "low_position": 4.9815323565323615,
+          "high_position": 5.6624725274725325,
+          "points": 137,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 0.05362043487432276,
+          "signed_deviation_pct": -48.13531604033885,
+          "delta_k_position_per_bar": -0.04976481840520591
+        },
+        {
+          "low_position": 5.1517673992674045,
+          "high_position": 5.8327075702075755,
+          "points": 129,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 2.6129868242588405,
+          "signed_deviation_pct": 2427.427018236302,
+          "delta_k_position_per_bar": 2.509601570979312
+        },
+        {
+          "low_position": 5.322002442002447,
+          "high_position": 6.002942612942618,
+          "points": 132,
+          "pressure_span_bar": 0.025103785103784304,
+          "k_position_per_bar": 1.1742531602518513,
+          "signed_deviation_pct": 1035.803340421245,
+          "delta_k_position_per_bar": 1.0708679069723226
+        }
+      ],
+      "d_max_pct": 6436.758974985201,
+      "d_rms_pct": 3760.2694192475833,
+      "work_points": 1044,
+      "work_low": 0.5554212454212462,
+      "work_high": 6.002942612942616,
+      "k": 0.10338525327952867,
+      "b": 2.9369387297710015,
+      "attempted_windows": 29,
+      "skipped_windows": 0,
+      "worst_window": {
+        "low_position": 1.7470665445665454,
+        "high_position": 2.428006715506717,
+        "points": 122,
+        "pressure_span_bar": 0.02196581196581171,
+        "k_position_per_bar": 6.758044822560773,
+        "signed_deviation_pct": 6436.758974985201,
+        "delta_k_position_per_bar": 6.654659569281245
+      },
+      "delta_k_max_position_per_bar": 6.654659569281245,
+      "delta_k_rms_position_per_bar": 3.8875640630817756
+    },
+    "points_remaining_in_original_worst_window": 135,
+    "work_pressure_quantiles": [
+      3.4129548229548226,
+      3.416092796092796,
+      3.4192307692307686,
+      3.4411965811965803,
+      3.4474725274725273
+    ]
+  },
+  {
+    "case": "lost_windows",
+    "path": "/media/vladislav-b/Tree/Library/рез/2023/ООО ИНК/УКПГ-3/ГПА/15 часть 16 ед/3-SDV-3402/30_08_2023/Pressure_1.data",
+    "direction": "backward",
+    "x_format": "%.2f bar",
+    "y_formats": [
+      "%.2f deg"
+    ],
+    "full": {
+      "valid": true,
+      "reason": null,
+      "points": 2936,
+      "windows": [
+        {
+          "low_position": 0.4775741389893412,
+          "high_position": 1.048790266015817,
+          "points": 181,
+          "pressure_span_bar": 1.5062271062271066,
+          "k_position_per_bar": 0.05633757383350904,
+          "signed_deviation_pct": -94.10832469133291,
+          "delta_k_position_per_bar": -0.8998857562375193
+        },
+        {
+          "low_position": 0.6203781707459601,
+          "high_position": 1.1915942977724359,
+          "points": 167,
+          "pressure_span_bar": 1.531330891330891,
+          "k_position_per_bar": 0.1160335730191269,
+          "signed_deviation_pct": -87.86543170720297,
+          "delta_k_position_per_bar": -0.8401897570519015
+        },
+        {
+          "low_position": 0.7631822025025791,
+          "high_position": 1.334398329529055,
+          "points": 133,
+          "pressure_span_bar": 1.6286080586080582,
+          "k_position_per_bar": 0.23785915418696207,
+          "signed_deviation_pct": -75.12514632232474,
+          "delta_k_position_per_bar": -0.7183641758840662
+        },
+        {
+          "low_position": 0.905986234259198,
+          "high_position": 1.477202361285674,
+          "points": 110,
+          "pressure_span_bar": 1.6223321123321117,
+          "k_position_per_bar": 0.3142181088510303,
+          "signed_deviation_pct": -67.13967344556526,
+          "delta_k_position_per_bar": -0.642005221219998
+        },
+        {
+          "low_position": 1.048790266015817,
+          "high_position": 1.620006393042293,
+          "points": 75,
+          "pressure_span_bar": 0.1663125763125759,
+          "k_position_per_bar": 1.9992543054391116,
+          "signed_deviation_pct": 109.07817688265426,
+          "delta_k_position_per_bar": 1.0430309753680833
+        },
+        {
+          "low_position": 1.191594297772436,
+          "high_position": 1.762810424798912,
+          "points": 65,
+          "pressure_span_bar": 0.1631746031746033,
+          "k_position_per_bar": 1.4956279861091526,
+          "signed_deviation_pct": 56.409903322276946,
+          "delta_k_position_per_bar": 0.5394046560381243
+        },
+        {
+          "low_position": 1.3343983295290551,
+          "high_position": 1.905614456555531,
+          "points": 38,
+          "pressure_span_bar": 0.12865689865689944,
+          "k_position_per_bar": 0.06960552215966842,
+          "signed_deviation_pct": -92.72078812859563,
+          "delta_k_position_per_bar": -0.8866178079113599
+        },
+        {
+          "low_position": 1.4772023612856742,
+          "high_position": 2.04841848831215,
+          "points": 30,
+          "pressure_span_bar": 0.12865689865689944,
+          "k_position_per_bar": -0.20223629727342066,
+          "signed_deviation_pct": -121.14948369419083,
+          "delta_k_position_per_bar": -1.158459627344449
+        },
+        {
+          "low_position": 1.6200063930422932,
+          "high_position": 2.191222520068769,
+          "points": 19,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 0.7466534189844767,
+          "signed_deviation_pct": -21.91641894691952,
+          "delta_k_position_per_bar": -0.20956991108655165
+        },
+        {
+          "low_position": 1.7628104247989123,
+          "high_position": 2.334026551825388,
+          "points": 19,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 0.7466534189844767,
+          "signed_deviation_pct": -21.91641894691952,
+          "delta_k_position_per_bar": -0.20956991108655165
+        },
+        {
+          "low_position": 1.9056144565555313,
+          "high_position": 2.4768305835820073,
+          "points": 12,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 1.9086371375055886,
+          "signed_deviation_pct": 99.60160743660322,
+          "delta_k_position_per_bar": 0.9524138074345603
+        },
+        {
+          "low_position": 2.04841848831215,
+          "high_position": 2.619634615338626,
+          "points": 9,
+          "pressure_span_bar": 0.07531135531135558,
+          "k_position_per_bar": 4.034974831641018,
+          "signed_deviation_pct": 321.9699211209687,
+          "delta_k_position_per_bar": 3.07875150156999
+        },
+        {
+          "low_position": 2.334026551825388,
+          "high_position": 2.905242678851864,
+          "points": 11,
+          "pressure_span_bar": 0.018827838827838228,
+          "k_position_per_bar": 6.272815996861876,
+          "signed_deviation_pct": 555.9990537352745,
+          "delta_k_position_per_bar": 5.316592666790848
+        },
+        {
+          "low_position": 2.4768305835820073,
+          "high_position": 3.048046710608483,
+          "points": 13,
+          "pressure_span_bar": 0.018827838827838228,
+          "k_position_per_bar": 6.236237611476517,
+          "signed_deviation_pct": 552.1737564187321,
+          "delta_k_position_per_bar": 5.280014281405489
+        },
+        {
+          "low_position": 2.6196346153386263,
+          "high_position": 3.190850742365102,
+          "points": 14,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 12.687411367099223,
+          "signed_deviation_pct": 1226.8251221350981,
+          "delta_k_position_per_bar": 11.731188037028195
+        },
+        {
+          "low_position": 2.7624386470952453,
+          "high_position": 3.333654774121721,
+          "points": 13,
+          "pressure_span_bar": 0.028241758241757786,
+          "k_position_per_bar": 13.714605406777627,
+          "signed_deviation_pct": 1334.2471026887522,
+          "delta_k_position_per_bar": 12.7583820767066
+        },
+        {
+          "low_position": 2.9052426788518644,
+          "high_position": 3.47645880587834,
+          "points": 10,
+          "pressure_span_bar": 0.018827838827839116,
+          "k_position_per_bar": 22.12740917986814,
+          "signed_deviation_pct": 2214.041969486826,
+          "delta_k_position_per_bar": 21.17118584979711
+        },
+        {
+          "low_position": 3.1908507423651025,
+          "high_position": 3.762066869391578,
+          "points": 13,
+          "pressure_span_bar": 0.0219658119658126,
+          "k_position_per_bar": 16.626007447991938,
+          "signed_deviation_pct": 1638.715938540943,
+          "delta_k_position_per_bar": 15.66978411792091
+        },
+        {
+          "low_position": 3.3336547741217215,
+          "high_position": 3.9048709011481972,
+          "points": 13,
+          "pressure_span_bar": 0.0219658119658126,
+          "k_position_per_bar": 15.3938736877748,
+          "signed_deviation_pct": 1509.8617554783298,
+          "delta_k_position_per_bar": 14.437650357703772
+        },
+        {
+          "low_position": 3.4764588058783406,
+          "high_position": 4.047674932904816,
+          "points": 12,
+          "pressure_span_bar": 0.02196581196581171,
+          "k_position_per_bar": 10.263423895195972,
+          "signed_deviation_pct": 973.329166151343,
+          "delta_k_position_per_bar": 9.307200565124944
+        },
+        {
+          "low_position": 3.6192628376349596,
+          "high_position": 4.190478964661436,
+          "points": 11,
+          "pressure_span_bar": 0.018827838827839116,
+          "k_position_per_bar": 8.470309471320315,
+          "signed_deviation_pct": 785.8087023134167,
+          "delta_k_position_per_bar": 7.514086141249287
+        },
+        {
+          "low_position": 3.7620668693915786,
+          "high_position": 4.333282996418054,
+          "points": 8,
+          "pressure_span_bar": 0.03451770451770475,
+          "k_position_per_bar": 5.242434780898651,
+          "signed_deviation_pct": 448.2437644048323,
+          "delta_k_position_per_bar": 4.286211450827622
+        },
+        {
+          "low_position": 3.9048709011481977,
+          "high_position": 4.476087028174674,
+          "points": 10,
+          "pressure_span_bar": 0.040793650793650826,
+          "k_position_per_bar": 7.774810438397319,
+          "signed_deviation_pct": 713.0747487430375,
+          "delta_k_position_per_bar": 6.818587108326291
+        },
+        {
+          "low_position": 4.047674932904816,
+          "high_position": 4.6188910599312925,
+          "points": 21,
+          "pressure_span_bar": 0.1631746031746033,
+          "k_position_per_bar": 1.8979321058371037,
+          "signed_deviation_pct": 98.4820957773667,
+          "delta_k_position_per_bar": 0.9417087757660754
+        },
+        {
+          "low_position": 4.190478964661435,
+          "high_position": 4.761695091687911,
+          "points": 89,
+          "pressure_span_bar": 1.9926129426129426,
+          "k_position_per_bar": 0.07663468222127522,
+          "signed_deviation_pct": -91.98569206467879,
+          "delta_k_position_per_bar": -0.8795886478497531
+        },
+        {
+          "low_position": 4.3332829964180535,
+          "high_position": 4.90449912344453,
+          "points": 1045,
+          "pressure_span_bar": 2.532344322344322,
+          "k_position_per_bar": 0.031775752554799724,
+          "signed_deviation_pct": -96.67695280427435,
+          "delta_k_position_per_bar": -0.9244475775162286
+        },
+        {
+          "low_position": 4.476087028174672,
+          "high_position": 5.047303155201148,
+          "points": 1301,
+          "pressure_span_bar": 2.532344322344322,
+          "k_position_per_bar": 0.033598427018834386,
+          "signed_deviation_pct": -96.48634100818909,
+          "delta_k_position_per_bar": -0.9226249030521939
+        }
+      ],
+      "d_max_pct": 2214.041969486826,
+      "d_rms_pct": 775.9607657121599,
+      "work_points": 1617,
+      "work_low": 0.4775741389893412,
+      "work_high": 5.047303155201147,
+      "k": 0.9562233300710283,
+      "b": 1.5083057180474193,
+      "attempted_windows": 29,
+      "skipped_windows": 2,
+      "worst_window": {
+        "low_position": 2.9052426788518644,
+        "high_position": 3.47645880587834,
+        "points": 10,
+        "pressure_span_bar": 0.018827838827839116,
+        "k_position_per_bar": 22.12740917986814,
+        "signed_deviation_pct": 2214.041969486826,
+        "delta_k_position_per_bar": 21.17118584979711
+      },
+      "delta_k_max_position_per_bar": 21.17118584979711,
+      "delta_k_rms_position_per_bar": 7.419917873937465
+    },
+    "decimated_offset1": {
+      "valid": true,
+      "reason": null,
+      "points": 1468,
+      "windows": [
+        {
+          "low_position": 0.4775741389893412,
+          "high_position": 1.048790266015817,
+          "points": 91,
+          "pressure_span_bar": 1.5062271062271066,
+          "k_position_per_bar": 0.05039729132493821,
+          "signed_deviation_pct": -94.71090536017704,
+          "delta_k_position_per_bar": -0.902455602353384
+        },
+        {
+          "low_position": 0.6203781707459601,
+          "high_position": 1.1915942977724359,
+          "points": 84,
+          "pressure_span_bar": 1.531330891330891,
+          "k_position_per_bar": 0.12551952194380714,
+          "signed_deviation_pct": -86.82697793368072,
+          "delta_k_position_per_bar": -0.827333371734515
+        },
+        {
+          "low_position": 0.7631822025025791,
+          "high_position": 1.334398329529055,
+          "points": 72,
+          "pressure_span_bar": 1.616056166056166,
+          "k_position_per_bar": 0.22389546959508044,
+          "signed_deviation_pct": -76.50261954594365,
+          "delta_k_position_per_bar": -0.7289574240832417
+        },
+        {
+          "low_position": 0.905986234259198,
+          "high_position": 1.477202361285674,
+          "points": 60,
+          "pressure_span_bar": 1.6160561660561656,
+          "k_position_per_bar": 0.28038085008033453,
+          "signed_deviation_pct": -70.57459215997412,
+          "delta_k_position_per_bar": -0.6724720435979876
+        },
+        {
+          "low_position": 1.048790266015817,
+          "high_position": 1.620006393042293,
+          "points": 38,
+          "pressure_span_bar": 0.1663125763125759,
+          "k_position_per_bar": 1.9903962006802765,
+          "signed_deviation_pct": 108.88808900990998,
+          "delta_k_position_per_bar": 1.0375433070019544
+        },
+        {
+          "low_position": 1.191594297772436,
+          "high_position": 1.762810424798912,
+          "points": 32,
+          "pressure_span_bar": 0.1631746031746033,
+          "k_position_per_bar": 1.3526294845916487,
+          "signed_deviation_pct": 41.95575136158309,
+          "delta_k_position_per_bar": 0.3997765909133265
+        },
+        {
+          "low_position": 1.3343983295290551,
+          "high_position": 1.905614456555531,
+          "points": 17,
+          "pressure_span_bar": 0.12238095238095248,
+          "k_position_per_bar": 0.8186123439105181,
+          "signed_deviation_pct": -14.088276444183517,
+          "delta_k_position_per_bar": -0.13424054976780408
+        },
+        {
+          "low_position": 1.4772023612856742,
+          "high_position": 2.04841848831215,
+          "points": 14,
+          "pressure_span_bar": 0.12551892551892596,
+          "k_position_per_bar": -0.6515585034881246,
+          "signed_deviation_pct": -168.37975807292736,
+          "delta_k_position_per_bar": -1.6044113971664467
+        },
+        {
+          "low_position": 1.6200063930422932,
+          "high_position": 2.191222520068769,
+          "points": 10,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 0.7120942248086374,
+          "signed_deviation_pct": -25.267139394442932,
+          "delta_k_position_per_bar": -0.24075866886968478
+        },
+        {
+          "low_position": 1.7628104247989123,
+          "high_position": 2.334026551825388,
+          "points": 10,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 0.7120942248086374,
+          "signed_deviation_pct": -25.267139394442932,
+          "delta_k_position_per_bar": -0.24075866886968478
+        },
+        {
+          "low_position": 1.9056144565555313,
+          "high_position": 2.4768305835820073,
+          "points": 8,
+          "pressure_span_bar": 0.1443467643467642,
+          "k_position_per_bar": 1.6082273441171575,
+          "signed_deviation_pct": 68.78023405154144,
+          "delta_k_position_per_bar": 0.6553744504388354
+        },
+        {
+          "low_position": 4.047674932904816,
+          "high_position": 4.6188910599312925,
+          "points": 12,
+          "pressure_span_bar": 0.13493284493284463,
+          "k_position_per_bar": 2.1702946785258885,
+          "signed_deviation_pct": 127.76807342714204,
+          "delta_k_position_per_bar": 1.2174417848475665
+        },
+        {
+          "low_position": 4.190478964661435,
+          "high_position": 4.761695091687911,
+          "points": 48,
+          "pressure_span_bar": 1.9926129426129426,
+          "k_position_per_bar": 0.08038460082702462,
+          "signed_deviation_pct": -91.56379737519462,
+          "delta_k_position_per_bar": -0.8724682928512976
+        },
+        {
+          "low_position": 4.3332829964180535,
+          "high_position": 4.90449912344453,
+          "points": 528,
+          "pressure_span_bar": 2.532344322344322,
+          "k_position_per_bar": 0.0341921822556307,
+          "signed_deviation_pct": -96.41159905348687,
+          "delta_k_position_per_bar": -0.9186607114226915
+        },
+        {
+          "low_position": 4.476087028174672,
+          "high_position": 5.047303155201148,
+          "points": 662,
+          "pressure_span_bar": 2.532344322344322,
+          "k_position_per_bar": 0.03724386947386854,
+          "signed_deviation_pct": -96.09133060087638,
+          "delta_k_position_per_bar": -0.9156090242044537
+        }
+      ],
+      "d_max_pct": 168.37975807292736,
+      "d_rms_pct": 88.97735820528592,
+      "work_points": 820,
+      "work_low": 0.4775741389893412,
+      "work_high": 5.047303155201147,
+      "k": 0.9528528936783222,
+      "b": 1.5078313645018397,
+      "attempted_windows": 29,
+      "skipped_windows": 14,
+      "worst_window": {
+        "low_position": 1.4772023612856742,
+        "high_position": 2.04841848831215,
+        "points": 14,
+        "pressure_span_bar": 0.12551892551892596,
+        "k_position_per_bar": -0.6515585034881246,
+        "signed_deviation_pct": -168.37975807292736,
+        "delta_k_position_per_bar": -1.6044113971664467
+      },
+      "delta_k_max_position_per_bar": 1.6044113971664467,
+      "delta_k_rms_position_per_bar": 0.847823332377593
+    },
+    "points_remaining_in_original_worst_window": 5
+  }
+]
