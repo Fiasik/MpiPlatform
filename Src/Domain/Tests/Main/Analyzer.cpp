@@ -54,9 +54,9 @@ void Analyzer::pauseRecording()
 
 bool Analyzer::isValidSample(const Domain::Measurement::Sample& s)
 {
-    return !qIsNaN(s.dac)
-        && !qIsNaN(s.positionValue)
-        && !qIsNaN(s.pressure1);
+    return std::isfinite(s.dac)
+        && std::isfinite(s.positionValue)
+        && std::isfinite(s.pressure1);
 }
 
 void Analyzer::onSample(const Domain::Measurement::Sample& s)
@@ -202,7 +202,7 @@ double Analyzer::computeLinearityError(
     const Limits& limits) const
 {
     if (!regression.valid || points.isEmpty())
-        return 0.0;
+        return qQNaN();
 
     const double frac = kWorkWindowFrac;
 
@@ -215,7 +215,7 @@ double Analyzer::computeLinearityError(
     const double pRange = pMax - pMin;
 
     if (pRange <= 0.0)
-        return 0.0;
+        return qQNaN();
 
     double maxDiff = 0.0;
 
@@ -255,11 +255,11 @@ double Analyzer::computePressureDiff(
     const Limits& limits) const
 {
     if (!regressionForward.valid || !regressionBackward.valid)
-        return 0.0;
+        return qQNaN();
 
     if (qFuzzyIsNull(regressionForward.k) ||
         qFuzzyIsNull(regressionBackward.k)) {
-        return 0.0;
+        return qQNaN();
     }
 
     const double yMean =
@@ -272,7 +272,7 @@ double Analyzer::computePressureDiff(
         (yMean - regressionBackward.b) / regressionBackward.k;
 
     if (!std::isfinite(xForward) || !std::isfinite(xBackward))
-        return 0.0;
+        return qQNaN();
 
     return qAbs(xForward - xBackward);
 }
@@ -284,7 +284,7 @@ double Analyzer::computeFrictionPercent(
     double pressureDiff) const
 {
     if (!regressionForward.valid || qFuzzyIsNull(regressionForward.k))
-        return 0.0;
+        return qQNaN();
 
     const double xMin =
         (limits.minY - regressionForward.b) / regressionForward.k;
@@ -296,7 +296,7 @@ double Analyzer::computeFrictionPercent(
         qAbs(xMin - xMax);
 
     if (range <= 0.0 || !std::isfinite(range))
-        return 0.0;
+        return qQNaN();
 
     return 50.0 * pressureDiff / range;
 }
@@ -307,7 +307,7 @@ QPair<double, double> Analyzer::computeDynamicErrorMeanMax(
     const QVector<LinearPoint>& backward) const
 {
     if (forward.isEmpty() || backward.isEmpty())
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     qreal minY = forward.first().position;
     qreal maxY = forward.first().position;
@@ -326,12 +326,12 @@ QPair<double, double> Analyzer::computeDynamicErrorMeanMax(
         qMin(forward.size(), backward.size()) / 3;
 
     if (Sections == 0)
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     const qreal step = (maxY - minY) / Sections;
 
     if (qFuzzyIsNull(step))
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     QVector<quint16> pointsNumForward(Sections);
     QVector<quint16> pointsNumBackward(Sections);
@@ -379,7 +379,7 @@ QPair<double, double> Analyzer::computeDynamicErrorMeanMax(
     }
 
     if (num == 0)
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     return qMakePair(double(sum / num), double(max));
 }
@@ -391,11 +391,11 @@ QPair<double, double> Analyzer::computeRangeLimits(
     const Limits& limits) const
 {
     if (!regressionForward.valid || !regressionBackward.valid)
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     if (qFuzzyIsNull(regressionForward.k) ||
         qFuzzyIsNull(regressionBackward.k)) {
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
     }
 
     auto xVal = [](const Regression& regression, double y) {
@@ -414,7 +414,7 @@ QPair<double, double> Analyzer::computeRangeLimits(
         qMax(qMax(x1, x2), qMax(x3, x4));
 
     if (!std::isfinite(minX) || !std::isfinite(maxX))
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     return qMakePair(minX, maxX);
 }
@@ -426,11 +426,11 @@ QPair<double, double> Analyzer::computeSpringLimits(
     const Limits& limits) const
 {
     if (!regressionForward.valid || !regressionBackward.valid)
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     if (qFuzzyIsNull(regressionForward.k) ||
         qFuzzyIsNull(regressionBackward.k)) {
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
     }
 
     auto xVal = [](const Regression& regression, double y) {
@@ -449,7 +449,7 @@ QPair<double, double> Analyzer::computeSpringLimits(
         (qMax(x1, x2) + qMax(x3, x4)) / 2.0;
 
     if (!std::isfinite(minX) || !std::isfinite(maxX))
-        return qMakePair(0.0, 0.0);
+        return qMakePair(qQNaN(), qQNaN());
 
     return qMakePair(minX, maxX);
 }
@@ -650,7 +650,8 @@ void Analyzer::applyRegressions(
 
     // [ОТ-6] — docs/formulas/main_test.md
     m_result.linearityErrorIntegral =
-        qMax(linearityForward, linearityBackward);
+        std::isfinite(linearityForward) && std::isfinite(linearityBackward)
+            ? qMax(linearityForward, linearityBackward) : qQNaN();
 
     // Допуск проверяется по линейности с прямой минимакс (см. Result::linearityError).
     const double minimaxForward =
@@ -661,7 +662,8 @@ void Analyzer::applyRegressions(
 
     // [ОТ-7] — docs/formulas/main_test.md
     m_result.linearityError =
-        qMax(minimaxForward, minimaxBackward);
+        std::isfinite(minimaxForward) && std::isfinite(minimaxBackward)
+            ? qMax(minimaxForward, minimaxBackward) : qQNaN();
 
     m_result.linearity =
         100.0 - m_result.linearityError;
@@ -676,7 +678,8 @@ void Analyzer::applyRegressions(
         5.0 * M_PI * m_cfg.driveDiameter * m_cfg.driveDiameter / 4.0;
 
     m_result.frictionForce =
-        m_result.pressureDiff * forceCoef;
+        std::isfinite(m_cfg.driveDiameter) && m_cfg.driveDiameter > 0.0
+            ? m_result.pressureDiff * forceCoef : qQNaN();
 
     // [ОТ-10] — docs/formulas/main_test.md
     m_result.frictionPercent =

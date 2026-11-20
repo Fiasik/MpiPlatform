@@ -17,6 +17,6 @@ namespace Domain {
         double diameterPulley = 0.0;
         double driveRangeLow = 0.0;
         double driveRangeHigh = 0.0;
-        double dinamicErrorRecomend = 0.0;
+        double dinamicErrorRecomend = qQNaN();
     };
 } Q_DECLARE_METATYPE(Domain::DeviceConfig)

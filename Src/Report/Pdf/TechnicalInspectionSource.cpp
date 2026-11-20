@@ -1,3 +1,4 @@
+#include "Report/NumberFormat.h"
 #include "TechnicalInspectionSource.h"
 
 #include <QDebug>
@@ -10,8 +11,9 @@
 namespace Report::Pdf {
 
 namespace {
-QString f2(qreal v) { return QString::number(v, 'f', 2); }
-QString f3(qreal v) { return QString::number(v, 'f', 3); }
+
+QString f2(qreal v) { return NumberFormat::number(v, 2); }
+QString f3(qreal v) { return NumberFormat::number(v, 3); }
 
 // Тот же 3-вариантный текст вердикта, что и в Report::Excel::Blocks::
 // TechnicalResults::resultOk/resultLimit (там — приватные методы класса,
@@ -109,14 +111,14 @@ void TechnicalInspectionSource::buildValues()
             m_values[QStringLiteral("resSpringNote")] = QStringLiteral("Привод ДД");
         } else {
             m_values[QStringLiteral("resSpringRange")] =
-                QStringLiteral("%1–%2").arg(f2(main->springLow), f2(main->springHigh));
+                NumberFormat::range(main->springLow, main->springHigh);
             m_values[QStringLiteral("resSpringRangeRef")] =
-                QStringLiteral("%1–%2").arg(f2(valve.driveRangeLow), f2(valve.driveRangeHigh));
+                NumberFormat::range(valve.driveRangeLow, valve.driveRangeHigh);
             m_values[QStringLiteral("resSpringNote")] = resultOk(t.crossingStatus.spring);
         }
 
         m_values[QStringLiteral("resPressureRange")] =
-            QStringLiteral("%1–%2").arg(f2(main->lowLimitPressure), f2(main->highLimitPressure));
+            NumberFormat::range(main->lowLimitPressure, main->highLimitPressure);
         m_values[QStringLiteral("resFrictionPct")] = f2(main->frictionPercent);
         m_values[QStringLiteral("resFrictionPctNote")] = resultLimit(t.crossingStatus.frictionPercent);
         m_values[QStringLiteral("resFrictionAvg")] = f3(main->frictionForce);

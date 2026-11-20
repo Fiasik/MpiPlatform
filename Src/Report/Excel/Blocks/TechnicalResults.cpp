@@ -1,4 +1,6 @@
+#include "Report/NumberFormat.h"
 #include "TechnicalResults.h"
+#include <cmath>
 
 #include "Domain/ValveEnums.h"
 #include "Utils/TimeUtils.h"
@@ -7,8 +9,9 @@
 #include "Report/Context.h"
 
 namespace Report::Excel::Blocks {
-    static QString f2(qreal v) { return QString::number(v, 'f', 2); }
-    static QString f3(qreal v) { return QString::number(v, 'f', 3); }
+
+    static QString f2(qreal v) { return NumberFormat::number(v, 2); }
+    static QString f3(qreal v) { return NumberFormat::number(v, 3); }
 
     QString TechnicalResults::resultOk(CrossingStatus::State state) const {
         using State = CrossingStatus::State;
@@ -65,12 +68,10 @@ namespace Report::Excel::Blocks {
             writer.cell(m_layout.sheet, spring, m_layout.colResult, "Привод ДД");
         } else if (main) {
             writer.cell(m_layout.sheet, spring, m_layout.colFact,
-                        QString("%1–%2").arg(f2(main->springLow),
-                                             f2(main->springHigh)));
+                        NumberFormat::range(main->springLow, main->springHigh));
 
             writer.cell(m_layout.sheet, spring, m_layout.colNorm,
-                        QString("%1–%2").arg(f2(v.driveRangeLow),
-                                             f2(v.driveRangeHigh)));
+                        NumberFormat::range(v.driveRangeLow, v.driveRangeHigh));
 
             writer.cell(m_layout.sheet, spring, m_layout.colResult,
                         resultOk(t.crossingStatus.spring));
@@ -78,8 +79,7 @@ namespace Report::Excel::Blocks {
 
         if (main) {
             writer.cell(m_layout.sheet, pressure, m_layout.colFact,
-                        QString("%1–%2").arg(f2(main->lowLimitPressure),
-                                             f2(main->highLimitPressure)));
+                        NumberFormat::range(main->lowLimitPressure, main->highLimitPressure));
 
             writer.cell(m_layout.sheet, frictionPercent, m_layout.colFact,
                         f2(main->frictionPercent));

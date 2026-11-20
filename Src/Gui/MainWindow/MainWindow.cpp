@@ -1336,7 +1336,7 @@ void MainWindow::setRegistry(Registry* registry)
     cfg.crossingLimits = valveInfo.crossingLimits;
     cfg.strokeMovement = valveInfo.strokeMovement;
     cfg.diameterPulley = valveInfo.diameterPulley;
-    cfg.dinamicErrorRecomend = valveInfo.dinamicErrorRecomend.toDouble();
+    cfg.dinamicErrorRecomend = NumberUtils::toDoubleOrNaN(valveInfo.dinamicErrorRecomend);
     cfg.driveRangeLow = valveInfo.driveRangeLow;
     cfg.driveRangeHigh = valveInfo.driveRangeHigh;
 

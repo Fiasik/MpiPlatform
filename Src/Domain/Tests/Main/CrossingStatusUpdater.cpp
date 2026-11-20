@@ -2,166 +2,90 @@
 
 #include "Utils/NumberUtils.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace Domain::Tests::Main {
-
 namespace {
+using State = CrossingStatus::State;
 
-// Промах относительно диапазона [lower, upper]: NaN — значение внутри
-// (Ok), иначе знак говорит, какая граница нарушена ("+" — выше upper,
-// "-" — ниже lower), величина — расстояние ровно до этой границы.
-double missFrom(double value, double lower, double upper)
+// Missing measurements and invalid limits cannot produce a verdict.
+// miss remains NaN for Unknown and Ok; the state distinguishes them.
+void evaluate(bool enabled, double value, double lower, double upper,
+              State& state, double& miss, double& measured,
+              double& storedLower, double& storedUpper)
 {
+    if (!enabled)
+        return;
+    measured = std::isfinite(value) ? value : qQNaN();
+    if (!std::isfinite(lower) || !std::isfinite(upper))
+        return;
     if (lower > upper)
         std::swap(lower, upper);
-
-    if (value < lower)
-        return value - lower;
-
-    if (value > upper)
-        return value - upper;
-
-    return qQNaN();
+    storedLower = lower;
+    storedUpper = upper;
+    if (!std::isfinite(value))
+        return;
+    if (value < lower) {
+        miss = value - lower;
+        state = State::Fail;
+    } else if (value > upper) {
+        miss = value - upper;
+        state = State::Fail;
+    } else {
+        state = State::Ok;
+    }
 }
-
-CrossingStatus::State stateFromMiss(double miss)
-{
-    return qIsNaN(miss) ? CrossingStatus::State::Ok : CrossingStatus::State::Fail;
-}
-
 }
 
 // [ОТ-15] Проверки Pass|Fail — docs/formulas/main_test.md
 void updateCrossingStatus(Telemetry& ts, const DeviceConfig& cfg)
 {
-    const QString& valveStroke = cfg.valveStroke;
-    const auto& limits = cfg.crossingLimits;
-
-    using State = CrossingStatus::State;
     auto& cs = ts.crossingStatus;
-
+    cs = {}; // Never retain a verdict from a previous calculation or test.
     if (!ts.testMain)
         return;
+    const auto& result = *ts.testMain;
+    const auto& limits = cfg.crossingLimits;
 
-    if (limits.frictionEnabled) {
-        cs.frictionPercentMiss =
-            missFrom(ts.testMain->frictionPercent,
-                     limits.frictionCoefLower,
-                     limits.frictionCoefUpper);
-        cs.frictionPercent = stateFromMiss(cs.frictionPercentMiss);
-        cs.frictionPercentValue = ts.testMain->frictionPercent;
-        cs.frictionPercentLower = limits.frictionCoefLower;
-        cs.frictionPercentUpper = limits.frictionCoefUpper;
-    } else {
-        cs.frictionPercent = State::Unknown;
-        cs.frictionPercentMiss = qQNaN();
-        cs.frictionPercentValue = qQNaN();
-        cs.frictionPercentLower = qQNaN();
-        cs.frictionPercentUpper = qQNaN();
-    }
+    evaluate(limits.frictionEnabled, result.frictionPercent,
+             limits.frictionCoefLower, limits.frictionCoefUpper,
+             cs.frictionPercent, cs.frictionPercentMiss, cs.frictionPercentValue,
+             cs.frictionPercentLower, cs.frictionPercentUpper);
 
-    if (limits.valveStrokeEnabled) {
-        bool ok = false;
-        const double recStroke = NumberUtils::toDouble(valveStroke, &ok);
+    bool strokeParsed = false;
+    const double referenceStroke = NumberUtils::toDouble(cfg.valveStroke, &strokeParsed);
+    const double strokeDelta = std::abs(referenceStroke) * limits.valveStroke / 100.0;
+    evaluate(limits.valveStrokeEnabled && strokeParsed, ts.valveStrokeRecord.real,
+             referenceStroke - strokeDelta, referenceStroke + strokeDelta,
+             cs.valveStroke, cs.valveStrokeMiss, cs.valveStrokeValue,
+             cs.valveStrokeLower, cs.valveStrokeUpper);
 
-        if (ok) {
-            const double d =
-                std::abs(recStroke) * (limits.valveStroke / 100.0);
+    evaluate(limits.dynamicErrorEnabled, result.dynamicErrorReal, 0.0, cfg.dinamicErrorRecomend,
+             cs.dynamicError, cs.dynamicErrorMiss, cs.dynamicErrorValue,
+             cs.dynamicErrorLower, cs.dynamicErrorUpper);
 
-            cs.valveStrokeMiss =
-                missFrom(ts.valveStrokeRecord.real, recStroke - d, recStroke + d);
-            cs.valveStroke = stateFromMiss(cs.valveStrokeMiss);
-            cs.valveStrokeValue = ts.valveStrokeRecord.real;
-            cs.valveStrokeLower = recStroke - d;
-            cs.valveStrokeUpper = recStroke + d;
-        } else {
-            cs.valveStroke = State::Unknown;
-            cs.valveStrokeMiss = qQNaN();
-            cs.valveStrokeValue = qQNaN();
-            cs.valveStrokeLower = qQNaN();
-            cs.valveStrokeUpper = qQNaN();
-        }
-    } else {
-        cs.valveStroke = State::Unknown;
-        cs.valveStrokeMiss = qQNaN();
-        cs.valveStrokeValue = qQNaN();
-        cs.valveStrokeLower = qQNaN();
-        cs.valveStrokeUpper = qQNaN();
-    }
+    double referenceLow = cfg.driveRangeLow;
+    double referenceHigh = cfg.driveRangeHigh;
+    if (referenceLow > referenceHigh)
+        std::swap(referenceLow, referenceHigh);
+    const double lowDelta = std::abs(referenceLow) * limits.springLower / 100.0;
+    const double highDelta = std::abs(referenceHigh) * limits.springUpper / 100.0;
+    State lowState = State::Unknown;
+    State highState = State::Unknown;
+    evaluate(limits.springEnabled, result.springLow, referenceLow - lowDelta, referenceLow + lowDelta,
+             lowState, cs.springLowMiss, cs.springLowValue, cs.springLowLower, cs.springLowUpper);
+    evaluate(limits.springEnabled, result.springHigh, referenceHigh - highDelta, referenceHigh + highDelta,
+             highState, cs.springHighMiss, cs.springHighValue, cs.springHighLower, cs.springHighUpper);
+    if (lowState == State::Fail || highState == State::Fail)
+        cs.spring = State::Fail;
+    else if (lowState == State::Ok && highState == State::Ok)
+        cs.spring = State::Ok;
 
-    if (limits.dynamicErrorEnabled) {
-        cs.dynamicErrorMiss =
-            missFrom(ts.testMain->dynamicErrorReal, 0.0, cfg.dinamicErrorRecomend);
-        cs.dynamicError = stateFromMiss(cs.dynamicErrorMiss);
-        cs.dynamicErrorValue = ts.testMain->dynamicErrorReal;
-        cs.dynamicErrorLower = 0.0;
-        cs.dynamicErrorUpper = cfg.dinamicErrorRecomend;
-    } else {
-        cs.dynamicError = State::Unknown;
-        cs.dynamicErrorMiss = qQNaN();
-        cs.dynamicErrorValue = qQNaN();
-        cs.dynamicErrorLower = qQNaN();
-        cs.dynamicErrorUpper = qQNaN();
-    }
-
-    if (limits.springEnabled) {
-        double recLow = cfg.driveRangeLow;
-        double recHigh = cfg.driveRangeHigh;
-
-        if (recLow > recHigh)
-            std::swap(recLow, recHigh);
-
-        const double lowD = std::abs(recLow) * (limits.springLower / 100.0);
-        const double highD = std::abs(recHigh) * (limits.springUpper / 100.0);
-
-        cs.springLowMiss =
-            missFrom(ts.testMain->springLow, recLow - lowD, recLow + lowD);
-        cs.springHighMiss =
-            missFrom(ts.testMain->springHigh, recHigh - highD, recHigh + highD);
-
-        const bool okLow = qIsNaN(cs.springLowMiss);
-        const bool okHigh = qIsNaN(cs.springHighMiss);
-
-        cs.spring = (okLow && okHigh) ? State::Ok : State::Fail;
-
-        cs.springLowValue = ts.testMain->springLow;
-        cs.springLowLower = recLow - lowD;
-        cs.springLowUpper = recLow + lowD;
-        cs.springHighValue = ts.testMain->springHigh;
-        cs.springHighLower = recHigh - highD;
-        cs.springHighUpper = recHigh + highD;
-    } else {
-        cs.spring = State::Unknown;
-        cs.springLowMiss = qQNaN();
-        cs.springHighMiss = qQNaN();
-        cs.springLowValue = qQNaN();
-        cs.springLowLower = qQNaN();
-        cs.springLowUpper = qQNaN();
-        cs.springHighValue = qQNaN();
-        cs.springHighLower = qQNaN();
-        cs.springHighUpper = qQNaN();
-    }
-
-    // Линейность — экспериментальная (MPIPLATFORM_EXPERIMENTAL_LINEARITY): без
-    // флага значение не считается и в Pass|Fail не участвует.
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
-    constexpr bool kLinearityOn = true;
-#else
-    constexpr bool kLinearityOn = false;
+    evaluate(limits.linearCharacteristicEnabled, result.linearityError, 0.0, limits.linearCharacteristic,
+             cs.linearCharacteristic, cs.linearCharacteristicMiss, cs.linearCharacteristicValue,
+             cs.linearCharacteristicLower, cs.linearCharacteristicUpper);
 #endif
-    if (kLinearityOn && limits.linearCharacteristicEnabled) {
-        cs.linearCharacteristicMiss =
-            missFrom(ts.testMain->linearityError, 0.0, limits.linearCharacteristic);
-        cs.linearCharacteristic = stateFromMiss(cs.linearCharacteristicMiss);
-        cs.linearCharacteristicValue = ts.testMain->linearityError;
-        cs.linearCharacteristicLower = 0.0;
-        cs.linearCharacteristicUpper = limits.linearCharacteristic;
-    } else {
-        cs.linearCharacteristic = State::Unknown;
-        cs.linearCharacteristicMiss = qQNaN();
-        cs.linearCharacteristicValue = qQNaN();
-        cs.linearCharacteristicLower = qQNaN();
-        cs.linearCharacteristicUpper = qQNaN();
-    }
 }
-
 }

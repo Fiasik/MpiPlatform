@@ -1,3 +1,4 @@
+#include "Report/NumberFormat.h"
 #include "Common.h"
 
 #include <QStringList>
@@ -49,9 +50,9 @@ void writeItem(Sheet& sheet, int row, int first, int last, const Item& item)
 
 }
 
-// Нет измерения (NaN) — пустая ячейка, а не "nan".
-QString f2(double value) { return std::isfinite(value) ? QString::number(value, 'f', 2) : QString(); }
-QString f3(double value) { return std::isfinite(value) ? QString::number(value, 'f', 3) : QString(); }
+// Нет конечного измерения — прочерк. Вычисленный ноль отображается числом.
+QString f2(double value) { return NumberFormat::number(value, 2); }
+QString f3(double value) { return NumberFormat::number(value, 3); }
 
 void title(Sheet& sheet, const QString& title, const Report::Context& ctx)
 {

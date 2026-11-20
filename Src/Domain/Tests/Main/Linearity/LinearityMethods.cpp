@@ -352,12 +352,12 @@ double minimaxLinearity(const QVector<QPointF>& points, double strokeMin, double
 {
     const double stroke = strokeMax - strokeMin;
     if (points.isEmpty() || stroke <= 0.0)
-        return 0.0;
+        return qQNaN();
 
     StrokeLinearity s;
     computeStroke(s, LinearityMethod::IntegralMinimax, points,
                   strokeMin + kWindowFrac * stroke, strokeMax - kWindowFrac * stroke, stroke);
-    return s.valid ? s.value : 0.0;
+    return s.valid && std::isfinite(s.value) ? s.value : qQNaN();
 }
 
 double strokePercent(const LinearityMethodsResult& result, double position)

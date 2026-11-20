@@ -5,6 +5,7 @@
 #include "Gui/Style/Palette.h"
 #include "Domain/Tests/Option/Response/Limits.h"
 #include "Utils/TimeUtils.h"
+#include "Utils/NumberUtils.h"
 #include "Widgets/BackgroundRoleDelegate.h"
 
 #include <QAbstractItemView>
@@ -14,6 +15,14 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+
+namespace {
+QString measuredNumber(double value, int decimals)
+{
+    return std::isfinite(value) ? QString::number(value, 'f', decimals)
+                               : QStringLiteral("--");
+}
+}
 
 void TelemetryUiMapper::updateInit(const InitState& init,
                                    const ValveStrokeRecord& strokeResult)
@@ -121,19 +130,19 @@ void TelemetryUiMapper::updateMainTest(
     const ValveStrokeRecord& strokeResult)
 {
     m_ui->label_pressureDifference_Value->setText(
-        QString("%1").arg(mainResult.pressureDiff, 0, 'f', 3));
+        measuredNumber(mainResult.pressureDiff, 3));
 
     m_ui->label_frictionForce_Value->setText(
-        QString("%1").arg(mainResult.frictionForce, 0, 'f', 3));
+        measuredNumber(mainResult.frictionForce, 3));
 
     m_ui->label_frictionPercent_Value->setText(
-        QString("%1").arg(mainResult.frictionPercent, 0, 'f', 2));
+        measuredNumber(mainResult.frictionPercent, 2));
 
     m_ui->lineEdit_resultsTable_frictionForceValue->setText(
-        QString("%1").arg(mainResult.frictionForce, 0, 'f', 3));
+        measuredNumber(mainResult.frictionForce, 3));
 
     m_ui->lineEdit_resultsTable_frictionPercentValue->setText(
-        QString("%1").arg(mainResult.frictionPercent, 0, 'f', 2));
+        measuredNumber(mainResult.frictionPercent, 2));
 
     auto breakawayText = [](double v) {
         return std::isfinite(v) ? QString::number(v, 'f', 3) : QStringLiteral("--");
@@ -142,41 +151,36 @@ void TelemetryUiMapper::updateMainTest(
     m_ui->label_breakawayBackward_Value->setText(breakawayText(mainResult.breakawayBackward));
 
     m_ui->label_dynamicErrorMeanPercent_Value->setText(
-        QString("%1").arg(mainResult.dynamicErrorMeanPercent, 0, 'f', 2));
+        measuredNumber(mainResult.dynamicErrorMeanPercent, 2));
 
     m_ui->label_dynamicErrorMean_Value->setText(
-        QString("%1").arg(mainResult.dynamicErrorMean, 0, 'f', 3));
+        measuredNumber(mainResult.dynamicErrorMean, 3));
 
     m_ui->label_dynamicErrorMaxPercent_Value->setText(
-        QString("%1")
-            .arg(mainResult.dynamicErrorMaxPercent, 0, 'f', 2)
+        measuredNumber(mainResult.dynamicErrorMaxPercent, 2)
         );
 
     m_ui->label_dynamicErrorMax_Value->setText(
-        QString("%1").arg(mainResult.dynamicErrorMax, 0, 'f', 3));
+        measuredNumber(mainResult.dynamicErrorMax, 3));
 
     m_ui->lineEdit_resultsTable_dynamicErrorReal->setText(
-        QString("%1").arg(mainResult.dynamicErrorReal, 0, 'f', 2));
+        measuredNumber(mainResult.dynamicErrorReal, 2));
 
     m_ui->lineEdit_resultsTable_strokeReal->setText(
-        QString("%1").arg(strokeResult.real, 0, 'f', 2));
+        measuredNumber(strokeResult.real, 2));
 
     m_ui->label_lowLimit_Value->setText(
-        QString("%1").arg(mainResult.lowLimitPressure, 0, 'f', 2));
+        measuredNumber(mainResult.lowLimitPressure, 2));
 
     m_ui->label_highLimit_Value->setText(
-        QString("%1").arg(mainResult.highLimitPressure, 0, 'f', 2));
+        measuredNumber(mainResult.highLimitPressure, 2));
 
     m_ui->lineEdit_resultsTable_rangePressure->setText(
-        QString("%1–%2")
-            .arg(mainResult.lowLimitPressure, 0, 'f', 2)
-            .arg(mainResult.highLimitPressure, 0, 'f', 2)
+        NumberUtils::formatRange(mainResult.lowLimitPressure, mainResult.highLimitPressure)
         );
 
     m_ui->lineEdit_resultsTable_driveRangeReal->setText(
-        QString("%1–%2")
-            .arg(mainResult.springLow, 0, 'f', 2)
-            .arg(mainResult.springHigh, 0, 'f', 2)
+        NumberUtils::formatRange(mainResult.springLow, mainResult.springHigh)
         );
 
     m_ui->label_valveStroke_range_Value->setText(strokeResult.range);
@@ -187,31 +191,19 @@ void TelemetryUiMapper::updateCrossingValues(
     const ValveStrokeRecord& strokeResult)
 {
     m_ui->label_crossingLimits_dynamicError_Value->setText(
-        QString::number(mainResult.dynamicErrorReal, 'f', 2));
-    m_ui->label_crossingLimits_dynamicError_Value->setText(
-        QString::number(mainResult.dynamicErrorReal, 'f', 2));
+        measuredNumber(mainResult.dynamicErrorReal, 2));
 
     m_ui->label_crossingLimits_linearCharacteristic_Value->setText(
-        QString::number(mainResult.linearityError, 'f', 2));
-    m_ui->label_crossingLimits_linearCharacteristic_Value->setText(
-        QString::number(mainResult.linearityError, 'f', 2));
+        measuredNumber(mainResult.linearityError, 2));
 
     m_ui->label_crossingLimits_range_Value->setText(
-        QString::number(strokeResult.real, 'f', 2));
-    m_ui->label_crossingLimits_range_Value->setText(
-        QString::number(strokeResult.real, 'f', 2));
+        measuredNumber(strokeResult.real, 2));
 
     m_ui->label_crossingLimits_spring_Value->setText(
-        QString("%1–%2")
-            .arg(mainResult.springLow, 0, 'f', 2)
-            .arg(mainResult.springHigh, 0, 'f', 2));
-    m_ui->label_crossingLimits_spring_Value->setText(
-        QString("%1–%2")
-            .arg(mainResult.springLow, 0, 'f', 2)
-            .arg(mainResult.springHigh, 0, 'f', 2));
+        NumberUtils::formatRange(mainResult.springLow, mainResult.springHigh));
 
     m_ui->label_crossingLimits_coefficientFriction_Value->setText(
-        QString::number(mainResult.frictionPercent, 'f', 2));
+        measuredNumber(mainResult.frictionPercent, 2));
 }
 
 void TelemetryUiMapper::updateStepTest(const Domain::Tests::Option::Step::Result& result)

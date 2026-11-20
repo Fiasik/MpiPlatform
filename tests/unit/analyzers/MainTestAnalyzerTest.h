@@ -7,9 +7,9 @@ class MainTestAnalyzerTest : public QObject
     Q_OBJECT
 
 private slots:
-    void emptyInput_resultIsAllZero();
+    void emptyInput_resultIsUnavailable();
     void nanSamples_ignoredAndDoNotCrash();
-    void onlyForwardStroke_resultIsZero();
+    void onlyForwardStroke_resultIsUnavailable();
     void perfectLinear_noHysteresis_pressureDiffIsZero();
     void perfectLinear_linearityErrorIsZero();
     void knownHysteresis_pressureDiffMatchesExpected();
@@ -19,7 +19,7 @@ private slots:
     void dynamicError_uniformDacOffset_computesCorrectly();
     void frictionForce_knownDiameter_matchesFormula();
     void springAndPressureLimits_parallelRegressions_computeCorrectly();
-    void allPointsOutsideRange_regressionFails_resultIsZero();
+    void allPointsOutsideRange_regressionFails_resultIsUnavailable();
     void minimumPoints_exactlyTwoInRange_regressionSucceeds();
 
     // ── Пересчёт по перетащенной линии (recalculateFromManualRegression) ───

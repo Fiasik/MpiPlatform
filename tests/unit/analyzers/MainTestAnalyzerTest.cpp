@@ -114,23 +114,23 @@ void printResult(const Test::Result& r)
              << "highLimitPressure=" << r.highLimitPressure;
 }
 
-// Проверяет, что все поля результата равны нулю.
-void verifyZeroResult(const Test::Result& r)
+// Неудачный расчёт не должен выдавать правдоподобные нули.
+void verifyMissingResult(const Test::Result& r)
 {
-    QCOMPARE(r.pressureDiff, qreal(0.0));
-    QCOMPARE(r.frictionForce, qreal(0.0));
-    QCOMPARE(r.frictionPercent, qreal(0.0));
-    QCOMPARE(r.dynamicErrorMean, qreal(0.0));
-    QCOMPARE(r.dynamicErrorMeanPercent, qreal(0.0));
-    QCOMPARE(r.dynamicErrorMax, qreal(0.0));
-    QCOMPARE(r.dynamicErrorMaxPercent, qreal(0.0));
-    QCOMPARE(r.dynamicErrorReal, qreal(0.0));
-    QCOMPARE(r.lowLimitPressure, qreal(0.0));
-    QCOMPARE(r.highLimitPressure, qreal(0.0));
-    QCOMPARE(r.springLow, qreal(0.0));
-    QCOMPARE(r.springHigh, qreal(0.0));
-    QCOMPARE(r.linearityError, qreal(0.0));
-    QCOMPARE(r.linearity, qreal(0.0));
+    QVERIFY(std::isnan(r.pressureDiff));
+    QVERIFY(std::isnan(r.frictionForce));
+    QVERIFY(std::isnan(r.frictionPercent));
+    QVERIFY(std::isnan(r.dynamicErrorMean));
+    QVERIFY(std::isnan(r.dynamicErrorMeanPercent));
+    QVERIFY(std::isnan(r.dynamicErrorMax));
+    QVERIFY(std::isnan(r.dynamicErrorMaxPercent));
+    QVERIFY(std::isnan(r.dynamicErrorReal));
+    QVERIFY(std::isnan(r.lowLimitPressure));
+    QVERIFY(std::isnan(r.highLimitPressure));
+    QVERIFY(std::isnan(r.springLow));
+    QVERIFY(std::isnan(r.springHigh));
+    QVERIFY(std::isnan(r.linearityError));
+    QVERIFY(std::isnan(r.linearity));
 }
 
 // Данные для тестов с гистерезисом
@@ -153,7 +153,7 @@ QVector<Sample> makeHysteresisBackward()
 
 } // namespace (anonymous)
 
-void MainTestAnalyzerTest::emptyInput_resultIsAllZero()
+void MainTestAnalyzerTest::emptyInput_resultIsUnavailable()
 {
     printCaseHeader("Пустой вход");
 
@@ -163,7 +163,7 @@ void MainTestAnalyzerTest::emptyInput_resultIsAllZero()
 
     const Test::Result r = analyzer.result();
     printResult(r);
-    verifyZeroResult(r);
+    verifyMissingResult(r);
 }
 
 void MainTestAnalyzerTest::nanSamples_ignoredAndDoNotCrash()
@@ -213,15 +213,15 @@ void MainTestAnalyzerTest::nanSamples_ignoredAndDoNotCrash()
 
     const Test::Result r = analyzer.result();
     printResult(r);
-    verifyZeroResult(r);
+    verifyMissingResult(r);
 }
 
-void MainTestAnalyzerTest::onlyForwardStroke_resultIsZero()
+void MainTestAnalyzerTest::onlyForwardStroke_resultIsUnavailable()
 {
     printCaseHeader("Только прямой ход — обратного нет");
 
     // startBackwardStroke() не вызывается → m_pressureSeriesFirst пустой
-    // → finish() делает ранний выход → результат нулевой.
+    // → finish() делает ранний выход → результат не определён.
     Test::Analyzer analyzer;
     analyzer.start();
 
@@ -233,7 +233,7 @@ void MainTestAnalyzerTest::onlyForwardStroke_resultIsZero()
 
     const Test::Result r = analyzer.result();
     printResult(r);
-    verifyZeroResult(r);
+    verifyMissingResult(r);
 }
 
 void MainTestAnalyzerTest::perfectLinear_noHysteresis_pressureDiffIsZero()
@@ -262,8 +262,12 @@ void MainTestAnalyzerTest::perfectLinear_linearityErrorIsZero()
     const Test::Result r = runAnalyzer(fwd, bwd);
     printResult(r);
 
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     QVERIFY2(qFuzzyIsNull(r.linearityError),
         qPrintable(QString("linearityError = %1, ожидалось 0").arg(r.linearityError)));
+#else
+    QVERIFY(std::isnan(r.linearityError));
+#endif
 }
 
 void MainTestAnalyzerTest::knownHysteresis_pressureDiffMatchesExpected()
@@ -319,11 +323,11 @@ void MainTestAnalyzerTest::start_resetsResult()
     QVERIFY2(r1.pressureDiff > 0.0,
         "Первый прогон должен дать ненулевой pressureDiff");
 
-    // Повторный start() обнуляет результат немедленно.
+    // Повторный start() сбрасывает показатели в состояние «нет данных».
     analyzer.start();
     const Test::Result r2 = analyzer.result();
     qDebug() << "После start(): pressureDiff =" << r2.pressureDiff;
-    verifyZeroResult(r2);
+    verifyMissingResult(r2);
 }
 
 void MainTestAnalyzerTest::dynamicError_uniformDacOffset_computesCorrectly()
@@ -408,12 +412,12 @@ void MainTestAnalyzerTest::springAndPressureLimits_parallelRegressions_computeCo
                        .arg(r.springHigh)));
 }
 
-void MainTestAnalyzerTest::allPointsOutsideRange_regressionFails_resultIsZero()
+void MainTestAnalyzerTest::allPointsOutsideRange_regressionFails_resultIsUnavailable()
 {
     printCaseHeader("Все точки вне диапазона 10%-90% — регрессия не строится");
 
     // Позиции только в [0,6] и [94,100]: все вне фильтра [10, 90].
-    // n = 0 для обеих регрессий → finish() выходит с нулевым результатом.
+    // n = 0 для обеих регрессий → finish() выходит с неопределённым результатом.
     const QVector<Sample> fwd = {
         makeSample(4.0, 0.0, 10.00),
         makeSample(5.0, 3.0, 10.33),
@@ -433,7 +437,7 @@ void MainTestAnalyzerTest::allPointsOutsideRange_regressionFails_resultIsZero()
 
     const Test::Result r = runAnalyzer(fwd, bwd);
     printResult(r);
-    verifyZeroResult(r);
+    verifyMissingResult(r);
 }
 
 void MainTestAnalyzerTest::minimumPoints_exactlyTwoInRange_regressionSucceeds()

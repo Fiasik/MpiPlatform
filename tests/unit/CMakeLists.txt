@@ -30,3 +30,15 @@ add_test(NAME AnalyzerTests COMMAND AnalyzerTests)
 qt_add_executable(SaverDataTests SaverDataTest.cpp)
 target_link_libraries(SaverDataTests PRIVATE Report Qt6::Test)
 add_test(NAME SaverDataTests COMMAND SaverDataTests)
+
+qt_add_executable(MainValidityTests MainValidityTest.cpp ${CMAKE_SOURCE_DIR}/database.qrc)
+target_link_libraries(MainValidityTests PRIVATE Domain Qt6::Test)
+add_test(NAME MainValidityTests COMMAND MainValidityTests)
+
+qt_add_executable(MainResultPresentationTests MainResultPresentationTest.cpp ${CMAKE_SOURCE_DIR}/img.qrc)
+set_target_properties(MainResultPresentationTests PROPERTIES
+    AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}/Src/Gui/MainWindow)
+target_link_libraries(MainResultPresentationTests PRIVATE Gui Qt6::Test)
+add_test(NAME MainResultPresentationTests COMMAND MainResultPresentationTests)
+set_tests_properties(MainResultPresentationTests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+

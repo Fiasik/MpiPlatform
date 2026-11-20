@@ -1,3 +1,4 @@
+#include "Utils/NumberUtils.h"
 #include "SessionReportLoader.h"
 
 #include <QDir>
@@ -78,7 +79,7 @@ bool readDb(QSqlDatabase& db, qint64 sessionId, DbPart& out)
                          .toString(QStringLiteral("dd.MM.yyyy"));
     // Пустое поле в живом отчёте печатается как 0.00 (collectInput()), NULL — так же.
     const QVariant supply = s.value(QStringLiteral("supply_pressure_bar"));
-    in.telemetry.supplyRecord.pressure_bar = supply.isNull() ? 0.0 : supply.toDouble();
+    in.telemetry.supplyRecord.pressure_bar = supply.isNull() ? qQNaN() : supply.toDouble();
     const qint64 positionId = s.value(QStringLiteral("position_id")).toLongLong();
 
     QSqlQuery pos(db);
@@ -218,7 +219,7 @@ Domain::DeviceConfig deviceConfig(const ValveInfo& valve)
     cfg.crossingLimits = valve.crossingLimits;
     cfg.strokeMovement = valve.strokeMovement;
     cfg.diameterPulley = valve.diameterPulley;
-    cfg.dinamicErrorRecomend = valve.dinamicErrorRecomend.toDouble();
+    cfg.dinamicErrorRecomend = NumberUtils::toDoubleOrNaN(valve.dinamicErrorRecomend);
     cfg.driveRangeLow = valve.driveRangeLow;
     cfg.driveRangeHigh = valve.driveRangeHigh;
     return cfg;

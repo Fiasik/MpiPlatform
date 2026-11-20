@@ -1,3 +1,4 @@
+#include "Report/NumberFormat.h"
 #include "TechnicalInspection.h"
 
 #include <QDebug>
@@ -5,6 +6,7 @@
 #include <QVector>
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 #include "Report/Context.h"
@@ -143,14 +145,14 @@ void results(Sheet& sheet, const Report::Context& ctx)
         resultRow(sheet, spring, {}, {}, QStringLiteral("Привод ДД"));
     else if (main)
         resultRow(sheet, spring,
-                  QStringLiteral("%1–%2").arg(f2(main->springLow), f2(main->springHigh)),
-                  QStringLiteral("%1–%2").arg(f2(v.driveRangeLow), f2(v.driveRangeHigh)),
+                  NumberFormat::range(main->springLow, main->springHigh),
+                  NumberFormat::range(v.driveRangeLow, v.driveRangeHigh),
                   resultOk(t.crossingStatus.spring));
     else
         resultRow(sheet, spring, {}, {}, {});
 
     resultRow(sheet, QStringLiteral("Нижнее/верхнее значение давления в приводе, бар"),
-              main ? QStringLiteral("%1–%2").arg(f2(main->lowLimitPressure), f2(main->highLimitPressure))
+              main ? NumberFormat::range(main->lowLimitPressure, main->highLimitPressure)
                    : QString(),
               {}, {}, true);
     noteChoices(kLimitChoices);

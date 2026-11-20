@@ -70,7 +70,7 @@ struct Item {
 
 void sideBySide(Sheet& sheet, const QVector<Item>& left, const QVector<Item>& right);
 
-// Пусто для NaN/inf (нет измерения).
+// Прочерк для NaN/inf (нет измерения).
 QString f2(double value);
 QString f3(double value);
 

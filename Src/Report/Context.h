@@ -10,7 +10,7 @@
 #include "Storage/ChartSnapshotStorage.h"
 #include "Report/Html/ConclusionField.h"
 #include "Report/Html/CommentCard.h"
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 
 namespace Report {
 

@@ -2,7 +2,7 @@
 
 #include "Data.h"
 #include "Report/Context.h"
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 
 namespace Report::Excel {
 
