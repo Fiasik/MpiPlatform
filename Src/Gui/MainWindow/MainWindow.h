@@ -249,6 +249,8 @@ private:
 
     TestState m_testState = TestState::Idle;
     void applyTestStateToUi(TestState  state);
+    void updateTestButtonState(TestState state);
+    QPushButton* m_runningTestButton = nullptr;
     void setTestState(TestState state);
     void showIdleState();
     // Раз в 60 дней (AppSettings::sensorsCheckIntervalDays) напоминает о проверке

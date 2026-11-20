@@ -89,6 +89,7 @@ const Palette& Palette::forScheme(ColorScheme scheme)
 QHash<QString, QString> Palette::tokens() const
 {
     return {
+        {QStringLiteral("testRunningFill"), passFillColor().name()},
         {QStringLiteral("bgDialog"), bgDialog},
         {QStringLiteral("bgRecessed"), bgRecessed},
         {QStringLiteral("bgSurface"), bgSurface},

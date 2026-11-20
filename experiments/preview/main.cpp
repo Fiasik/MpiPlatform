@@ -1,3 +1,4 @@
+#include "Utils/NumberUtils.h"
 // Превьюер: НАСТОЯЩИЙ MainWindow без устройства — посмотреть вживую новые и
 // экспериментальные функции (карточка способов линейности, вкладка
 // «Предпросмотр» отчёта и т. п.) на синтетике, на архивной папке испытания
@@ -279,7 +280,7 @@ Domain::DeviceConfig deviceConfig(const ValveInfo& valve)
     cfg.driveDiameter = valve.driveDiameter;
     cfg.driveRangeLow = valve.driveRangeLow;
     cfg.driveRangeHigh = valve.driveRangeHigh;
-    cfg.dinamicErrorRecomend = valve.dinamicErrorRecomend.toDouble();
+    cfg.dinamicErrorRecomend = NumberUtils::toDoubleOrNaN(valve.dinamicErrorRecomend);
     return cfg;
 }
 
@@ -351,7 +352,7 @@ QLabel* infoLabel(QWidget* window)
 struct SessionData {
     qint64 id = -1;
     QString folder;           // абсолютный путь папки сессии
-    SelectTests::PatternType pattern = SelectTests::Pattern_C_CVT;
+    Domain::Tests::PatternType pattern = Domain::Tests::PatternType::C_CVT;
     ObjectInfo object;
     ValveInfo valve;
     MaterialsOfComponentParts materials;
@@ -393,8 +394,8 @@ std::optional<SessionData> loadSession(const QString& dbPath, const QString& whi
         d.id = q.value(QStringLiteral("id")).toLongLong();
         d.folder = SessionFolders::resolve(q.value(QStringLiteral("folder_path")).toString(), appDir);
         const QString patternKey = q.value(QStringLiteral("pattern")).toString();
-        for (auto p : {SelectTests::Pattern_C_SOVT, SelectTests::Pattern_B_SACVT, SelectTests::Pattern_C_SACVT,
-                       SelectTests::Pattern_B_CVT, SelectTests::Pattern_C_CVT}) {
+        for (auto p : {Domain::Tests::PatternType::C_SOVT, Domain::Tests::PatternType::B_SACVT, Domain::Tests::PatternType::C_SACVT,
+                       Domain::Tests::PatternType::B_CVT, Domain::Tests::PatternType::C_CVT}) {
             if (SelectTests::patternKey(p) == patternKey)
                 d.pattern = p;
         }
@@ -693,7 +694,7 @@ int main(int argc, char* argv[])
     }
 
     MainWindow window;
-    window.setPatternType(session ? session->pattern : SelectTests::Pattern_C_CVT);
+    window.setPatternType(session ? session->pattern : Domain::Tests::PatternType::C_CVT);
     window.setBlockCTS({});
     window.setRegistry(&registry);
     window.setThemeManager(&themeManager);
@@ -1163,7 +1164,7 @@ int main(int argc, char* argv[])
         }
         if (!shotsDir.isEmpty()) {
             auto* tests = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_mainTests"));
-            tests->setCurrentIndex(tests->count() - 1); // «Результаты»
+            window.findChild<QPushButton*>(QStringLiteral("pushButton_mainResults"))->click();
             app.processEvents();
             shot(QStringLiteral("archive_results"));
             tests->setCurrentIndex(0);
@@ -1325,10 +1326,11 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    auto* resultTab = window.findChild<QWidget*>(QStringLiteral("tab_mainTests_result"));
     mainTabs->setCurrentWidget(window.findChild<QWidget*>(QStringLiteral("tab_mainTests")));
-    testTabs->setCurrentWidget(resultTab);
+    window.findChild<QPushButton*>(QStringLiteral("pushButton_mainResults"))->click();
     app.processEvents();
+
+    window.findChild<QTabWidget*>(QStringLiteral("tabWidget_mainResults"))->setCurrentIndex(1);
 
     auto* card = window.findChild<QFrame*>(QStringLiteral("frame_crossingLimits_linearCharacteristic_Card"));
     QToolButton* arrow = card ? card->findChild<QToolButton*>() : nullptr;
@@ -1348,6 +1350,8 @@ int main(int argc, char* argv[])
     arrow->click();
     wait(500); // анимация 220 мс
     QComboBox* combo = methodCombo(&window);
+    if (!combo || !card->isAncestorOf(combo)) return 1;
+    if (window.findChild<QLabel*>(QStringLiteral("label_crossingLimits_linearCharacteristic_Value"))->text().contains(QLatin1Char('%'))) return 1;
     for (int i = 0; combo && i < combo->count(); ++i) {
         combo->setCurrentIndex(i);
         app.processEvents();
@@ -1455,7 +1459,6 @@ int main(int argc, char* argv[])
         task->setDisplayOptions(saved);
     }
 
-    testTabs->setCurrentWidget(resultTab);
     if (QLabel* info = infoLabel(&window)) {
         // Наведение на ⓘ — всплывающий блок появляется по таймеру (350 мс).
         wait(150);
@@ -1475,5 +1478,42 @@ int main(int argc, char* argv[])
     arrow->click();
     wait(500);
     shot(QStringLiteral("06_collapsed_again"));
+    auto* resultsPage = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_mainResults"));
+    auto* resultsButton = window.findChild<QPushButton*>(QStringLiteral("pushButton_mainResults"));
+    if (!resultsPage->isVisible() || !resultsButton->isChecked()) return 1;
+    if (resultsPage->isWindow() || resultsPage->parentWidget() != window.findChild<QWidget*>(QStringLiteral("tab_mainTests"))) return 1;
+    resultsButton->click();
+    if (resultsPage->isVisible() || resultsButton->isChecked()) return 1;
+    resultsButton->click();
+    if (!resultsPage->isVisible() || !resultsButton->isChecked()) return 1;
+    auto* resultTabs = window.findChild<QTabWidget*>(QStringLiteral("tabWidget_mainResults"));
+    resultTabs->setCurrentIndex(0);
+    shot(QStringLiteral("08_measurements"));
+    resultTabs->grab().save(shotsDir + QStringLiteral("/11_standalone_measurements.png"));
+    resultTabs->setCurrentIndex(1);
+    resultTabs->grab().save(shotsDir + QStringLiteral("/12_standalone_pass_fail.png"));
+
+    if (auto* controller = window.findChild<TestController*>()) {
+        for (const auto& entry : {qMakePair("tab_strokeTest", "pushButton_strokeTest_start"),
+                                 qMakePair("tab_mainTests", "pushButton_mainTest_start"),
+                                 qMakePair("tab_optionalTests", "pushButton_optionalTests_start"),
+                                 qMakePair("tab_cyclicTests", "pushButton_cyclicTest_start")}) {
+            auto* tab = window.findChild<QWidget*>(QString::fromLatin1(entry.first));
+            const int index = mainTabs->indexOf(tab);
+            mainTabs->setTabVisible(index, true);
+            mainTabs->setCurrentWidget(tab);
+            auto* button = window.findChild<QPushButton*>(QString::fromLatin1(entry.second));
+            controller->stateChanged(TestState::Starting);
+            if (button->property("testRunning").toBool()) return 1;
+            controller->stateChanged(TestState::Running);
+            if (!button->property("testRunning").toBool()) return 1;
+            if (tab == window.findChild<QWidget*>(QStringLiteral("tab_mainTests")))
+                shot(QStringLiteral("10_running_main_test"));
+            controller->stateChanged(TestState::Canceled);
+            if (button->property("testRunning").toBool()) return 1;
+            controller->stateChanged(TestState::Idle);
+        }
+    } else return 1;
+
     return 0;
 }

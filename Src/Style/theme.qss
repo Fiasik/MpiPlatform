@@ -405,6 +405,15 @@ QPushButton:default:hover {
     background: @{accentHover};
 }
 
+/* Running tests use the same pastel fill as successful resolution steps. */
+QPushButton[testRunning="true"],
+QPushButton[testRunning="true"]:hover,
+QPushButton[testRunning="true"]:pressed {
+    background: @{testRunningFill};
+    color: #17351f;
+    border-color: #73ad82;
+}
+
 /* QTableWidget */
 QTableWidget {
     background: @{bgSurface};

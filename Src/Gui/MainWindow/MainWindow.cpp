@@ -7,6 +7,7 @@
 #include <QDataStream>
 #include <QDesktopServices>
 #include <QDir>
+#include <QStyle>
 #include <QPushButton>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -1696,8 +1697,31 @@ void setStatusStateChip(QLabel* label, const QString& text, const QString& color
 }
 }
 
+void MainWindow::updateTestButtonState(TestState state)
+{
+    const QList<QPushButton*> buttons = {ui->pushButton_strokeTest_start,
+        ui->pushButton_mainTest_start, ui->pushButton_optionalTests_start,
+        ui->pushButton_cyclicTest_start};
+    if (state == TestState::Starting || (state == TestState::Running && !m_runningTestButton)) {
+        auto* candidate = m_tabActionRouter.actions(ui->tabWidget_main->currentWidget()).primary;
+        m_runningTestButton = buttons.contains(candidate) ? candidate : nullptr;
+    } else if (state != TestState::Running) {
+        m_runningTestButton = nullptr;
+    }
+    for (auto* button : buttons) {
+        const bool running = state == TestState::Running && button == m_runningTestButton;
+        if (button->property("testRunning").toBool() == running)
+            continue;
+        button->setProperty("testRunning", running);
+        button->style()->unpolish(button);
+        button->style()->polish(button);
+        button->update();
+    }
+}
+
 void MainWindow::applyTestStateToUi(TestState state)
 {
+    updateTestButtonState(state);
     switch (state) {
     case TestState::Idle:
         // Помимо старта из конструктора (там контролы выставляет
@@ -1774,6 +1798,7 @@ void MainWindow::onDeviceDisconnected()
         (m_testState == TestState::Starting || m_testState == TestState::Running);
 
     m_deviceDisconnected = true;
+    updateTestButtonState(TestState::Canceled);
 
     applyInitState(InitState::Failed);
 
