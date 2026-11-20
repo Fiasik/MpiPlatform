@@ -27,7 +27,7 @@
 namespace Domain {
 constexpr quint8 VersionFlag = 0x40;
 
-using ChartType = Widgets::Chart::ChartType;
+using ChartType = Shared::Chart::ChartType;
 
 Program::Program(QObject *parent)
     : QObject{parent}
@@ -239,7 +239,7 @@ void Program::updateMainCharts(const Measurement::Sample& s)
     if (m_isChartDataPaused)
         return;
 
-    QVector<Widgets::Chart::Point> points;
+    QVector<Shared::Chart::Point> points;
 
     if (auto* linear = m_device.sensorByAdc(0)) {
         const qreal x = s.dac;
@@ -262,7 +262,7 @@ void Program::updateMainCharts(const Measurement::Sample& s)
 
     if (auto* linear = m_device.sensorByAdc(0)) {
         if (!qIsNaN(s.pressure1)) {
-            QVector<Widgets::Chart::Point> pressurePoints;
+            QVector<Shared::Chart::Point> pressurePoints;
             pressurePoints.push_back({0, s.pressure1, linear->value()});
             emit addPoints(ChartType::Pressure, pressurePoints);
         }
@@ -286,7 +286,7 @@ void Program::updateSensors()
 
 void Program::updateTimeChart(const Measurement::Sample& s, ChartType chart, qint64 time)
 {
-    QVector<Widgets::Chart::Point> points;
+    QVector<Shared::Chart::Point> points;
 
     points.push_back({0, qreal(time), s.taskPercent});
     points.push_back({1, qreal(time), s.positionPercent});
@@ -411,9 +411,9 @@ void Program::initialization()
         m_deviceConfig.positionerScale,
         m_device.dac()->rawFromValue(SignalUtils::kMinPoweredCurrent));
 
-    if (m_patternType == SelectTests::Pattern_B_SACVT ||
-        m_patternType == SelectTests::Pattern_C_SACVT ||
-        m_patternType == SelectTests::Pattern_C_SOVT) {
+    if (m_patternType == Domain::Tests::PatternType::B_SACVT ||
+        m_patternType == Domain::Tests::PatternType::C_SACVT ||
+        m_patternType == Domain::Tests::PatternType::C_SOVT) {
 
         if ((m_device.version() & VersionFlag) != 0) {
             emit setDoButtonsChecked(m_device.digitalOutputs());
@@ -444,8 +444,8 @@ void Program::initialization()
         emit telemetryUpdated(m_telemetry);
     }
 
-    if (m_patternType == SelectTests::Pattern_B_CVT ||
-        m_patternType == SelectTests::Pattern_C_CVT) {
+    if (m_patternType == Domain::Tests::PatternType::B_CVT ||
+        m_patternType == Domain::Tests::PatternType::C_CVT) {
 
         setDacRaw(startRaw, 10000, true);
 
@@ -465,11 +465,11 @@ void Program::initialization()
 
     initializer.calculateCoefficients();
 
-    if (m_patternType == SelectTests::Pattern_B_CVT ||
-        m_patternType == SelectTests::Pattern_C_CVT ||
-        m_patternType == SelectTests::Pattern_B_SACVT ||
-        m_patternType == SelectTests::Pattern_C_SACVT ||
-        m_patternType == SelectTests::Pattern_C_SOVT) {
+    if (m_patternType == Domain::Tests::PatternType::B_CVT ||
+        m_patternType == Domain::Tests::PatternType::C_CVT ||
+        m_patternType == Domain::Tests::PatternType::B_SACVT ||
+        m_patternType == Domain::Tests::PatternType::C_SACVT ||
+        m_patternType == Domain::Tests::PatternType::C_SOVT) {
         initializer.recordStrokeRange();
 
         setDacRaw(safeParkRaw(), 10000, true);
@@ -562,7 +562,7 @@ void Program::startMainTest(const Tests::Main::Params& params)
 // [ОТ-11] График трения: разность давлений × forceCoef [ОТ-9] — docs/formulas/main_test.md
 void Program::addFriction(const QVector<QPointF> &points)
 {
-    QVector<Widgets::Chart::Point> chartPoints;
+    QVector<Shared::Chart::Point> chartPoints;
 
     qreal k = 5 * M_PI * m_deviceConfig.driveDiameter
               * m_deviceConfig.driveDiameter / 4;
@@ -577,7 +577,7 @@ void Program::addFriction(const QVector<QPointF> &points)
 void Program::addRegression(const QVector<QPointF> &forwardPoints,
                             const QVector<QPointF> &backwardPoints)
 {
-    QVector<Widgets::Chart::Point> chartPoints;
+    QVector<Shared::Chart::Point> chartPoints;
 
     for (QPointF point : forwardPoints) {
         chartPoints.push_back({1, point.x(), point.y()});
@@ -732,7 +732,7 @@ void Program::connectScenarioRuntime(Domain::Tests::AbstractScenario* scenario)
     Q_ASSERT(scenario);
 
     connect(scenario, &Domain::Tests::AbstractScenario::requestClearChart,
-            this, [this](Widgets::Chart::ChartType chartType) {
+            this, [this](Shared::Chart::ChartType chartType) {
                 emit clearPoints(chartType);
             });
 
@@ -807,7 +807,7 @@ void Program::connectScenarioRuntime(Domain::Tests::AbstractScenario* scenario)
 
     connect(scenario, &Domain::Tests::AbstractScenario::pointsRequested,
             this, [this](QVector<QVector<QPointF>>& pointsF,
-                   Widgets::Chart::ChartType chartType) {
+                   Shared::Chart::ChartType chartType) {
                 points(pointsF, chartType);
             }, Qt::DirectConnection);
 

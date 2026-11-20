@@ -1,13 +1,7 @@
 #pragma once
 
-#include <QMetaType>
+#include "Shared/Chart/Point.h"
 
 namespace Widgets::Chart {
-    struct Point
-    {
-        quint8 seriesNum;
-        qreal X;
-        qreal Y;
-    };
+using Shared::Chart::Point;
 }
-Q_DECLARE_METATYPE(Widgets::Chart::Point)

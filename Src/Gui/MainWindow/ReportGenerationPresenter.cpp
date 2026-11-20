@@ -13,6 +13,7 @@
 #include "Storage/Registry.h"
 #include "Storage/Telemetry.h"
 #include "Utils/NumberUtils.h"
+#include "Gui/NumberInput.h"
 #include "Utils/TimeUtils.h"
 
 #include <QDateTime>
@@ -51,7 +52,7 @@ void ReportGenerationPresenter::setRegistry(Registry* registry)
     m_registry = registry;
 }
 
-void ReportGenerationPresenter::setPatternType(SelectTests::PatternType pattern)
+void ReportGenerationPresenter::setPatternType(Domain::Tests::PatternType pattern)
 {
     m_patternType = pattern;
 }
@@ -74,30 +75,30 @@ void ReportGenerationPresenter::collectReportOverrides(Telemetry& telemetry,
 
         take(detectNumber(kFrictionForce, main.frictionForce, 3,
                           m_ui->lineEdit_resultsTable_frictionForceValue->text()));
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionForceValue, main.frictionForce);
+        Gui::NumberInput::readDouble(m_ui->lineEdit_resultsTable_frictionForceValue, main.frictionForce);
 
         take(detectNumber(kFrictionPercent, main.frictionPercent, 2,
                           m_ui->lineEdit_resultsTable_frictionPercentValue->text()));
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_frictionPercentValue, main.frictionPercent);
+        Gui::NumberInput::readDouble(m_ui->lineEdit_resultsTable_frictionPercentValue, main.frictionPercent);
 
         take(detectNumber(kDynamicErrorReal, main.dynamicErrorReal, 2,
                           m_ui->lineEdit_resultsTable_dynamicErrorReal->text()));
-        NumberUtils::readDouble(m_ui->lineEdit_resultsTable_dynamicErrorReal, main.dynamicErrorReal);
+        Gui::NumberInput::readDouble(m_ui->lineEdit_resultsTable_dynamicErrorReal, main.dynamicErrorReal);
 
         overrides += detectRange(kPressureLow, kPressureHigh, main.lowLimitPressure, main.highLimitPressure, 2,
                                  m_ui->lineEdit_resultsTable_rangePressure->text());
-        NumberUtils::readRange(m_ui->lineEdit_resultsTable_rangePressure,
+        Gui::NumberInput::readRange(m_ui->lineEdit_resultsTable_rangePressure,
                                main.lowLimitPressure, main.highLimitPressure);
 
         overrides += detectRange(kSpringLow, kSpringHigh, main.springLow, main.springHigh, 2,
                                  m_ui->lineEdit_resultsTable_driveRangeReal->text());
-        NumberUtils::readRange(m_ui->lineEdit_resultsTable_driveRangeReal, main.springLow, main.springHigh);
+        Gui::NumberInput::readRange(m_ui->lineEdit_resultsTable_driveRangeReal, main.springLow, main.springHigh);
     }
 
     // Stroke
     take(detectNumber(kValveStrokeReal, telemetry.valveStrokeRecord.real, 2,
                       m_ui->lineEdit_resultsTable_strokeReal->text()));
-    NumberUtils::readDouble(m_ui->lineEdit_resultsTable_strokeReal, telemetry.valveStrokeRecord.real);
+    Gui::NumberInput::readDouble(m_ui->lineEdit_resultsTable_strokeReal, telemetry.valveStrokeRecord.real);
 
     // Stroke test
     if (telemetry.testStroke) {
@@ -166,7 +167,7 @@ void ReportGenerationPresenter::collectRegistryOverrides(
     ValveInfo& valveInfo,
     OtherParameters& otherParameters) const
 {
-    NumberUtils::readRange(m_ui->lineEdit_resultsTable_driveRangeRecomend,
+    Gui::NumberInput::readRange(m_ui->lineEdit_resultsTable_driveRangeRecomend,
               valveInfo.driveRangeLow,
               valveInfo.driveRangeHigh);
 

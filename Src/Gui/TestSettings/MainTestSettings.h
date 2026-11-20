@@ -16,7 +16,7 @@ public:
     ~MainTestSettings();
 
     void applyValveInfo(const ValveInfo& info) override;
-    void applyPattern(SelectTests::PatternType pattern) override;
+    void applyPattern(Domain::Tests::PatternType pattern) override;
 
     Domain::Tests::Main::Params parameters() const;
 private:

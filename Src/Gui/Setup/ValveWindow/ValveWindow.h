@@ -4,7 +4,7 @@
 #include <QList>
 #include <QStringList>
 #include "Storage/Registry.h"
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 #include "Storage/AppSettings.h"
 
 class Mapper;
@@ -26,7 +26,7 @@ public:
     ~ValveWindow() = default;
 
     void setRegistry(Registry *registry);
-    void setPatternType(SelectTests::PatternType pattern);
+    void setPatternType(Domain::Tests::PatternType pattern);
 
 private:
     Ui::ValveWindow *ui;
@@ -91,7 +91,7 @@ private:
         QStringLiteral("125.0")
     };
 
-    SelectTests::PatternType m_patternType = SelectTests::Pattern_None;
+    Domain::Tests::PatternType m_patternType = Domain::Tests::PatternType::None;
 
     void saveValveInfo();
     void applyPatternVisibility();

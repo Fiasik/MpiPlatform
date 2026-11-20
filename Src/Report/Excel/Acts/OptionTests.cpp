@@ -9,7 +9,7 @@
 
 #include "Report/Context.h"
 #include "Report/Excel/Sheet.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 namespace Report::Excel::Acts {
 
@@ -26,7 +26,7 @@ constexpr int kMaxStepColumns = Sheet::kColumns - kStepLabelLast;
 
 // График теста по времени (ось X приложения — мс от начала теста).
 void chart(Sheet& sheet, const QString& caption, const Report::Context& ctx,
-           Widgets::Chart::ChartType type)
+           Shared::Chart::ChartType type)
 {
     if (!hasChart(ctx, type))
         return;
@@ -221,7 +221,7 @@ const QString kDownward = QStringLiteral("Нисходящее движение"
 void stepReaction(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт шагового испытания клапана"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА ШАГОВОЙ РЕАКЦИИ"), ctx, Widgets::Chart::ChartType::Step);
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА ШАГОВОЙ РЕАКЦИИ"), ctx, Shared::Chart::ChartType::Step);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА ШАГОВОЙ РЕАКЦИИ"));
     if (const auto& result = ctx.telemetry.testStep)
@@ -234,7 +234,7 @@ void stepReaction(Sheet& sheet, const Report::Context& ctx, const HeaderOptions&
 void response(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт теста на чувствительность реагирования"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"), ctx, Widgets::Chart::ChartType::Response);
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"), ctx, Shared::Chart::ChartType::Response);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА НА ЧУВСТВИТЕЛЬНОСТЬ РЕАГИРОВАНИЯ"));
     if (const auto& result = ctx.telemetry.testResponse) {
@@ -255,7 +255,7 @@ void response(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& hea
 void resolution(Sheet& sheet, const Report::Context& ctx, const HeaderOptions& headerOptions)
 {
     header(sheet, QStringLiteral("Акт теста на разрешающую способность"), ctx, headerOptions);
-    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"), ctx, Widgets::Chart::ChartType::Resolution);
+    chart(sheet, QStringLiteral("ГРАФИК ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"), ctx, Shared::Chart::ChartType::Resolution);
 
     section(sheet, QStringLiteral("РЕЗУЛЬТАТЫ ТЕСТА НА РАЗРЕШАЮЩУЮ СПОСОБНОСТЬ"));
     if (const auto& result = ctx.telemetry.testResolution) {

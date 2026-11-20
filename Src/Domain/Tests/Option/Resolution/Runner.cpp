@@ -62,7 +62,7 @@ RunnerConfig Runner::buildConfig()
     // случай" (тот же разбор, что для Main::Standard::Runner).
     const quint64 totalMs = N_values * delay;
 
-    return makeConfig(std::move(worker), totalMs, Widgets::Chart::ChartType::Resolution);
+    return makeConfig(std::move(worker), totalMs, Shared::Chart::ChartType::Resolution);
 }
 
 void Runner::wireSpecificSignals(AbstractTestAlgorithm& base) {

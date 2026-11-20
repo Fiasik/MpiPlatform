@@ -60,11 +60,8 @@ set(DOMAIN_CPP
     Storage/EquipmentCatalog.cpp
 
     Utils/NumberUtils.cpp
-    Utils/StyledMessageBox.cpp
     Utils/TimeUtils.cpp
-    Utils/UiText.cpp
 
-    ValidatorFactory/ValidatorFactory.cpp
 )
 
 set(DOMAIN_HEADERS
@@ -76,6 +73,7 @@ set(DOMAIN_HEADERS
     Domain/Mpi/Device.h
     Domain/Mpi/Settings.h
 
+    Domain/Tests/Pattern.h
     Domain/Tests/IAnalyzer.h
     Domain/Tests/Main/Standard/Algorithm.h
     Domain/Tests/Main/DoubleActing/AlgorithmDoubleActing.h
@@ -158,15 +156,8 @@ set(DOMAIN_HEADERS
 
     Utils/NumberUtils.h
     Utils/SignalUtils.h
-    Utils/Shortcuts/LayoutTabOrder.h
-    Utils/Shortcuts/TabActionRouter.h
-    Utils/Shortcuts/TabBinder.h
-    Utils/StyledMessageBox.h
     Utils/TimeUtils.h
-    Utils/UiText.h
 
-    ValidatorFactory/ValidatorFactory.h
-    ValidatorFactory/RegexPatterns.h
 )
 
 set(REPORT_CPP
@@ -211,6 +202,7 @@ set(REPORT_CPP
 )
 
 set(REPORT_HEADERS
+    Report/NumberFormat.h
     Report/Context.h
     Report/Excel/Builder.h
     Report/Excel/Pages/TechnicalInspection.h
@@ -254,6 +246,10 @@ set(REPORT_HEADERS
 )
 
 set(GUI_CPP
+    Gui/NumberInput.cpp
+    ValidatorFactory/ValidatorFactory.cpp
+    Utils/UiText.cpp
+    Utils/StyledMessageBox.cpp
     Gui/Style/RoleStyler.cpp
     Gui/Style/Palette.cpp
     Gui/Style/ThemeManager.cpp
@@ -282,7 +278,6 @@ set(GUI_CPP
     Gui/TestSettings/StepTestSettings.cpp
     Gui/TestSettings/MainTestSettings.cpp
     Gui/TestSettings/CyclicTestSettings.cpp
-    Widgets/Chart/ChartType.cpp
     Widgets/Chart/ChartView.cpp
     Widgets/Chart/AnnotationBuilder.cpp
     Widgets/Chart/Series.cpp
@@ -298,6 +293,14 @@ set(GUI_CPP
 )
 
 set(GUI_HEADERS
+    Gui/NumberInput.h
+    Utils/Shortcuts/TabBinder.h
+    Utils/Shortcuts/TabActionRouter.h
+    Utils/Shortcuts/LayoutTabOrder.h
+    ValidatorFactory/RegexPatterns.h
+    ValidatorFactory/ValidatorFactory.h
+    Utils/UiText.h
+    Utils/StyledMessageBox.h
     Gui/Style/RoleStyler.h
     Gui/Style/Palette.h
     Gui/Style/ThemeManager.h
@@ -396,6 +399,14 @@ if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
                        Gui/MainWindow/Linearity/LinearityInfoPopup.ui)
 endif()
 
+add_library(SharedData STATIC
+    Shared/Chart/ChartType.cpp
+    Shared/Chart/ChartType.h
+    Shared/Chart/Point.h
+)
+target_include_directories(SharedData PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(SharedData PUBLIC Qt6::Core)
+
 add_library(Domain STATIC
     ${DOMAIN_CPP}
     ${DOMAIN_HEADERS}
@@ -409,7 +420,8 @@ target_include_directories(Domain
 target_link_libraries(Domain
     PUBLIC
         Qt6::Core
-        Qt6::Charts
+        SharedData
+        Qt6::Gui
         Qt6::SerialPort
         Qt6::Sql
 )

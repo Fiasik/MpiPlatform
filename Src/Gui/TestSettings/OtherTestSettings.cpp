@@ -113,7 +113,7 @@ void OtherTestSettings::applyValveInfo(const ValveInfo& info)
     applySafePositionReversal(info.safePosition == SafePosition::NormallyOpen);
 }
 
-void OtherTestSettings::applyPattern(SelectTests::PatternType pattern)
+void OtherTestSettings::applyPattern(Domain::Tests::PatternType pattern)
 {
     Q_UNUSED(pattern);
 }

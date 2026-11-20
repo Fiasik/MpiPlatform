@@ -187,7 +187,7 @@ void sideBySide(Sheet& sheet, const QVector<Item>& left, const QVector<Item>& ri
 
 namespace {
 
-QVector<ChartSeries> chartSeries(const Report::Context& ctx, Widgets::Chart::ChartType type)
+QVector<ChartSeries> chartSeries(const Report::Context& ctx, Shared::Chart::ChartType type)
 {
     QVector<ChartSeries> series;
     if (ctx.chartImages.isManual(type))
@@ -201,12 +201,12 @@ QVector<ChartSeries> chartSeries(const Report::Context& ctx, Widgets::Chart::Cha
 
 }
 
-bool hasChart(const Report::Context& ctx, Widgets::Chart::ChartType type)
+bool hasChart(const Report::Context& ctx, Shared::Chart::ChartType type)
 {
     return !chartSeries(ctx, type).isEmpty() || !ctx.chartImages.get(type).isNull();
 }
 
-void chart(Sheet& sheet, const Report::Context& ctx, Widgets::Chart::ChartType type,
+void chart(Sheet& sheet, const Report::Context& ctx, Shared::Chart::ChartType type,
            const Sheet::ChartAxes& axes, int first, int last, double aspect)
 {
     if (!sheet.chart(chartSeries(ctx, type), axes, first, last, aspect))

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Domain/Tests/Pattern.h"
+
 #include <QDialog>
 #include <QCheckBox>
 
@@ -15,14 +17,7 @@ public:
     explicit SelectTests(QWidget *parent = nullptr);
     ~SelectTests();
 
-    enum PatternType {
-        Pattern_None,
-        Pattern_C_SOVT,
-        Pattern_B_SACVT,
-        Pattern_C_SACVT,
-        Pattern_B_CVT,
-        Pattern_C_CVT
-    };
+    using PatternType = Domain::Tests::PatternType;
 
     struct PatternSetup {
         QList<QCheckBox*> checksOn;
@@ -72,7 +67,7 @@ private:
     Ui::SelectTests *ui;
     BlockCTS m_blockCts;
     QList<QCheckBox*> allCheckBoxes() const;
-    PatternType m_currentPattern = Pattern_None;
+    PatternType m_currentPattern = Domain::Tests::PatternType::None;
     PatternType detectCurrentPattern() const;
     bool m_suppressDebugOutput = false;
 };

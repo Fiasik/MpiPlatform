@@ -1,23 +1,23 @@
 #include "ChartSnapshotStorage.h"
 
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
-void ChartSnapshotStorage::set(Widgets::Chart::ChartType type, const ChartSnapshot& snapshot)
+void ChartSnapshotStorage::set(Shared::Chart::ChartType type, const ChartSnapshot& snapshot)
 {
     m_snapshots[type] = snapshot;
 }
 
-ChartSnapshot ChartSnapshotStorage::get(Widgets::Chart::ChartType type) const
+ChartSnapshot ChartSnapshotStorage::get(Shared::Chart::ChartType type) const
 {
     return m_snapshots.value(type);
 }
 
-bool ChartSnapshotStorage::contains(Widgets::Chart::ChartType type) const
+bool ChartSnapshotStorage::contains(Shared::Chart::ChartType type) const
 {
     return m_snapshots.contains(type) && !m_snapshots.value(type).series.isEmpty();
 }
 
-void ChartSnapshotStorage::clear(Widgets::Chart::ChartType type)
+void ChartSnapshotStorage::clear(Shared::Chart::ChartType type)
 {
     m_snapshots.remove(type);
 }

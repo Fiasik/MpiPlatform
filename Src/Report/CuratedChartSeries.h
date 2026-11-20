@@ -2,7 +2,7 @@
 
 #include <QStringList>
 
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 namespace Report {
 
@@ -21,6 +21,6 @@ namespace Report {
 // ("Регрессия (прямой/обратный ход)") — это перетаскиваемые
 // (setSeriesDraggable) калибровочные вспомогательные кривые для UI, не
 // часть результата теста; у Friction — единственная серия и так одна.
-QStringList curatedSeriesNames(Widgets::Chart::ChartType type);
+QStringList curatedSeriesNames(Shared::Chart::ChartType type);
 
 }

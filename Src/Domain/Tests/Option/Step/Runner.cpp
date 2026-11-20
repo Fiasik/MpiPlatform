@@ -48,7 +48,7 @@ RunnerConfig Runner::buildConfig() {
 
     auto worker = std::make_unique<Algorithm>(task);
 
-    return makeConfig(std::move(worker), totalMs, Widgets::Chart::ChartType::Step);
+    return makeConfig(std::move(worker), totalMs, Shared::Chart::ChartType::Step);
 }
 
 void Runner::wireSpecificSignals(AbstractTestAlgorithm& base)

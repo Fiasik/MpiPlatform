@@ -1,17 +1,15 @@
 #pragma once
 
 #include <QObject>
+#include <QByteArray>
+#include <QImage>
 #include <QDir>
 #include <QHash>
 #include <QString>
 
 #include "Excel/Data.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 #include "Storage/ChartSnapshot.h"
-
-namespace Widgets::Chart {
-class ChartView;
-}
 
 namespace Report {
 
@@ -28,9 +26,9 @@ public:
     void setBasePath(const QString& basePath);
 
     void saveChartSnapshot(
-        Widgets::Chart::ChartType chart,
+        Shared::Chart::ChartType chart,
         const QImage& image,
-        Widgets::Chart::ChartView* chartView);
+        const QByteArray& chartData);
     bool ensureDirectory();
 
     // Забывает текущую папку сессии: следующий ensureDirectory() создаст
@@ -53,7 +51,7 @@ public:
     // прецедент).
     [[nodiscard]] QString reportPdfPath(const QString& fileName) const;
 
-    bool saveChartCsv(Widgets::Chart::ChartType chart, const ChartSnapshot& snapshot);
+    bool saveChartCsv(Shared::Chart::ChartType chart, const ChartSnapshot& snapshot);
 
 private:
     bool createAutoDirectory();

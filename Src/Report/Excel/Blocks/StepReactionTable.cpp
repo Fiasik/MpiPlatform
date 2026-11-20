@@ -5,7 +5,7 @@
 #include "Report/Excel/Writer.h"
 #include "Report/Context.h"
 #include "Report/CuratedChartSeries.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 namespace Report::Excel::Blocks {
 
@@ -16,7 +16,7 @@ StepReactionTable::StepReactionTable(Layout layout)
 void StepReactionTable::build(Writer& writer, const Report::Context& ctx)
 {
     writer.image(m_layout.sheet, m_layout.imageRow, m_layout.imageCol,
-                 ctx.chartImages.get(Widgets::Chart::ChartType::Step));
+                 ctx.chartImages.get(Shared::Chart::ChartType::Step));
 
     if (const auto& result = ctx.telemetry.testStep) {
         const auto& steps = result->steps;

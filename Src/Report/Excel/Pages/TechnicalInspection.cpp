@@ -9,7 +9,7 @@
 #include "Report/Excel/Blocks/TechnicalResults.h"
 
 #include "Report/CuratedChartSeries.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 #include <utility>
 
@@ -63,13 +63,13 @@ void TechnicalInspection::build(Writer& writer, const Report::Context& ctx)
                 ctx.object.FIO);
 
     writer.image(m_layout.sheet, m_layout.taskImageRow, m_layout.taskImageColumn,
-                 ctx.chartImages.get(Widgets::Chart::ChartType::Task));
+                 ctx.chartImages.get(Shared::Chart::ChartType::Task));
 
     writer.image(m_layout.sheet, m_layout.pressureImageRow, m_layout.pressureImageColumn,
-                 ctx.chartImages.get(Widgets::Chart::ChartType::Pressure));
+                 ctx.chartImages.get(Shared::Chart::ChartType::Pressure));
 
     writer.image(m_layout.sheet, m_layout.frictionImageRow, m_layout.frictionImageColumn,
-                 ctx.chartImages.get(Widgets::Chart::ChartType::Friction));
+                 ctx.chartImages.get(Shared::Chart::ChartType::Friction));
 
     writer.cell(m_layout.sheet, m_layout.secondDateRow, m_layout.secondDateColumn,
                 ctx.params.date);

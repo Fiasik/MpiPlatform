@@ -8,7 +8,7 @@
 #include "Report/Excel/Blocks/ResolutionTable.h"
 
 #include "Report/Context.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 #include <utility>
 
@@ -66,7 +66,7 @@ void Resolution::build(Writer& writer, const Report::Context& ctx)
         writer.image(m_layout.sheet,
                      m_layout.imageRow,
                      m_layout.imageColumn,
-                     ctx.chartImages.get(Widgets::Chart::ChartType::Resolution));
+                     ctx.chartImages.get(Shared::Chart::ChartType::Resolution));
     }
 }
 

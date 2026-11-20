@@ -113,6 +113,7 @@ public:
 
     void clearAll() {
         init = {};
+        crossingStatus = {};
         testMain.reset();
         testStroke.reset();
         testStep.reset();

@@ -59,7 +59,7 @@ void MainTestSettings::applyValveInfo(const ValveInfo& info)
     Q_UNUSED(info);
 }
 
-void MainTestSettings::applyPattern(SelectTests::PatternType pattern)
+void MainTestSettings::applyPattern(Domain::Tests::PatternType pattern)
 {
     Q_UNUSED(pattern);
 }

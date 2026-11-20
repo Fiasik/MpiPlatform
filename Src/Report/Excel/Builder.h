@@ -13,7 +13,7 @@ public:
     // pattern нужен только Ski (5 разных шаблонов/раскладок листа "ЦТ" —
     // см. templatePath()/buildSki()); у Standard/Ilim игнорируется, они не
     // зависят от паттерна вообще, поэтому дефолт безвреден.
-    explicit Builder(SelectTests::PatternType pattern = SelectTests::Pattern_None)
+    explicit Builder(Domain::Tests::PatternType pattern = Domain::Tests::PatternType::None)
         : m_pattern(pattern) {}
     ~Builder() = default;
 
@@ -35,7 +35,7 @@ public:
 private:
     void buildSki(Writer& writer, const Report::Context& ctx);
 
-    SelectTests::PatternType m_pattern;
+    Domain::Tests::PatternType m_pattern;
 
     QString m_sheetStepReactionTest = "ТШР";
     QString m_sheetTechnicalInspection = "ТО";

@@ -81,13 +81,13 @@ void saveCompare(const QString& name)
 // Один полный проход (3 диалога + 5 вкладок + hover) под уже применённой
 // themeManager.setPreference(...) темой, пишет в experiments/verify-theme/<subfolder>/.
 void runPass(QApplication& app, Gui::Style::ThemeManager& themeManager, const QString& subfolder,
-             SelectTests::PatternType forcedPattern = SelectTests::Pattern_None)
+             Domain::Tests::PatternType forcedPattern = Domain::Tests::PatternType::None)
 {
     // ВРЕМЕННО (диагностика) — реальный main.cpp: LoadFromReg() до show(),
     // затем setPatternType()/setBlockCTS() на MainWindow ДО setRegistry() —
     // воспроизводим ровно ту же последовательность аргументов/вызовов.
     static Registry diagnosticRegistry;
-    SelectTests::PatternType diagnosticPattern = forcedPattern;
+    Domain::Tests::PatternType diagnosticPattern = forcedPattern;
     SelectTests::BlockCTS diagnosticBlockCts{};
 
     {
@@ -200,13 +200,13 @@ int main(int argc, char* argv[])
     // раз SelectTests не кликали) не крашил; гоняем по всем реальным
     // значениям паттерна на случай, если краш завязан именно на ветку кода,
     // которая с Pattern_None просто не исполняется.
-    const QVector<QPair<SelectTests::PatternType, QString>> patterns = {
-        {SelectTests::Pattern_None, QStringLiteral("None")},
-        {SelectTests::Pattern_C_SOVT, QStringLiteral("C_SOVT")},
-        {SelectTests::Pattern_B_SACVT, QStringLiteral("B_SACVT")},
-        {SelectTests::Pattern_C_SACVT, QStringLiteral("C_SACVT")},
-        {SelectTests::Pattern_B_CVT, QStringLiteral("B_CVT")},
-        {SelectTests::Pattern_C_CVT, QStringLiteral("C_CVT")},
+    const QVector<QPair<Domain::Tests::PatternType, QString>> patterns = {
+        {Domain::Tests::PatternType::None, QStringLiteral("None")},
+        {Domain::Tests::PatternType::C_SOVT, QStringLiteral("C_SOVT")},
+        {Domain::Tests::PatternType::B_SACVT, QStringLiteral("B_SACVT")},
+        {Domain::Tests::PatternType::C_SACVT, QStringLiteral("C_SACVT")},
+        {Domain::Tests::PatternType::B_CVT, QStringLiteral("B_CVT")},
+        {Domain::Tests::PatternType::C_CVT, QStringLiteral("C_CVT")},
     };
     for (const auto& [pattern, name] : patterns) {
         qInfo() << "=== PATTERN" << name << "START ===";

@@ -9,7 +9,7 @@ namespace Report {
 struct Context;
 }
 
-namespace Widgets::Chart {
+namespace Shared::Chart {
 enum class ChartType;
 }
 
@@ -45,13 +45,13 @@ void date(Sheet& sheet, const Report::Context& ctx, int first);
 void signatures(Sheet& sheet, const Report::Context& ctx);
 
 // Есть ли что поставить на место графика type (см. chart()).
-bool hasChart(const Report::Context& ctx, Widgets::Chart::ChartType type);
+bool hasChart(const Report::Context& ctx, Shared::Chart::ChartType type);
 
 // График type в текущей строке на столбцах сетки [first..last], высота =
 // ширина * aspect: настоящий график Excel по точкам ctx.chartData (те же
 // серии, что у PDF). Картинка вместо него — если оператор выбрал её файлом
 // вместо графика или точек нет.
-void chart(Sheet& sheet, const Report::Context& ctx, Widgets::Chart::ChartType type,
+void chart(Sheet& sheet, const Report::Context& ctx, Shared::Chart::ChartType type,
            const Sheet::ChartAxes& axes, int first, int last, double aspect);
 
 // Две таблицы "подпись — значение" рядом (левая и правая половины листа),

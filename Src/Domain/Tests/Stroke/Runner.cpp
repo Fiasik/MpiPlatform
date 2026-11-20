@@ -14,7 +14,7 @@ namespace Domain::Tests::Stroke {
                 m_scale,
                 m_device.dac()->rawFromValue(SignalUtils::kMinPoweredCurrent)));
 
-        return makeConfig(std::move(worker), 0, Widgets::Chart::ChartType::Stroke);
+        return makeConfig(std::move(worker), 0, Shared::Chart::ChartType::Stroke);
     }
 
     void Runner::wireSpecificSignals(AbstractTestAlgorithm& base) {

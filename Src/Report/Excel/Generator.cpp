@@ -27,7 +27,7 @@ struct Plan {
     Acts::HeaderOptions header;    // спецификация клапана во всех шапках
 };
 
-Plan planFor(Domain::Variant variant, SelectTests::PatternType pattern)
+Plan planFor(Domain::Variant variant, Domain::Tests::PatternType pattern)
 {
     Plan plan;
 
@@ -38,29 +38,29 @@ Plan planFor(Domain::Variant variant, SelectTests::PatternType pattern)
 
     // У Ski нет вкладки "Материалы" — и блока материалов в ТО тоже.
     switch (pattern) {
-    case SelectTests::Pattern_B_CVT:
+    case Domain::Tests::PatternType::B_CVT:
         plan.cyclicRegulatory = true;
         plan.inspection = false;
         break;
-    case SelectTests::Pattern_B_SACVT:
+    case Domain::Tests::PatternType::B_SACVT:
         plan.cyclicRegulatory = true;
         plan.cyclicShutoff = true;
         plan.inspection = false;
         plan.header.solenoid = true;
         break;
-    case SelectTests::Pattern_C_SACVT:
+    case Domain::Tests::PatternType::C_SACVT:
         plan.cyclicRegulatory = true;
         plan.cyclicShutoff = true;
         plan.header.solenoid = true;
         break;
-    case SelectTests::Pattern_C_SOVT:
+    case Domain::Tests::PatternType::C_SOVT:
         plan.cyclicShutoff = true;
         plan.inspection = false;
         plan.header.positioner = false;
         plan.header.solenoid = true;
         break;
-    case SelectTests::Pattern_C_CVT:
-    case SelectTests::Pattern_None:
+    case Domain::Tests::PatternType::C_CVT:
+    case Domain::Tests::PatternType::None:
     default:
         plan.cyclicRegulatory = true;
         break;

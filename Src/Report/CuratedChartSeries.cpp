@@ -4,9 +4,9 @@
 
 namespace Report {
 
-QStringList curatedSeriesNames(Widgets::Chart::ChartType type)
+QStringList curatedSeriesNames(Shared::Chart::ChartType type)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     // QObject::tr(...) — ровно тот же вызов (тот же статический метод,
     // тот же контекст "QObject"), которым Widgets::Chart::Manager::

@@ -69,7 +69,7 @@ void StepTestSettings::applyValveInfo(const ValveInfo& info)
     applySafePositionReversal(info.safePosition == SafePosition::NormallyOpen);
 }
 
-void StepTestSettings::applyPattern(SelectTests::PatternType pattern)
+void StepTestSettings::applyPattern(Domain::Tests::PatternType pattern)
 {
     Q_UNUSED(pattern);
 }

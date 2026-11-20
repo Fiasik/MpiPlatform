@@ -86,7 +86,7 @@ struct Session {
     QString conclusionSummary;
     QMap<Report::Html::CommentSlot, QString> testComments;
     QStringList spareParts;
-    SelectTests::PatternType pattern = SelectTests::Pattern_None;
+    Domain::Tests::PatternType pattern = Domain::Tests::PatternType::None;
     Report::EditChoices editChoices;
 
     bool save(const QString& path, Domain::Variant variant) const
@@ -307,12 +307,12 @@ int main(int argc, char* argv[])
     bool ok = full.save(outDir + "/full.xlsx", Variant::Ilim);
     ok &= Session().save(outDir + "/minimal.xlsx", Variant::Standard);
 
-    const std::pair<SelectTests::PatternType, const char*> skiPatterns[] = {
-        {SelectTests::Pattern_B_CVT, "B_CVT"},
-        {SelectTests::Pattern_B_SACVT, "B_SACVT"},
-        {SelectTests::Pattern_C_CVT, "C_CVT"},
-        {SelectTests::Pattern_C_SACVT, "C_SACVT"},
-        {SelectTests::Pattern_C_SOVT, "C_SOVT"},
+    const std::pair<Domain::Tests::PatternType, const char*> skiPatterns[] = {
+        {Domain::Tests::PatternType::B_CVT, "B_CVT"},
+        {Domain::Tests::PatternType::B_SACVT, "B_SACVT"},
+        {Domain::Tests::PatternType::C_CVT, "C_CVT"},
+        {Domain::Tests::PatternType::C_SACVT, "C_SACVT"},
+        {Domain::Tests::PatternType::C_SOVT, "C_SOVT"},
     };
     for (const auto& [pattern, name] : skiPatterns) {
         Session ski = full;
@@ -321,7 +321,7 @@ int main(int argc, char* argv[])
     }
 
     Session skiEmpty;
-    skiEmpty.pattern = SelectTests::Pattern_B_CVT;
+    skiEmpty.pattern = Domain::Tests::PatternType::B_CVT;
     ok &= skiEmpty.save(outDir + "/ski_B_CVT_empty.xlsx", Variant::Ski);
 
     return ok ? 0 : 1;

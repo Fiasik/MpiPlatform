@@ -30,9 +30,6 @@ namespace Domain::Tests::Cyclic {
 struct Params;
 }
 
-namespace Widgets::Chart {
-struct Point;
-}
 
 class TestController : public QObject
 {

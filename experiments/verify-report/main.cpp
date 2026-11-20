@@ -257,12 +257,12 @@ int main(int argc, char* argv[])
         // Дымовой тест листа "ЦТ" по всем 5 паттернам Ski — на синтетике
         // testCyclicRegulatory/testCyclicShutoff выше, каждый паттерн в свой
         // подкаталог verify_out_ski_<имя>/report.xlsx.
-        const QList<QPair<SelectTests::PatternType, QString>> skiPatterns = {
-            { SelectTests::Pattern_B_CVT, "B_CVT" },
-            { SelectTests::Pattern_B_SACVT, "B_SACVT" },
-            { SelectTests::Pattern_C_CVT, "C_CVT" },
-            { SelectTests::Pattern_C_SACVT, "C_SACVT" },
-            { SelectTests::Pattern_C_SOVT, "C_SOVT" },
+        const QList<QPair<Domain::Tests::PatternType, QString>> skiPatterns = {
+            { Domain::Tests::PatternType::B_CVT, "B_CVT" },
+            { Domain::Tests::PatternType::B_SACVT, "B_SACVT" },
+            { Domain::Tests::PatternType::C_CVT, "C_CVT" },
+            { Domain::Tests::PatternType::C_SACVT, "C_SACVT" },
+            { Domain::Tests::PatternType::C_SOVT, "C_SOVT" },
         };
 
         for (const auto& [pattern, name] : skiPatterns) {

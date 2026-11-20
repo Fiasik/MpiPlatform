@@ -9,7 +9,7 @@
 
 #include "Report/Html/CommentCard.h"
 #include "Storage/FieldOverrides.h"
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 #include "ReportGenerationWorker.h"
 
 class QWidget;
@@ -52,7 +52,7 @@ public:
     // листа "ЦТ", см. Report::Excel::Builder) — MainWindow зовёт это из
     // своего setPatternType() тем же путём, что и
     // m_cyclicTestSettings->applyPattern(pattern).
-    void setPatternType(SelectTests::PatternType pattern);
+    void setPatternType(Domain::Tests::PatternType pattern);
 
     // Всё, что должно случиться на GUI-потоке ДО тяжёлой сборки отчёта:
     // забирает поправленные значения из ui->lineEdit_resultsTable_*,
@@ -117,7 +117,7 @@ private:
     ChartSnapshotStorage& m_chartSnapshotStorage;
     QWidget* m_dialogParent;
     Registry* m_registry = nullptr;
-    SelectTests::PatternType m_patternType = SelectTests::Pattern_None;
+    Domain::Tests::PatternType m_patternType = Domain::Tests::PatternType::None;
 
     QMap<Report::Html::CommentSlot, QString> m_testComments;
 

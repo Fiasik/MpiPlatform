@@ -37,11 +37,8 @@ struct Context {
 
     const QStringList& spareParts;
 
-    // Нужен только Excel::Builder::buildSki() для выбора раскладки листа
-    // "ЦТ" — тот же enum, что уже используют Domain::Program и
-    // CyclicTestSettings::applyPattern (см. Program.h:145 — прецедент
-    // включения Gui/Setup/SelectTests.h из Domain уже есть в кодовой базе).
-    SelectTests::PatternType pattern = SelectTests::Pattern_None;
+    // Программа испытаний определяет раскладку циклического отчёта.
+    Domain::Tests::PatternType pattern = Domain::Tests::PatternType::None;
 
     // Нужен только Excel::generate() (скрытый лист "Списки" и выпадающие
     // списки в ТО); по значению — QStringList всё равно разделяемый.

@@ -37,7 +37,7 @@ RunnerConfig Runner::buildConfig()
     return makeConfig(
         std::move(worker),
         totalMs,
-        Widgets::Chart::ChartType::Task
+        Shared::Chart::ChartType::Task
         );
 }
 

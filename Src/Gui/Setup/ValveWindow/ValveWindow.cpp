@@ -529,7 +529,7 @@ void ValveWindow::saveLinearRange()
     m_settings.setLinearRange(min, max);
 }
 
-void ValveWindow::setPatternType(SelectTests::PatternType pattern)
+void ValveWindow::setPatternType(Domain::Tests::PatternType pattern)
 {
     m_patternType = pattern;
     applyPatternVisibility();
@@ -555,7 +555,7 @@ void ValveWindow::onDriveTypeChanged(int)
 void ValveWindow::applyPatternVisibility()
 {
     switch (m_patternType) {
-    case SelectTests::Pattern_B_CVT:
+    case Domain::Tests::PatternType::B_CVT:
         ui->label_positionSensorModel->setVisible(false);
         ui->lineEdit_positionSensorModel->setVisible(false);
         ui->label_solenoidValveModel->setVisible(false);
@@ -563,7 +563,7 @@ void ValveWindow::applyPatternVisibility()
         ui->label_limitSwitchModel->setVisible(false);
         ui->lineEdit_limitSwitchModel->setVisible(false);
         break;
-    case SelectTests::Pattern_C_CVT:
+    case Domain::Tests::PatternType::C_CVT:
         ui->label_positionSensorModel->setVisible(false);
         ui->lineEdit_positionSensorModel->setVisible(false);
         ui->label_solenoidValveModel->setVisible(false);
@@ -571,11 +571,11 @@ void ValveWindow::applyPatternVisibility()
         ui->label_limitSwitchModel->setVisible(false);
         ui->lineEdit_limitSwitchModel->setVisible(false);
         break;
-    case SelectTests::Pattern_B_SACVT:
+    case Domain::Tests::PatternType::B_SACVT:
         break;
-    case SelectTests::Pattern_C_SACVT:
+    case Domain::Tests::PatternType::C_SACVT:
         break;
-    case SelectTests::Pattern_C_SOVT:
+    case Domain::Tests::PatternType::C_SOVT:
         ui->label_positionerModel->setVisible(false);
         ui->label_2->setVisible(false);
         ui->comboBox_positionerModel->setVisible(false);

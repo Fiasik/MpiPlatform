@@ -41,7 +41,7 @@ RunnerConfig Runner::buildConfig()
     const quint64 totalSteps = stepsPerCycle * static_cast<quint64>(task.cycles);
     const quint64 totalMs = totalSteps * static_cast<quint64>(task.delayMsecs + task.holdMsecs);
 
-    return makeConfig(std::move(worker), totalMs, Widgets::Chart::ChartType::Cyclic);
+    return makeConfig(std::move(worker), totalMs, Shared::Chart::ChartType::Cyclic);
 }
 
 void Runner::wireSpecificSignals(AbstractTestAlgorithm& base) {

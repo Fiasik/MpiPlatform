@@ -139,7 +139,7 @@ bool SelectTests::isValidPattern() {
     return false;
 }
 
-SelectTests::PatternType SelectTests::detectCurrentPattern() const
+Domain::Tests::PatternType SelectTests::detectCurrentPattern() const
 {
     // Комплексных; Запорно-Регулирующей Арматуры; Тесты: основной, полного хода, опциональный, циклический
     if (ui->check_box_usb->isChecked() &&
@@ -153,7 +153,7 @@ SelectTests::PatternType SelectTests::detectCurrentPattern() const
         ui->check_box_imit_switch_3_0->isChecked() &&
         (m_blockCts.do_1 || m_blockCts.do_2 || m_blockCts.do_3 || m_blockCts.do_4))
     {
-        return Pattern_C_SACVT;
+        return Domain::Tests::PatternType::C_SACVT;
     }
 
     // Комплексных; Регулирующей Арматуры; Тесты: основной, полного хода, опциональный, циклический
@@ -165,7 +165,7 @@ SelectTests::PatternType SelectTests::detectCurrentPattern() const
         ui->check_box_input_4_20_mA->isChecked() &&
         ui->check_box_output_4_20_mA->isChecked())
     {
-        return Pattern_C_CVT;
+        return Domain::Tests::PatternType::C_CVT;
     }
 
     // Базовых; Запорно-Регулирующей Арматуры; Тесты: полного хода, циклический
@@ -176,7 +176,7 @@ SelectTests::PatternType SelectTests::detectCurrentPattern() const
         ui->check_box_imit_switch_3_0->isChecked() &&
         (m_blockCts.do_1 || m_blockCts.do_2 || m_blockCts.do_3 || m_blockCts.do_4))
     {
-        return Pattern_B_SACVT;
+        return Domain::Tests::PatternType::B_SACVT;
     }
 
     // Комплексных; Отсечной Арматуры; Тесты: полного хода, циклический
@@ -186,7 +186,7 @@ SelectTests::PatternType SelectTests::detectCurrentPattern() const
         ui->check_box_imit_switch_0_3->isChecked() &&
         (m_blockCts.do_1 || m_blockCts.do_2 || m_blockCts.do_3 || m_blockCts.do_4))
     {
-        return Pattern_C_SOVT;
+        return Domain::Tests::PatternType::C_SOVT;
     }
 
     // Базовых; Регулирующей Арматуры; Тесты: полного хода, циклический
@@ -195,10 +195,10 @@ SelectTests::PatternType SelectTests::detectCurrentPattern() const
         ui->check_box_input_4_20_mA->isChecked() &&
         ui->check_box_output_4_20_mA->isChecked())
     {
-        return Pattern_B_CVT;
+        return Domain::Tests::PatternType::B_CVT;
     }
 
-    return Pattern_None;
+    return Domain::Tests::PatternType::None;
 }
 
 void SelectTests::onCheckBoxChanged()
@@ -265,7 +265,7 @@ void SelectTests::ButtonClick_C_CVT() {
     });
 }
 
-SelectTests::PatternType SelectTests::currentPattern() const {
+Domain::Tests::PatternType SelectTests::currentPattern() const {
     return m_currentPattern;
 }
 
@@ -275,12 +275,12 @@ SelectTests::BlockCTS SelectTests::getCTS() const {
 
 QString SelectTests::patternKey(PatternType pattern) {
     switch (pattern) {
-    case Pattern_C_SOVT: return QStringLiteral("C_SOVT");
-    case Pattern_B_SACVT: return QStringLiteral("B_SACVT");
-    case Pattern_C_SACVT: return QStringLiteral("C_SACVT");
-    case Pattern_B_CVT: return QStringLiteral("B_CVT");
-    case Pattern_C_CVT: return QStringLiteral("C_CVT");
-    case Pattern_None: return QStringLiteral("None");
+    case Domain::Tests::PatternType::C_SOVT: return QStringLiteral("C_SOVT");
+    case Domain::Tests::PatternType::B_SACVT: return QStringLiteral("B_SACVT");
+    case Domain::Tests::PatternType::C_SACVT: return QStringLiteral("C_SACVT");
+    case Domain::Tests::PatternType::B_CVT: return QStringLiteral("B_CVT");
+    case Domain::Tests::PatternType::C_CVT: return QStringLiteral("C_CVT");
+    case Domain::Tests::PatternType::None: return QStringLiteral("None");
     }
     return QStringLiteral("None");
 }

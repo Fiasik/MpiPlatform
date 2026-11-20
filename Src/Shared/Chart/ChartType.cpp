@@ -1,6 +1,6 @@
 #include "ChartType.h"
 
-namespace Widgets::Chart {
+namespace Shared::Chart {
 
 QString chartTypeDisplayName(ChartType type)
 {

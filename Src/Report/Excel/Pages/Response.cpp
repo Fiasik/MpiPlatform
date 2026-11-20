@@ -9,7 +9,7 @@
 
 #include "Report/Context.h"
 #include "Report/CuratedChartSeries.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 #include <utility>
 
@@ -72,7 +72,7 @@ void Response::build(Writer& writer, const Report::Context& ctx)
         writer.image(m_layout.sheet,
                      m_layout.imageRow,
                      m_layout.imageColumn,
-                     ctx.chartImages.get(Widgets::Chart::ChartType::Response));
+                     ctx.chartImages.get(Shared::Chart::ChartType::Response));
     }
 }
 

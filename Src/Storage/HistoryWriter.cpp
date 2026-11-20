@@ -50,7 +50,7 @@ qint64 findOrInsertSite(QSqlDatabase& db, const ObjectInfo& info)
 // (нестандартно для SQLite и ломает обычные сравнения в SELECT).
 QVariant optionalReal(double v)
 {
-    return std::isnan(v) ? QVariant() : QVariant(v);
+    return std::isfinite(v) ? QVariant(v) : QVariant();
 }
 
 QString stateKey(CrossingStatus::State state)

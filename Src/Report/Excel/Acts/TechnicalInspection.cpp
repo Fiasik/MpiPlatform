@@ -12,11 +12,13 @@
 #include "Report/Excel/Sheet.h"
 #include "Report/Html/ConclusionField.h"
 #include "Utils/TimeUtils.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 namespace Report::Excel::Acts {
 
 namespace {
+
+
 
 // Столбцы таблицы результатов.
 constexpr int kParamLast = 4;
@@ -231,7 +233,7 @@ void conclusion(Sheet& sheet, const Report::Context& ctx)
 // один (иначе пустая страница с одним заголовком).
 void charts(Sheet& sheet, const Report::Context& ctx)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     const QString stroke = ctx.valve.strokeMovement == StrokeMovement::Rotary
         ? QStringLiteral("Угол поворота, °") : QStringLiteral("Ход штока, мм");

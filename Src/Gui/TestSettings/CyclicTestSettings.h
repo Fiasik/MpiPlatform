@@ -3,7 +3,7 @@
 #include <QTime>
 
 #include "BaseSequenceSettingsDialog.h"
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 #include "Domain/Tests/Cyclic/Params.h"
 
 namespace Ui {
@@ -18,7 +18,7 @@ public:
     explicit CyclicTestSettings(QWidget* parent = nullptr);
     ~CyclicTestSettings() override;
 
-    void applyPattern(SelectTests::PatternType pattern) override;
+    void applyPattern(Domain::Tests::PatternType pattern) override;
     void applyValveInfo(const ValveInfo& info) override;
 
     Domain::Tests::Cyclic::Params parameters() const { return m_params; }
@@ -42,7 +42,7 @@ private slots:
 private:
     Ui::CyclicTestSettings* ui = nullptr;
     Domain::Tests::Cyclic::Params m_params;
-    SelectTests::PatternType m_pattern = SelectTests::Pattern_None;
+    Domain::Tests::PatternType m_pattern = Domain::Tests::PatternType::None;
     // См. BaseSequenceSettingsDialog::applySafePositionReversal — та же
     // защита от повторного разворота при повторном вызове applyValveInfo(),
     // только тут список разворачивается вручную (item-by-item), не через
@@ -54,7 +54,7 @@ private:
     void initConnections();
     void initDefaults();
 
-    void setPattern(SelectTests::PatternType pattern);
+    void setPattern(Domain::Tests::PatternType pattern);
     void updateVisibilityBySelectedTest();
 
     void fillDefaultRegulatoryPresets();

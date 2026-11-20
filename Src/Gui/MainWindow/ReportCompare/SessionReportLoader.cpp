@@ -46,14 +46,14 @@ QString resolveFolder(const QString& stored)
 
 // Как MainWindow::setRegistry(): допуски и параметры — из карточки сессии.
 
-SelectTests::PatternType patternFromKey(const QString& key)
+Domain::Tests::PatternType patternFromKey(const QString& key)
 {
-    for (auto p : {SelectTests::Pattern_C_SOVT, SelectTests::Pattern_B_SACVT, SelectTests::Pattern_C_SACVT,
-                   SelectTests::Pattern_B_CVT, SelectTests::Pattern_C_CVT}) {
+    for (auto p : {Domain::Tests::PatternType::C_SOVT, Domain::Tests::PatternType::B_SACVT, Domain::Tests::PatternType::C_SACVT,
+                   Domain::Tests::PatternType::B_CVT, Domain::Tests::PatternType::C_CVT}) {
         if (SelectTests::patternKey(p) == key)
             return p;
     }
-    return SelectTests::Pattern_None;
+    return Domain::Tests::PatternType::None;
 }
 
 // Всё из базы, кроме графиков. false — сессии нет.

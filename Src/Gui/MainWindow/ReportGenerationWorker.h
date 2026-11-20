@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QStringList>
 
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 #include "Report/Context.h"
 #include "Report/Pdf/Builder.h"
 #include "Report/Html/CommentCard.h"
@@ -56,7 +56,7 @@ public:
         QString conclusionSummary;
         QMap<Report::Html::CommentSlot, QString> testComments;
         QStringList spareParts;
-        SelectTests::PatternType pattern = SelectTests::Pattern_None;
+        Domain::Tests::PatternType pattern = Domain::Tests::PatternType::None;
         Report::EditChoices editChoices;
         bool buildTechnicalInspectionPdf = false;
 

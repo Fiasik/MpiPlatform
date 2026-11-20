@@ -43,7 +43,7 @@ void Scenario::onSample(const Measurement::Sample& sample)
     if (di == m_lastDiStatus)
         return;
 
-    QVector<Widgets::Chart::Point> diPts;
+    QVector<Shared::Chart::Point> diPts;
     const bool lastClosed = (m_lastDiStatus & 0x01);
     const bool lastOpen = (m_lastDiStatus & 0x02);
     const bool nowClosed = (di & 0x01);
@@ -56,7 +56,7 @@ void Scenario::onSample(const Measurement::Sample& sample)
     else if (!nowOpen && lastOpen) diPts.push_back({3, qreal(sample.testTime), 100.0});
 
     if (!diPts.isEmpty())
-        emit addPointsRequested(Widgets::Chart::ChartType::Cyclic, diPts);
+        emit addPointsRequested(Shared::Chart::ChartType::Cyclic, diPts);
 
     m_lastDiStatus = di;
 }

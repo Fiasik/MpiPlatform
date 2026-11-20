@@ -10,12 +10,12 @@ namespace Domain::Mpi {
 class Device;
 }
 
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 struct RunnerConfig {
     std::unique_ptr<AbstractTestAlgorithm> worker = nullptr;
     quint64 totalMs = 0;
-    Widgets::Chart::ChartType chartToClear = Widgets::Chart::ChartType::None;
+    Shared::Chart::ChartType chartToClear = Shared::Chart::ChartType::None;
 };
 
 class BaseRunner : public QObject
@@ -39,7 +39,7 @@ public slots:
     void releaseBlock();
 
 signals:
-    void requestClearChart(Widgets::Chart::ChartType chartIndex);
+    void requestClearChart(Shared::Chart::ChartType chartIndex);
     void totalTestTimeMs(quint64 totalMs);
     void endTest();
     void testActuallyStarted();
@@ -52,7 +52,7 @@ protected:
 protected:
     RunnerConfig makeConfig(std::unique_ptr<AbstractTestAlgorithm> worker,
                             quint64 totalMs,
-                            Widgets::Chart::ChartType chart)
+                            Shared::Chart::ChartType chart)
     {
         RunnerConfig cfg;
         cfg.worker = std::move(worker);

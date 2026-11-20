@@ -128,7 +128,7 @@ void CyclicTestSettings::initDefaults()
     bindRegulatoryPresetEditor();
 }
 
-void CyclicTestSettings::applyPattern(SelectTests::PatternType pattern)
+void CyclicTestSettings::applyPattern(Domain::Tests::PatternType pattern)
 {
     setPattern(pattern);
 }
@@ -151,7 +151,7 @@ void CyclicTestSettings::applyValveInfo(const ValveInfo& info)
     m_reversedForNormalOpen = normalOpen;
 }
 
-void CyclicTestSettings::setPattern(SelectTests::PatternType pattern)
+void CyclicTestSettings::setPattern(Domain::Tests::PatternType pattern)
 {
     ui->comboBox_testSelection->clear();
     m_pattern = pattern;
@@ -162,17 +162,17 @@ void CyclicTestSettings::setPattern(SelectTests::PatternType pattern)
     };
 
     switch (m_pattern) {
-    case SelectTests::Pattern_B_CVT:
-    case SelectTests::Pattern_C_CVT:
+    case Domain::Tests::PatternType::B_CVT:
+    case Domain::Tests::PatternType::C_CVT:
         add(QStringLiteral("Регулирующий"), Domain::Tests::Cyclic::Params::Regulatory);
         break;
 
-    case SelectTests::Pattern_C_SOVT:
+    case Domain::Tests::PatternType::C_SOVT:
         add(QStringLiteral("Отсечной"), Domain::Tests::Cyclic::Params::Shutoff);
         break;
 
-    case SelectTests::Pattern_B_SACVT:
-    case SelectTests::Pattern_C_SACVT:
+    case Domain::Tests::PatternType::B_SACVT:
+    case Domain::Tests::PatternType::C_SACVT:
         add(QStringLiteral("Запорно-регулирующий"), Domain::Tests::Cyclic::Params::Combined);
         add(QStringLiteral("Регулирующий"), Domain::Tests::Cyclic::Params::Regulatory);
         add(QStringLiteral("Отсечной"), Domain::Tests::Cyclic::Params::Shutoff);

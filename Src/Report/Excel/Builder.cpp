@@ -18,16 +18,16 @@ QString Builder::templatePath() const
 {
     if constexpr (Domain::kSkiVariant) {
         switch (m_pattern) {
-        case SelectTests::Pattern_B_CVT:
+        case Domain::Tests::PatternType::B_CVT:
             return ":/excel/Reports/SKI_B_CVT.xlsx";
-        case SelectTests::Pattern_B_SACVT:
+        case Domain::Tests::PatternType::B_SACVT:
             return ":/excel/Reports/SKI_B_SACVT.xlsx";
-        case SelectTests::Pattern_C_SACVT:
+        case Domain::Tests::PatternType::C_SACVT:
             return ":/excel/Reports/SKI_C_SACVT.xlsx";
-        case SelectTests::Pattern_C_SOVT:
+        case Domain::Tests::PatternType::C_SOVT:
             return ":/excel/Reports/SKI_C_SOVT.xlsx";
-        case SelectTests::Pattern_C_CVT:
-        case SelectTests::Pattern_None:
+        case Domain::Tests::PatternType::C_CVT:
+        case Domain::Tests::PatternType::None:
         default:
             return ":/excel/Reports/SKI_C_CVT.xlsx";
         }
@@ -230,7 +230,7 @@ void Builder::build(
 void Builder::buildSki(Writer& writer, const Report::Context& ctx)
 {
     switch (m_pattern) {
-    case SelectTests::Pattern_B_CVT: {
+    case Domain::Tests::PatternType::B_CVT: {
         {
             Pages::CyclicRegulatory::Layout layout;
             layout.sheet = m_sheetCyclicTests;
@@ -273,7 +273,7 @@ void Builder::buildSki(Writer& writer, const Report::Context& ctx)
         break;
     }
 
-    case SelectTests::Pattern_B_SACVT: {
+    case Domain::Tests::PatternType::B_SACVT: {
         {
             Pages::CyclicRegulatory::Layout layout;
             layout.sheet = m_sheetCyclicTests;
@@ -344,7 +344,7 @@ void Builder::buildSki(Writer& writer, const Report::Context& ctx)
         break;
     }
 
-    case SelectTests::Pattern_C_SACVT: {
+    case Domain::Tests::PatternType::C_SACVT: {
         {
             Pages::CyclicRegulatory::Layout layout;
             layout.sheet = m_sheetCyclicTests;
@@ -461,7 +461,7 @@ void Builder::buildSki(Writer& writer, const Report::Context& ctx)
         break;
     }
 
-    case SelectTests::Pattern_C_SOVT: {
+    case Domain::Tests::PatternType::C_SOVT: {
         Pages::SolenoidShutoff::Layout layout;
         layout.sheet = m_sheetCyclicTests;
 
@@ -487,8 +487,8 @@ void Builder::buildSki(Writer& writer, const Report::Context& ctx)
         break;
     }
 
-    case SelectTests::Pattern_C_CVT:
-    case SelectTests::Pattern_None:
+    case Domain::Tests::PatternType::C_CVT:
+    case Domain::Tests::PatternType::None:
     default: {
         {
             Pages::CyclicRegulatory::Layout layout;

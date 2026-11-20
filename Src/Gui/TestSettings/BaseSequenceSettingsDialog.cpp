@@ -15,7 +15,7 @@ void BaseSequenceSettingsDialog::applyValveInfo(const ValveInfo&)
 {
 }
 
-void BaseSequenceSettingsDialog::applyPattern(SelectTests::PatternType)
+void BaseSequenceSettingsDialog::applyPattern(Domain::Tests::PatternType)
 {
 }
 

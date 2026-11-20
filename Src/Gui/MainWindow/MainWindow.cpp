@@ -4,6 +4,7 @@
 
 #include <QCloseEvent>
 #include <QDebug>
+#include <QDataStream>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
@@ -1281,7 +1282,7 @@ void MainWindow::setSessionId(qint64 sessionId)
 #endif
 }
 
-void MainWindow::setPatternType(SelectTests::PatternType pattern)
+void MainWindow::setPatternType(Domain::Tests::PatternType pattern)
 {
     m_patternType = pattern;
     m_cyclicTestSettings->applyPattern(pattern);
@@ -1510,14 +1511,14 @@ void MainWindow::setTask(qreal task)
 
 void MainWindow::displayDependingPattern() {
     switch (m_patternType) {
-    case SelectTests::Pattern_B_CVT:
+    case Domain::Tests::PatternType::B_CVT:
         ui->tabWidget_main->setTabEnabled(1, true);
         ui->tabWidget_main->setTabEnabled(2, false);
         ui->tabWidget_main->setTabEnabled(3, false);
         ui->tabWidget_main->setTabEnabled(4, true);
         ui->frame_shutOff_Section->setVisible(false);
         break;
-    case SelectTests::Pattern_C_CVT:
+    case Domain::Tests::PatternType::C_CVT:
         ui->tabWidget_main->setTabEnabled(1, true);
         ui->tabWidget_main->setTabEnabled(2, true);
         ui->tabWidget_main->setTabEnabled(3, true);
@@ -2226,9 +2227,9 @@ void MainWindow::initCharts()
     );
 
     const bool patternHasShutoff =
-        m_patternType == SelectTests::Pattern_C_SOVT ||
-        m_patternType == SelectTests::Pattern_B_SACVT ||
-        m_patternType == SelectTests::Pattern_C_SACVT;
+        m_patternType == Domain::Tests::PatternType::C_SOVT ||
+        m_patternType == Domain::Tests::PatternType::B_SACVT ||
+        m_patternType == Domain::Tests::PatternType::C_SACVT;
 
     if (patternHasShutoff) {
         cyclicChart->addSeries(0, tr("Кв закрыто →"), QColor(200, 200, 0));
@@ -2476,7 +2477,11 @@ bool MainWindow::saveChart(ChartType chart)
     if (!m_reportSaver)
         return false;
 
-    m_reportSaver->saveChartSnapshot(chart, image, chartView);
+    QByteArray chartData;
+    QDataStream stream(&chartData, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_6_2);
+    chartView->saveToStream(stream);
+    m_reportSaver->saveChartSnapshot(chart, image, chartData);
     return true;
 }
 

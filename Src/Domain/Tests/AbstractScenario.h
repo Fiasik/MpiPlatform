@@ -5,8 +5,8 @@
 
 #include "Domain/Tests/BaseRunner.h"
 #include "Domain/Measurement/Sample.h"
-#include "Widgets/Chart/ChartType.h"
-#include "Widgets/Chart/Point.h"
+#include "Shared/Chart/ChartType.h"
+#include "Shared/Chart/Point.h"
 #include "Storage/Telemetry.h"
 
 #include <QPointF>
@@ -38,7 +38,7 @@ signals:
                        bool waitForStop,
                        bool waitForStart);
 
-    void requestClearChart(Widgets::Chart::ChartType chartType);
+    void requestClearChart(Shared::Chart::ChartType chartType);
     void totalTestTimeMs(quint64 totalMs);
 
     void telemetryUpdated(const Telemetry& telemetry);
@@ -55,7 +55,7 @@ signals:
     void crossingStatusUpdated(const CrossingStatus& status);
 
     void pointsRequested(QVector<QVector<QPointF>>& points,
-                         Widgets::Chart::ChartType chartType);
+                         Shared::Chart::ChartType chartType);
 
     void addRegressionRequested(const QVector<QPointF>& forwardPoints,
                                 const QVector<QPointF>& backwardPoints);
@@ -66,8 +66,8 @@ signals:
     // отсечной арматуре) — обычная линия задание/положение по-прежнему
     // ведётся централизованно в Program::updateChartsFromSample(), это
     // только для точек, которых там нет (см. Cyclic::Shutoff::Scenario).
-    void addPointsRequested(Widgets::Chart::ChartType chartType,
-                            const QVector<Widgets::Chart::Point>& points);
+    void addPointsRequested(Shared::Chart::ChartType chartType,
+                            const QVector<Shared::Chart::Point>& points);
 
     // Переключение нескольких DO разом (см. Cyclic::Shutoff — сценарий
     // сам переключает выходы во время теста, а не оператор кнопками).

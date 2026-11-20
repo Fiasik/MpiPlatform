@@ -27,3 +27,6 @@ target_include_directories(AnalyzerTests
 )
 
 add_test(NAME AnalyzerTests COMMAND AnalyzerTests)
+qt_add_executable(SaverDataTests SaverDataTest.cpp)
+target_link_libraries(SaverDataTests PRIVATE Report Qt6::Test)
+add_test(NAME SaverDataTests COMMAND SaverDataTests)

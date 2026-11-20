@@ -17,7 +17,7 @@
 #include "Report/Pdf/ResponseSource.h"
 #include "Report/Pdf/ResolutionSource.h"
 #include "Report/Pdf/CommentsSource.h"
-#include "Widgets/Chart/ChartType.h"
+#include "Shared/Chart/ChartType.h"
 
 namespace Report::Pdf {
 
@@ -43,7 +43,7 @@ using Print = std::function<void(QtRPT&)>;
 
 bool buildTechnicalInspection(const Report::Context& ctx, const Print& print)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     QDomDocument doc = loadTemplate(":/pdf/Reports/Act.xml");
     if (doc.isNull())
@@ -72,7 +72,7 @@ bool buildTechnicalInspection(const Report::Context& ctx, const Print& print)
 
 bool buildStepReaction(const Report::Context& ctx, const Print& print)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     QDomDocument doc = loadTemplate(":/pdf/Reports/Tshr.xml");
     if (doc.isNull())
@@ -96,7 +96,7 @@ bool buildStepReaction(const Report::Context& ctx, const Print& print)
 
 bool buildResponse(const Report::Context& ctx, const Print& print)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     QDomDocument doc = loadTemplate(":/pdf/Reports/Tchr.xml");
     if (doc.isNull())
@@ -121,7 +121,7 @@ bool buildResponse(const Report::Context& ctx, const Print& print)
 
 bool buildResolution(const Report::Context& ctx, const Print& print)
 {
-    using Widgets::Chart::ChartType;
+    using Shared::Chart::ChartType;
 
     QDomDocument doc = loadTemplate(":/pdf/Reports/Trs.xml");
     if (doc.isNull())

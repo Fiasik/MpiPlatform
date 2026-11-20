@@ -3,11 +3,11 @@
 #include <QCoreApplication>
 #include <QDate>
 #include <QFile>
-#include <QDataStream>
+
 #include <QDebug>
 
-#include "Widgets/Chart/ChartView.h"
-#include "Widgets/Chart/ChartType.h"
+
+#include "Shared/Chart/ChartType.h"
 #include "Report/Csv/Writer.h"
 
 #include "xlsxdocument.h"
@@ -146,20 +146,20 @@ bool Saver::chooseDirectoryManually()
     return true;
 }
 
-void Saver::saveChartSnapshot(Widgets::Chart::ChartType chart,
+void Saver::saveChartSnapshot(Shared::Chart::ChartType chart,
                               const QImage& image,
-                              Widgets::Chart::ChartView* chartView)
+                              const QByteArray& chartData)
 {
     if (image.isNull())
         return;
 
-    if (!chartView)
+    if (chartData.isEmpty())
         return;
 
     if (!ensureDirectory())
         return;
 
-    const QString name = Widgets::Chart::chartTypeDisplayName(chart);
+    const QString name = Shared::Chart::chartTypeDisplayName(chart);
     const quint16 index = ++m_chartCounter[name];
 
     const QString baseName =
@@ -174,9 +174,7 @@ void Saver::saveChartSnapshot(Widgets::Chart::ChartType chart,
     QFile out(m_dir.filePath(baseName + QStringLiteral(".data")));
 
     if (out.open(QIODevice::WriteOnly)) {
-        QDataStream stream(&out);
-        stream.setVersion(QDataStream::Qt_6_2);
-        chartView->saveToStream(stream);
+        out.write(chartData);
         out.flush();
         out.close();
     } else {
@@ -362,13 +360,13 @@ QString Saver::reportPdfPath(const QString& fileName) const
     return m_dir.filePath(fileName);
 }
 
-bool Saver::saveChartCsv(Widgets::Chart::ChartType chart, const ChartSnapshot& snapshot)
+bool Saver::saveChartCsv(Shared::Chart::ChartType chart, const ChartSnapshot& snapshot)
 {
     if (!ensureDirectory())
         return false;
 
     const QString path =
-        m_dir.filePath(Widgets::Chart::chartTypeDisplayName(chart) + QStringLiteral(".csv"));
+        m_dir.filePath(Shared::Chart::chartTypeDisplayName(chart) + QStringLiteral(".csv"));
 
     return Csv::writeChartCsv(path, snapshot);
 }

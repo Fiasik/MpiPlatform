@@ -1,13 +1,13 @@
 #include "Settings.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QSettings>
 
 namespace Domain::Mpi {
     Settings::Settings(QObject *parent)
         : QObject{parent}
     {
-        QSettings settings(qApp->applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+        QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
 
         settings.beginGroup("ADC");
         for (int i = 0; i < 6; i++) {
@@ -79,7 +79,7 @@ namespace Domain::Mpi {
         // Папка с exe может быть недоступна на запись (Program Files) —
         // тогда QSettings молча не сохранит, и это не ошибка: следующее
         // подключение просто переберёт порты по порядку.
-        QSettings settings(qApp->applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+        QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
         if (settings.value("Uart/LastPort").toString() != portName)
             settings.setValue("Uart/LastPort", portName);
     }

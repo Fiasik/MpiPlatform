@@ -42,6 +42,7 @@ class ImageService;
 }
 
 #include "TestController.h"
+#include "Gui/Setup/SelectTests.h"
 
 // QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -81,13 +82,13 @@ public:
     // Тело — в .cpp: setPatternType() зовёт m_reportPresenter->..., а
     // ReportGenerationPresenter тут только forward-declared (хранится по
     // unique_ptr), для inline-тела в заголовке нужен полный тип.
-    void setPatternType(SelectTests::PatternType pattern);
+    void setPatternType(Domain::Tests::PatternType pattern);
     void setBlockCTS(const SelectTests::BlockCTS& cts) {
         m_blockCts = cts;
     }
 signals:
     void initialized();
-    void patternChanged(SelectTests::PatternType pattern);
+    void patternChanged(Domain::Tests::PatternType pattern);
 
     void doInitStatesSelected(const QVector<bool> &states);
     void dacValueRequested(qreal value);
@@ -287,7 +288,7 @@ private:
     QVector<Widgets::Chart::ChartType> m_pendingTestCharts;
     void resetCountdownDisplay();
 
-    SelectTests::PatternType m_patternType = SelectTests::Pattern_None;
+    Domain::Tests::PatternType m_patternType = Domain::Tests::PatternType::None;
 
     QVector<BaseSequenceSettingsDialog*> m_testSettings;
     MainTestSettings *m_mainTestSettings;

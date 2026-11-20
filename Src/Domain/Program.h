@@ -9,8 +9,8 @@
 
 #include "Domain/Mpi/Device.h"
 
-#include "Widgets/Chart/ChartType.h"
-#include "Widgets/Chart/Point.h"
+#include "Shared/Chart/ChartType.h"
+#include "Shared/Chart/Point.h"
 
 
 #include "Storage/Telemetry.h"
@@ -21,7 +21,7 @@
 
 #include "Domain/Tests/BaseRunner.h"
 
-#include "Gui/Setup/SelectTests.h"
+#include "Domain/Tests/Pattern.h"
 #include "DeviceConfig.h"
 
 namespace Domain::Tests {
@@ -51,9 +51,6 @@ namespace Regulatory { struct Params; }
 namespace Shutoff { struct Params; }
 }
 
-namespace Widgets::Chart {
-struct Point;
-}
 
 namespace Domain {
 class Program : public QObject
@@ -96,7 +93,7 @@ signals:
 
     void initializationFinished(bool success);
     void setGroupDOVisible(bool visible);
-    void setVisible(Widgets::Chart::ChartType chart, quint16 series, bool visible);
+    void setVisible(Shared::Chart::ChartType chart, quint16 series, bool visible);
     void setRegressionEnable(bool enable);
 
     void regressionRecalculated(const QVector<QPointF>& forwardPoints,
@@ -118,10 +115,10 @@ signals:
 
     void setDiCheckboxesChecked(quint8 status);
 
-    void points(QVector<QVector<QPointF>>& points, Widgets::Chart::ChartType chartType);
+    void points(QVector<QVector<QPointF>>& points, Shared::Chart::ChartType chartType);
 
-    void addPoints(Widgets::Chart::ChartType chartType, const QVector<Widgets::Chart::Point>& points);
-    void clearPoints(Widgets::Chart::ChartType chartType);
+    void addPoints(Shared::Chart::ChartType chartType, const QVector<Shared::Chart::Point>& points);
+    void clearPoints(Shared::Chart::ChartType chartType);
 
     void stopTheTest();
     void duplicateMainChartsSeries();
@@ -142,7 +139,7 @@ private:
     bool isDeviceReadyForTest() const;
     void failToStartTest(const QString& reason);
     DeviceConfig m_deviceConfig;
-    SelectTests::PatternType m_patternType = SelectTests::Pattern_None;
+    Domain::Tests::PatternType m_patternType = Domain::Tests::PatternType::None;
 
     // Sample
     Domain::Measurement::Sample makeSample() const;
@@ -214,10 +211,10 @@ public slots:
     // updateCharts
     void updateChartsFromSample(const Domain::Measurement::Sample& s);
     void updateMainCharts(const Domain::Measurement::Sample& s);
-    void updateTimeChart(const Domain::Measurement::Sample& s, Widgets::Chart::ChartType chartType, qint64 time);
+    void updateTimeChart(const Domain::Measurement::Sample& s, Shared::Chart::ChartType chartType, qint64 time);
 
     void setInitDoStates(const QVector<bool>& states);
-    void setPattern(SelectTests::PatternType pattern) {
+    void setPattern(Domain::Tests::PatternType pattern) {
         qDebug() << "[Program::setPattern] called with" << static_cast<int>(pattern);
         m_patternType = pattern;
     }

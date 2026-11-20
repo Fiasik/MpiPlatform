@@ -16,7 +16,7 @@ public:
     explicit StepTestSettings(QWidget* parent = nullptr);
 
     void applyValveInfo(const ValveInfo& info) override;
-    void applyPattern(SelectTests::PatternType pattern) override;
+    void applyPattern(Domain::Tests::PatternType pattern) override;
 
     ~StepTestSettings();
     Domain::Tests::Option::Step::Params parameters() const;
