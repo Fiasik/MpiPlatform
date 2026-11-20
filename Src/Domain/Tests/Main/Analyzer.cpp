@@ -4,6 +4,7 @@
 #endif
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <QDebug>
 #include <QVector>
@@ -818,12 +819,9 @@ void Analyzer::finish()
 
     applyRegressions(regressionFirst, regressionSecond, pressureLimits);
 
-    // Ток страгивания: абсолютное задание (dac), при котором положение
-    // впервые ушло от исходного (медиана первых 5 отсчётов хода) больше чем
-    // на 0.2 % полного хода — и так два отсчёта подряд, чтобы одиночный
-    // шумовой всплеск не считался началом движения. Порог 0.2 % выше шума
-    // датчика положения (~0.1 %). Прямой ход лежит в "Second", обратный в
-    // "First" (см. onSample()).
+    // Порог страгивания задаётся долей полного измеренного хода.
+    // Два последовательных превышения проверяем по медианному фильтру.
+    // Прямой ход хранится в Second, обратный — в First.
     {
         double lo = m_linearSeriesFirst.first().position;
         double hi = lo;
@@ -836,17 +834,26 @@ void Analyzer::finish()
         const double threshold = 0.002 * (hi - lo);
 
         auto breakaway = [threshold](const QVector<LinearPoint>& series) {
-            if (series.size() < 7 || !(threshold > 0.0))
+            constexpr int windowSize = 5;
+            constexpr int radius = windowSize / 2;
+            if (series.size() < windowSize + radius + 2 || !(threshold > 0.0))
                 return qQNaN();
-            QVector<double> head;
-            for (int i = 0; i < 5; ++i)
-                head.push_back(series.at(i).position);
-            std::sort(head.begin(), head.end());
-            const double start = head.at(2);
-            for (int i = 5; i + 1 < series.size(); ++i) {
-                if (std::abs(series.at(i).position - start) > threshold
-                    && std::abs(series.at(i + 1).position - start) > threshold)
-                    return series.at(i).dac;
+
+            const auto medianPosition = [&](qsizetype center) {
+                std::array<double, windowSize> positions;
+                for (int j = 0; j < windowSize; ++j)
+                    positions[j] = series.at(center - radius + j).position;
+                std::sort(positions.begin(), positions.end());
+                return positions[radius];
+            };
+
+            const double start = medianPosition(radius);
+            bool previousAbove = false;
+            for (qsizetype i = windowSize; i + radius < series.size(); ++i) {
+                const bool above = std::abs(medianPosition(i) - start) > threshold;
+                if (above && previousAbove)
+                    return series.at(i - 1).dac;
+                previousAbove = above;
             }
             return qQNaN();
         };

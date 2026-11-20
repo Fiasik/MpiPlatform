@@ -153,6 +153,21 @@ QVector<Sample> makeHysteresisBackward()
 
 } // namespace (anonymous)
 
+void MainTestAnalyzerTest::breakaway_twoSampleSpike_usesStartOfSustainedMovement()
+{
+    auto forward = makeHysteresisForward();
+    auto backward = makeHysteresisBackward();
+    for (int i = 0; i < 10; ++i) {
+        const double spike = (i == 5 || i == 6) ? 0.5 : 0.0;
+        forward[i].positionValue = spike;
+        backward[i].positionValue = 100.0 - spike;
+    }
+
+    const Test::Result result = runAnalyzer(forward, backward);
+    QCOMPARE(result.breakawayForward, forward[10].dac);
+    QCOMPARE(result.breakawayBackward, backward[10].dac);
+}
+
 void MainTestAnalyzerTest::emptyInput_resultIsUnavailable()
 {
     printCaseHeader("Пустой вход");

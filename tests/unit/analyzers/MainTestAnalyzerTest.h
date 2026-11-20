@@ -17,6 +17,7 @@ private slots:
     void start_resetsResult();
 
     void dynamicError_uniformDacOffset_computesCorrectly();
+    void breakaway_twoSampleSpike_usesStartOfSustainedMovement();
     void frictionForce_knownDiameter_matchesFormula();
     void springAndPressureLimits_parallelRegressions_computeCorrectly();
     void allPointsOutsideRange_regressionFails_resultIsUnavailable();
