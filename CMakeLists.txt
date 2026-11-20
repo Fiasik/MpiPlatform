@@ -209,6 +209,8 @@ if(MPIPLATFORM_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+add_subdirectory(Researcher)
+
 option(MPIPLATFORM_BUILD_CHART_PREVIEW "Build real ChartView/Manager preview on synthetic data (experiments/chart-preview)" OFF)
 
 if(MPIPLATFORM_BUILD_CHART_PREVIEW)

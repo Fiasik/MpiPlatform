@@ -43,6 +43,7 @@ public:
 
     // Имя показанного файла ("Task_2.data") — для подсказки/строки состояния.
     QString currentFileName() const;
+    Widgets::Chart::ChartView* chart() const { return m_chart; }
 
 signals:
     // Кнопка ⤢ или двойной клик по графику — показать на всю область карточки.
