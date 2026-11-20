@@ -341,7 +341,7 @@ void ValveWindow::setupConnections()
             this, &ValveWindow::onDriveTypeChanged);
 
     connect(ui->comboBox_materialStuffingBoxSeal, &QComboBox::currentTextChanged,
-            this, &ValveWindow::applyFrictionLimitsFromStuffingBoxSeal);
+            this, &ValveWindow::applyFrictionLimits);
 
     connect(ui->lineEdit_driveDiameter, &QLineEdit::textChanged,
             this, &ValveWindow::updateCriticalFieldWarnings);
@@ -369,7 +369,7 @@ void ValveWindow::setupInitialUi()
     onPositionerTypeChanged(ui->comboBox_positionerType->currentIndex());
     reloadDriveModels();
 
-    applyFrictionLimitsFromStuffingBoxSeal();
+    applyFrictionLimits();
 
     ui->lineEdit_pulleyDiameter->setText(m_diameter[0]);
 
@@ -496,12 +496,13 @@ void ValveWindow::setupValidators()
         ValidatorFactory::create(ValidatorFactory::Type::DigitsDot, this));
 }
 
-void ValveWindow::applyFrictionLimitsFromStuffingBoxSeal()
+void ValveWindow::applyFrictionLimits()
 {
     const StuffingBoxSeal seal =
         ValveEnums::stuffingBoxSealFromCombo(ui->comboBox_materialStuffingBoxSeal);
 
-    auto limits = Logic::frictionLimitsForSeal(seal);
+    const DriveType drive = ValveEnums::driveTypeFromCombo(ui->comboBox_driveType);
+    auto limits = Logic::frictionLimitsForDrive(drive, seal);
     if (!limits.has_value()) {
         return;
     }
@@ -511,6 +512,39 @@ void ValveWindow::applyFrictionLimitsFromStuffingBoxSeal()
 
     ui->lineEdit_crossingLimits_coefficientFriction_upper
         ->setText(QString::number(limits->upper, 'f', 2));
+
+    QString driveName;
+    QString explanation;
+    switch (drive) {
+    case DriveType::SpringDiaphragm:
+        driveName = tr("пружинно-мембранный");
+        explanation = tr("Для пружинно-мембранного привода допуск зависит от материала "
+                         "сальникового уплотнения: PTFE — 1–9 %, графит — 8–15 %. "
+                         "Используются ранее принятые в приложении пределы.");
+        break;
+    case DriveType::SingleSided:
+        driveName = tr("поршневой одностороннего действия");
+        explanation = tr("Для поршневого привода одностороннего действия принят диапазон "
+                         "%1–%2 % включительно согласно ТЗ приложения. "
+                         "Материал сальникового уплотнения на допуск не влияет.")
+                            .arg(limits->lower).arg(limits->upper);
+        break;
+    case DriveType::DoubleActing:
+        driveName = tr("поршневой двойного действия");
+        explanation = tr("Для поршневого привода двойного действия принят диапазон "
+                         "%1–%2 % включительно согласно ТЗ приложения. "
+                         "Материал сальникового уплотнения на допуск не влияет.")
+                            .arg(limits->lower).arg(limits->upper);
+        break;
+    }
+    ui->checkBox_crossingLimits_coefficientFriction->setText(
+        tr("Коэффициент трения — %1, %").arg(driveName));
+    const QString checkHelp = tr("Коэффициент трения рассчитывается всегда. "
+                                "Флажок включает только проверку допустимого диапазона.");
+    ui->checkBox_crossingLimits_coefficientFriction->setToolTip(checkHelp);
+    ui->label_crossingLimits_coefficientFriction_info->setToolTip(
+        explanation + QStringLiteral("\n\n") + checkHelp + QStringLiteral("\n\n") +
+        tr("Нажмите «?», чтобы открыть расчёт коэффициента трения."));
 }
 
 void ValveWindow::loadLinearRange()
@@ -537,6 +571,7 @@ void ValveWindow::setPatternType(Domain::Tests::PatternType pattern)
 
 void ValveWindow::onDriveTypeChanged(int)
 {
+    applyFrictionLimits();
     const DriveType type = ValveEnums::driveTypeFromCombo(ui->comboBox_driveType);
     const Logic::DriveTypeRule rule = Logic::driveTypeRule(type);
 
@@ -643,7 +678,7 @@ void ValveWindow::setRegistry(Registry *registry)
                                       objectInfo.department, last, m_local)) {
         m_registry->valveInfo() = m_local;
         Mapper::write(*this, m_local);
-        applyFrictionLimitsFromStuffingBoxSeal();
+        applyFrictionLimits();
     }
 
     if (!last.isEmpty()) {
@@ -703,7 +738,7 @@ void ValveWindow::loadMaterialsToUi(const MaterialsOfComponentParts& m)
     // setCurrentText() не эмитит его, если текст не поменялся (тот же
     // случай, что и у setCurrentIndex() в Mapper::write()), так что
     // полагаться на него нельзя. Применяем сами, гарантированно.
-    applyFrictionLimitsFromStuffingBoxSeal();
+    applyFrictionLimits();
 }
 
 
@@ -731,7 +766,7 @@ void ValveWindow::positionChanged(const QString &position)
         m_registry->valveInfo() = m_local;
         Mapper::write(*this, m_local);
 
-        applyFrictionLimitsFromStuffingBoxSeal();
+        applyFrictionLimits();
         updateCriticalFieldWarnings();
     }
 
@@ -857,7 +892,7 @@ void ValveWindow::on_pushButton_clear_clicked()
     reloadPositionerModels();
     reloadDriveModels();
 
-    applyFrictionLimitsFromStuffingBoxSeal();
+    applyFrictionLimits();
 
     ui->lineEdit_pulleyDiameter->setText(m_diameter[0]);
 

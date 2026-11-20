@@ -95,7 +95,7 @@ private:
 
     void saveValveInfo();
     void applyPatternVisibility();
-    void applyFrictionLimitsFromStuffingBoxSeal();
+    void applyFrictionLimits();
 
     // Диаметр привода/шкива, диапазон пружины, ход клапана — поля, без
     // которых часть результатов теста считается неверно (0 вместо

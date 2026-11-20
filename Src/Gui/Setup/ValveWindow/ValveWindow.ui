@@ -44,7 +44,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_data">
       <property name="sizePolicy">
@@ -1207,7 +1207,7 @@
      </widget>
      <widget class="QWidget" name="tab_passFail">
       <attribute name="title">
-       <string>Pass | Fail</string>
+       <string>Критерии годности</string>
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
@@ -1416,7 +1416,7 @@
              </font>
             </property>
             <property name="text">
-             <string>PTFE: 1–9 %; Graphite: 8–15 %</string>
+             <string>?</string>
             </property>
            </widget>
           </item>

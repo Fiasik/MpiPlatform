@@ -66,8 +66,22 @@ bool Logic::isDoubleActing(DriveType type)
 }
 
 std::optional<Logic::FrictionLimits>
-Logic::frictionLimitsForSeal(StuffingBoxSeal seal)
+Logic::frictionLimitsForDrive(DriveType drive, StuffingBoxSeal seal)
 {
+    // Независимые настройки: допуски двух поршневых приводов могут измениться.
+    static constexpr FrictionLimits singleSidedLimits{0.0, 25.0};
+    static constexpr FrictionLimits doubleActingLimits{0.0, 25.0};
+    switch (drive) {
+    case DriveType::SingleSided:
+        return singleSidedLimits;
+    case DriveType::DoubleActing:
+        return doubleActingLimits;
+    case DriveType::SpringDiaphragm:
+        break;
+    default:
+        return std::nullopt;
+    }
+
     switch (seal) {
     case StuffingBoxSeal::PTFE:
         return FrictionLimits{1.0, 9.0};

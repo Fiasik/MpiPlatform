@@ -33,7 +33,7 @@ public:
     static qreal calculateCircleArea(qreal diameter);
     static bool isDoubleActing(DriveType type);
 
-    static std::optional<Logic::FrictionLimits> frictionLimitsForSeal(StuffingBoxSeal seal);
+    static std::optional<Logic::FrictionLimits> frictionLimitsForDrive(DriveType drive, StuffingBoxSeal seal);
 
     static QString toString(SafePosition value);
     static QString toString(StrokeMovement value);
