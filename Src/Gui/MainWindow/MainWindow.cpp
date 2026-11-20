@@ -7,6 +7,7 @@
 #include <QDataStream>
 #include <QDesktopServices>
 #include <QDir>
+#include <QPushButton>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHash>
@@ -129,6 +130,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     Gui::Style::applyRoles(this);
+
+    ui->tabWidget_mainResults->hide();
+    connect(ui->pushButton_mainResults, &QPushButton::toggled,
+            ui->tabWidget_mainResults, &QWidget::setVisible);
 
     applyBuildVariantUi();
 
@@ -850,6 +855,7 @@ void MainWindow::openHelpSection(const QString& article)
     }
 
     HelpDialog dialog(tabs, this);
+    dialog.showArticle(article);
     dialog.exec();
 }
 
@@ -1488,8 +1494,7 @@ void MainWindow::setRegistry(Registry* registry)
 
 #ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
     // Стрелка в карточке «Линейность характеристики» блока
-    // Pass|Fail раскрывает под ней способы расчёта; остальные карточки
-    // сворачиваются до строки «название + статус».
+    // Pass|Fail раскрывает способы расчёта внутри секции линейности.
     if (!m_linearityMethods) {
         m_linearityMethods = std::make_unique<LinearityMethodsPresenter>(m_chartManager.get());
         if (m_linearityThemeManager)
@@ -1497,16 +1502,9 @@ void MainWindow::setRegistry(Registry* registry)
 
         using Card = ExpandableCard::Card;
         m_linearityCard = std::make_unique<ExpandableCard>(
-            ui->verticalLayout_41,
+            ui->verticalLayout_linearCharacteristic,
             Card{ui->frame_crossingLimits_linearCharacteristic_Card, ui->horizontalLayout_linearCharacteristic_1},
-            QVector<QWidget*>{
-                // остальные карточки Pass|Fail
-                ui->frame_crossingLimits_coefficientFriction_control_Card,
-                ui->frame_crossingLimits_dynamicError_Card,
-                ui->frame_crossingLimits_spring_Card,
-                ui->frame_crossingLimits_range_Card,
-                // левая колонка вкладки «Результаты» остаётся на месте
-            },
+            QVector<QWidget*>{},
             m_linearityMethods->panel(),
             tr("Подробнее: способы расчёта линейности"));
 
@@ -1518,7 +1516,8 @@ void MainWindow::setRegistry(Registry* registry)
         m_linearityMethods->setCardTargets(
             {ui->label_crossingLimits_linearCharacteristic_Value,
              ui->label_crossingLimits_linearCharacteristic_Status,
-             ui->toleranceBar_linearCharacteristic},
+             ui->toleranceBar_linearCharacteristic,
+             ui->label_crossingLimits_linearCharacteristicPhysical_Norm},
             [this] {
                 if (m_archiveView) {
                     showArchivedResult();
@@ -1790,6 +1789,11 @@ void MainWindow::setTestState(TestState state)
         return;
 
     m_testState = state;
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    if (m_linearityMethods)
+        m_linearityMethods->setTestRunning(state == TestState::Starting || state == TestState::Running);
+#endif
+
 
     // Данные поступают только пока тест идёт: тогда линии на OpenGL (быстро
     // на частых обновлениях), после него — обычные, под плашками подписей.
@@ -2297,6 +2301,13 @@ void MainWindow::initCharts()
 
     connect(m_program, &Domain::Program::clearPoints,
             m_chartManager.get(), &Widgets::Chart::Manager::clearPoints);
+#ifdef MPIPLATFORM_EXPERIMENTAL_LINEARITY
+    connect(m_program, &Domain::Program::clearPoints, this, [this](ChartType type) {
+        if (type == ChartType::Pressure && m_linearityMethods)
+            m_linearityMethods->refresh();
+    });
+#endif
+
 
     connect(m_program, &Domain::Program::duplicateMainChartsSeries,
             m_chartManager.get(), &Widgets::Chart::Manager::duplicateMainChartsSeries);

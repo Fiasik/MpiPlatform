@@ -35,7 +35,7 @@ QImage ImageService::captureChart(ChartType chart)
     // есть, поставила карточка способов линейности. В отчёт она попадать не
     // должна: снимаем на время снимка и возвращаем.
     QVector<ChartView::ChartAnnotation> linearityMarks;
-    if (chart == ChartType::Task || chart == ChartType::Pressure) {
+    if (chart == ChartType::Task || chart == ChartType::Pressure || chart == ChartType::Friction) {
         linearityMarks = ch->annotations();
         if (!linearityMarks.isEmpty())
             ch->clearAnnotations();

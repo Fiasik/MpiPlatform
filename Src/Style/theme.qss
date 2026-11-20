@@ -61,6 +61,21 @@ QWidget {
     border-radius: 6px;
 }
 
+/* Main-test results use the same recessed surface as other test tabs.
+ * Style the pages and scroll viewports too: their palette otherwise exposes
+ * the application window background when docking or changing tabs. */
+#tabWidget_mainResults,
+#tab_mainResults_measurements,
+#tab_mainResults_passFail,
+#scrollArea_mainMeasurements,
+#scrollArea_mainMeasurements > QWidget,
+#scrollArea_mainPassFail,
+#scrollArea_mainPassFail > QWidget,
+#tab_mainTests_result,
+#frame_mainTests_result_crossingLimits_Section {
+    background-color: @{bgRecessed};
+}
+
 /* QScrollArea и её контент-виджет по умолчанию красят собственный фон
  * (палитра Window) — поверх уже покрашенного #tab_history получался
  * второй, чуть другой серый прямоугольник ровно по границе правой панели.

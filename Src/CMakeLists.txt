@@ -280,6 +280,7 @@ set(GUI_CPP
     Gui/TestSettings/CyclicTestSettings.cpp
     Widgets/Chart/ChartView.cpp
     Widgets/Chart/AnnotationBuilder.cpp
+    Widgets/Chart/PositionRangeAnnotations.cpp
     Widgets/Chart/Series.cpp
     Widgets/Chart/ImageService.cpp
     Widgets/Chart/Manager.cpp

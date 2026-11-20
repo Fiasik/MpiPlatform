@@ -191,6 +191,12 @@ void finishWindows(StrokeLinearity& s, const Line& line, bool variation)
     s.valid = true;
 }
 
+QString signedNum(double value, int decimals)
+{
+    return (value > 0.0 ? QStringLiteral("+") : QString())
+        + QLocale(QLocale::Russian).toString(value, 'f', decimals);
+}
+
 QString num(double value, int decimals)
 {
     return QLocale(QLocale::Russian).toString(value, 'f', decimals);
@@ -326,9 +332,9 @@ QString linearityMethodDescription(LinearityMethod method)
         return QObject::tr("Наибольшее отклонение от прямой, проведённой по минимаксу, % рабочего хода. "
                            "Так считаются Pass|Fail, отчёт и база");
     case LinearityMethod::DifferentialByStroke:
-        return QObject::tr("Наибольшее отличие наклона на участке от общего, %. Участок — 10 % хода");
+        return QObject::tr("Наибольшее отличие наклона на участке от общего, мм/бар и % модуля общего наклона. Участок — 10 % хода");
     case LinearityMethod::SlopeVariation:
-        return QObject::tr("Среднее отличие наклона на участках от общего по всему ходу, %");
+        return QObject::tr("Среднеквадратичное отличие наклонов от общего, мм/бар и % модуля общего наклона");
     }
     return {};
 }
@@ -442,7 +448,25 @@ LinearityMethodsResult computeLinearity(LinearityMethod method,
         ? QObject::tr("%1 мм (%2 %)").arg(num(s.worstLow.y(), 1), num(pLow, 0))
         : QObject::tr("%1–%2 мм (%3–%4 %)").arg(num(s.worstLow.y(), 1), num(s.worstHigh.y(), 1),
                                                num(pLow, 0), num(pHigh, 0));
-    result.summary = QObject::tr("%1: %2 — %3 %").arg(strokeName(result.worstStroke), where, num(result.value, 2));
+    if (isPercentOfStroke(method)) {
+        result.summary = QObject::tr("%1: %2. Максимальное отклонение: %3 % ширины рабочего диапазона (%4 мм); разность: %5 мм.\n"
+                                    "При давлении %6 бар измерено %7 мм, по прямой: %8 мм.")
+            .arg(strokeName(result.worstStroke), where, num(result.value, 2),
+                 num(result.windowMax - result.windowMin, 2), signedNum(s.worstResidual, 2),
+                 num(s.worstLow.x(), 3), num(s.worstLow.y(), 2), num(s.k * s.worstLow.x() + s.b, 2));
+    } else {
+        const double difference = s.worstSlope - s.k;
+        const double percent = difference / std::abs(s.k) * 100.0;
+        result.summary = QObject::tr("%1: %2. Общий наклон: %3 мм/бар; локальный: %4 мм/бар.\n"
+                                    "Максимальное локальное отклонение: %5 мм/бар (%6 % модуля общего наклона). "
+                                    "Границы по давлению: %7–%8 бар.")
+            .arg(strokeName(result.worstStroke), where, num(s.k, 2), num(s.worstSlope, 2),
+                 signedNum(difference, 2), signedNum(percent, 2),
+                 num(s.worstLow.x(), 3), num(s.worstHigh.x(), 3));
+        if (method == LinearityMethod::SlopeVariation)
+            result.summary.prepend(QObject::tr("Среднеквадратичный разброс: %1 % (%2 мм/бар).\n")
+                .arg(num(result.value, 2), num(result.value * std::abs(s.k) / 100.0, 2)));
+    }
     return result;
 }
 

@@ -143,6 +143,8 @@ public:
         // "усы", которые на графике читаются как ещё одна ступенька сигнала.
         enum class RangeStyle { Bracket, Band };
         RangeStyle rangeStyle = RangeStyle::Bracket;
+        Qt::Orientation bandAxis = Qt::Horizontal; // Horizontal: X interval; Vertical: Y interval.
+        int seriesIndex = -1; // Explicit coordinate axes for multi-axis charts; -1 uses first visible series.
     };
     void setAnnotations(const QVector<ChartAnnotation>& annotations);
     void clearAnnotations();

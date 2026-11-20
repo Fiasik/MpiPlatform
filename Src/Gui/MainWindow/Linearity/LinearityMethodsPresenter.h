@@ -41,6 +41,7 @@ public:
         QLabel* value = nullptr;
         QLabel* status = nullptr;
         Widgets::ToleranceBar* bar = nullptr;
+        QLabel* physical = nullptr;
     };
 
     explicit LinearityMethodsPresenter(Widgets::Chart::Manager* charts, QObject* parent = nullptr);
@@ -60,6 +61,7 @@ public slots:
     // Карточка раскрыта: считаем, подставляем результат в карточку и
     // отмечаем графики; свёрнута — всё официальное обратно.
     void setActive(bool active);
+    void setTestRunning(bool running);
     // Вызывать после того, как карточку перерисовал официальный код
     // (телеметрия, статусы Pass|Fail) — иначе подстановка затрётся.
     void reapplyCardOverride();
@@ -89,7 +91,9 @@ private:
     std::function<void()> m_restoreOfficial;
 
     Domain::Tests::Main::Linearity::LinearityMethodsResult m_result;
+    double m_officialResidual = qQNaN();
     bool m_marksShown = false;
     bool m_overrideShown = false;
     bool m_active = false;
+    bool m_running = false;
 };

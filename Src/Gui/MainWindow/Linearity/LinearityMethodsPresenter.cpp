@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 #include "Gui/Style/Palette.h"
 #include "Gui/Style/RoleStyler.h"
@@ -19,6 +20,7 @@
 #include "Widgets/Chart/ChartType.h"
 #include "Widgets/Chart/ChartView.h"
 #include "Widgets/Chart/Manager.h"
+#include "Widgets/Chart/PositionRangeAnnotations.h"
 #include "Widgets/ToleranceBar.h"
 
 using namespace Domain::Tests::Main::Linearity;
@@ -34,8 +36,7 @@ enum ProfileSeries : quint8 {
     ProfileForward = 0,
     ProfileBackward = 1,
     ProfileAverage = 2,
-    ProfileLevel = 3,   // ноль
-    ProfileWorst = 4,   // худшее место
+    ProfileWorst = 3,   // худшее место
 };
 
 const QColor kMarkColor(214, 39, 40);
@@ -45,26 +46,10 @@ QString num(double value, int decimals)
     return QLocale(QLocale::Russian).toString(value, 'f', decimals);
 }
 
-// Точка хода, ближайшая по положению к target (для отметки на графике задания).
-QPointF nearestByPosition(const QList<QPointF>& points, double target)
-{
-    QPointF best;
-    double bestDistance = std::numeric_limits<double>::max();
-    for (const QPointF& p : points) {
-        const double d = std::abs(p.y() - target);
-        if (d < bestDistance) {
-            bestDistance = d;
-            best = p;
-        }
-    }
-    return best;
-}
-
 // Отклонение наклона участка от общего, %: + наклон больше, − меньше.
 double slopeDeviation(const StrokeLinearity& s, double slope)
 {
-    const double sign = s.k < 0 ? -1.0 : 1.0;
-    return (slope - s.k) / std::abs(s.k) * 100.0 * sign;
+    return (slope - s.k) / std::abs(s.k) * 100.0;
 }
 
 } // namespace
@@ -94,7 +79,6 @@ LinearityMethodsPresenter::LinearityMethodsPresenter(Widgets::Chart::Manager* ch
     profile->addSeries(0, tr("Прямой"), QColor(31, 111, 235));
     profile->addSeries(0, tr("Обратный"), QColor(232, 89, 12));
     profile->addSeries(0, tr("Средняя"), QColor(43, 138, 62));
-    profile->addSeries(0, tr("Ноль"), QColor(112, 72, 232));
     profile->addSeries(0, tr("Худшее место"), kMarkColor);
     profile->setSeriesMarkersOnly(ProfileWorst, true, 12.0);
     profile->setAllowNegativeY(true);
@@ -131,6 +115,14 @@ LinearityMethodsPresenter::~LinearityMethodsPresenter() = default;
 void LinearityMethodsPresenter::setRegistry(Registry* registry)
 {
     m_registry = registry;
+    refresh();
+}
+
+void LinearityMethodsPresenter::setTestRunning(bool running)
+{
+    if (m_running == running) return;
+    m_running = running;
+    refresh();
 }
 
 void LinearityMethodsPresenter::applyPalette(const Gui::Style::Palette& palette)
@@ -162,14 +154,27 @@ void LinearityMethodsPresenter::refresh()
     const LinearityMethod method = currentMethod();
     m_ui->label_linearityMethodDescription_Title->setText(linearityMethodDescription(method));
 
+    m_officialResidual = qQNaN();
     m_result = {};
     m_result.method = method;
-    if (ChartView* pressure = m_charts->chart(ChartType::Pressure)) {
+    ChartView* pressure = m_charts->chart(ChartType::Pressure);
+    if (!m_running && m_registry && m_registry->valveInfo().crossingLimits.linearCharacteristicEnabled
+        && pressure && pressure->seriesCount() > 0) {
         // Manager::duplicateMainChartsSeries() на старте обратного хода
         // переносит прямой ход в "дубль"-слой серии: second — прямой ход,
         // first — обратный. Из истории грузится только first.
         const auto points = pressure->getPoints(0);
-        m_result = computeLinearity(method, points.second, points.first, currentBasis());
+        const auto finite = [](const auto& stroke) {
+            return std::all_of(stroke.begin(), stroke.end(), [](const auto& p) {
+                return std::isfinite(p.x()) && std::isfinite(p.y());
+            });
+        };
+        if (finite(points.first) && finite(points.second)) {
+            m_result = computeLinearity(method, points.second, points.first, currentBasis());
+            const auto official = computeLinearity(LinearityMethod::IntegralMinimax, points.second, points.first);
+            if (official.valid)
+                m_officialResidual = official.strokes[official.worstStroke].worstResidual;
+        }
     }
 
     render();
@@ -189,6 +194,10 @@ void LinearityMethodsPresenter::setActive(bool active)
 
 void LinearityMethodsPresenter::render()
 {
+    m_ui->label_linearityDetails_Value->hide();
+    m_ui->label_linearityMethodDescription_Title->hide();
+    m_ui->label_linearityStrokes_Title->hide();
+    m_ui->label_linearityStrokes_Value->hide();
     const bool valid = m_result.valid;
     const bool integral = isPercentOfStroke(m_result.method);
 
@@ -221,12 +230,12 @@ void LinearityMethodsPresenter::render()
         perStroke << (stroke.valid ? num(stroke.value, 2) : QStringLiteral("—"));
     m_ui->label_linearityStrokes_Value->setText(perStroke.join(QStringLiteral(" / ")));
 
-    m_ui->label_linearityCalcRange_Norm->setText(tr("расчёт по 10–90 % хода: %1–%2 мм")
+    m_ui->label_linearityCalcRange_Norm->setText(tr("Расчёт: 10–90 % хода · %1–%2 мм")
         .arg(num(m_result.windowMin, 1), num(m_result.windowMax, 1)));
 
     m_ui->label_linearityProfile_Title->setText(integral
         ? tr("Отклонение от прямой по ходу, мм")
-        : tr("Отклонение наклона по ходу, % (выше нуля — наклон больше, ниже — меньше)"));
+        : tr("Отклонение наклона, %"));
 
     fillInfoPopup();
     updateProfileChart();
@@ -248,6 +257,25 @@ void LinearityMethodsPresenter::reapplyCardOverride()
         && m_registry && m_card.value && m_card.status && m_card.bar
         && m_registry->valveInfo().crossingLimits.linearCharacteristicEnabled;
 
+    if (m_card.physical) {
+        m_card.physical->setToolTip(wanted || official ? m_result.summary : QString());
+        double physical = m_officialResidual;
+        QString unit = tr("мм");
+        if (wanted) {
+            const auto& stroke = m_result.strokes[m_result.worstStroke];
+            if (isPercentOfStroke(m_result.method))
+                physical = stroke.worstResidual;
+            else {
+                unit = tr("мм/бар");
+                physical = m_result.method == LinearityMethod::SlopeVariation
+                    ? m_result.value * std::abs(stroke.k) / 100.0 : stroke.worstSlope - stroke.k;
+            }
+        }
+        m_card.physical->setText(std::isfinite(physical)
+            ? (physical > 0 ? QStringLiteral("+") : QString()) + num(physical, 2) + QLatin1Char(' ') + unit
+            : QStringLiteral("—"));
+    }
+
     if (!wanted) {
         if (m_overrideShown) {
             m_overrideShown = false;
@@ -264,7 +292,7 @@ void LinearityMethodsPresenter::reapplyCardOverride()
     const double miss = state == State::Fail ? value - tolerance : qQNaN();
 
     // Тот же вид, что у CrossingIndicatorsPresenter::update() для линейности.
-    m_card.value->setText(QString::number(value, 'f', 2));
+    m_card.value->setText(num(value, 2));
     m_card.status->setText(Gui::Style::crossingStateLabel(state));
     m_card.status->setStyleSheet(
         QStringLiteral("color: %1;").arg(Gui::Style::crossingStateColor(state).name()));
@@ -274,51 +302,7 @@ void LinearityMethodsPresenter::reapplyCardOverride()
 
 void LinearityMethodsPresenter::fillInfoPopup()
 {
-    Ui::LinearityInfoPopup& ui = *m_popupUi;
-    const bool integral = isPercentOfStroke(m_result.method);
-
-    auto set = [](QLabel* label, const StrokeLinearity& s, const QString& text) {
-        label->setText(s.totalPoints > 0 ? text : QStringLiteral("—"));
-    };
-    const StrokeLinearity& f = m_result.strokes[0];
-    const StrokeLinearity& b = m_result.strokes[1];
-    const StrokeLinearity& a = m_result.strokes[2];
-
-    set(ui.label_infoPointsForward_Data, f, QString::number(f.totalPoints));
-    set(ui.label_infoPointsBackward_Data, b, QString::number(b.totalPoints));
-    set(ui.label_infoInRangeForward_Data, f, QString::number(f.windowPoints));
-    set(ui.label_infoInRangeBackward_Data, b, QString::number(b.windowPoints));
-    set(ui.label_infoSlopeForward_Data, f, num(f.lsqSlope, 2));
-    set(ui.label_infoSlopeBackward_Data, b, num(b.lsqSlope, 2));
-    set(ui.label_infoWindowsForward_Data, f, QString::number(f.totalWindows));
-    set(ui.label_infoWindowsBackward_Data, b, QString::number(b.totalWindows));
-    set(ui.label_infoResultForward_Data, f, f.valid ? num(f.value, 2) : QStringLiteral("—"));
-    set(ui.label_infoResultBackward_Data, b, b.valid ? num(b.value, 2) : QStringLiteral("—"));
-    set(ui.label_infoPointsAverage_Data, a, QString::number(a.totalPoints));
-    set(ui.label_infoInRangeAverage_Data, a, QString::number(a.windowPoints));
-    set(ui.label_infoSlopeAverage_Data, a, num(a.lsqSlope, 2));
-    set(ui.label_infoWindowsAverage_Data, a, QString::number(a.totalWindows));
-    set(ui.label_infoResultAverage_Data, a, a.valid ? num(a.value, 2) : QStringLiteral("—"));
-    auto binned = [](const StrokeLinearity& s) {
-        return qIsNaN(s.binnedValue) ? QStringLiteral("—") : num(s.binnedValue, 2);
-    };
-    set(ui.label_infoBinnedForward_Data, f, binned(f));
-    set(ui.label_infoBinnedBackward_Data, b, binned(b));
-    set(ui.label_infoBinnedAverage_Data, a, binned(a));
-
-    for (QWidget* w : {static_cast<QWidget*>(ui.label_infoWindows),
-                       static_cast<QWidget*>(ui.label_infoWindowsForward_Data),
-                       static_cast<QWidget*>(ui.label_infoWindowsBackward_Data),
-                       static_cast<QWidget*>(ui.label_infoWindowsAverage_Data)})
-        w->setVisible(!integral);
-
-    QString footer = tr("ход %1…%2 мм · расчёт по %3…%4 мм (10–90 %)")
-        .arg(num(m_result.strokeMin, 2), num(m_result.strokeMax, 2),
-             num(m_result.windowMin, 2), num(m_result.windowMax, 2));
-    const StrokeLinearity& any = m_result.strokes[m_result.worstStroke];
-    if (any.slopeWindowMm > 0.0)
-        footer += tr(" · участок %1 мм").arg(num(any.slopeWindowMm, 2));
-    ui.label_infoRange_Norm->setText(footer);
+    m_popupUi->label_explanation->setText(linearityMethodDescription(m_result.method));
     m_popup->adjustSize();
 }
 
@@ -351,64 +335,54 @@ void LinearityMethodsPresenter::updateProfileChart()
     else
         worst.push_back({(s.worstLow.y() + s.worstHigh.y()) / 2.0, slopeDeviation(s, s.worstSlope)});
 
-    chart->replacePoints(ProfileLevel, {{m_result.windowMin, 0.0}, {m_result.windowMax, 0.0}});
     chart->replacePoints(ProfileWorst, worst);
     chart->rescanRange();
 }
 
 void LinearityMethodsPresenter::updateMainChartMarks()
 {
-    const StrokeLinearity& s = m_result.strokes[m_result.worstStroke];
+    if (!m_result.valid) { clearMainChartMarks(); return; }
+    ChartView* pressure = m_charts->chart(ChartType::Pressure);
+    if (!pressure) { clearMainChartMarks(); return; }
+    const auto& s = m_result.strokes[m_result.worstStroke];
     const bool integral = isPercentOfStroke(m_result.method);
-
-    QString label;
-    if (integral) {
-        label = tr("%1 мм").arg(num(std::abs(s.worstResidual), 2));
-    } else {
-        const double d = slopeDeviation(s, s.worstSlope);
-        label = tr("наклон %1 на %2 %").arg(d > 0 ? tr("больше") : tr("меньше"), num(std::abs(d), 0));
+    const QString unit = Widgets::Chart::chartPositionUnit(pressure);
+    const QString label = integral
+        ? tr("Δy = %1 %2 (%3 %)").arg(num(s.worstResidual, 2), unit, num(m_result.value, 2))
+        : tr("Δk = %1 %2/бар (%3 %)").arg(num(s.worstSlope-s.k, 2), unit, num(slopeDeviation(s, s.worstSlope), 2));
+    ChartView::ChartAnnotation mark;
+    mark.from = s.worstLow;
+    mark.to = integral ? QPointF(s.worstLow.x(), s.k*s.worstLow.x()+s.b) : s.worstHigh;
+    mark.label = label;
+    mark.color = QColor("#b8409a");
+    mark.seriesIndex = 0;
+    if (!integral) {
+        mark.rangeStyle = ChartView::ChartAnnotation::RangeStyle::Band;
+        mark.bandAxis = Qt::Vertical;
     }
-
-    if (ChartView* pressure = m_charts->chart(ChartType::Pressure)) {
-        ChartView::ChartAnnotation a;
-        a.from = s.worstLow;
-        a.to = integral ? QPointF(s.worstLow.x(), s.k * s.worstLow.x() + s.b) : s.worstHigh;
-        a.label = label;
-        a.color = kMarkColor;
-        pressure->setAnnotations({a});
-    }
-
-    // На графике задания по вертикали тоже положение — отмечаем те же
-    // миллиметры на том же ходу (серия 1: second — прямой, first — обратный).
-    if (ChartView* task = m_charts->chart(ChartType::Task)) {
-        const auto pair = task->getPoints(1);
-        // Для средней кривой — прямой ход (своих точек на графике задания у неё нет).
-        const QList<QPointF>& stroke = m_result.worstStroke == 1 ? pair.first : pair.second;
-        if (!stroke.isEmpty()) {
-            ChartView::ChartAnnotation a;
-            a.from = nearestByPosition(stroke, s.worstLow.y());
-            a.to = integral ? a.from : nearestByPosition(stroke, s.worstHigh.y());
-            a.label = label;
-            a.color = kMarkColor;
-            task->setAnnotations({a});
-        } else {
-            task->clearAnnotations();
+    pressure->setAnnotations({mark});
+    const double low = s.worstLow.y(), high = integral ? low : s.worstHigh.y();
+    for (auto type : {ChartType::Task, ChartType::Friction}) {
+        if (auto* chart = m_charts->chart(type)) {
+            const auto marks = Widgets::Chart::buildPositionRangeAnnotations(chart,
+                m_result.worstStroke, low, high, m_result.strokeMax-m_result.strokeMin, unit, label);
+            if (type == ChartType::Friction)
+                chart->setDisplayFeatures(marks.isEmpty() ? 0 : ChartView::ResultsFeature);
+            chart->setAnnotations(marks);
         }
     }
-
     m_marksShown = true;
 }
 
 void LinearityMethodsPresenter::clearMainChartMarks()
 {
-    if (!m_marksShown)
-        return;
-
-    if (ChartView* pressure = m_charts->chart(ChartType::Pressure))
-        pressure->clearAnnotations();
-    if (ChartView* task = m_charts->chart(ChartType::Task))
-        task->clearAnnotations();
-
+    if (!m_marksShown) return;
+    for (auto type : {ChartType::Pressure, ChartType::Task, ChartType::Friction}) {
+        if (auto* chart = m_charts->chart(type)) {
+            chart->clearAnnotations();
+            if (type == ChartType::Friction) chart->setDisplayFeatures(0);
+        }
+    }
     m_marksShown = false;
 }
 

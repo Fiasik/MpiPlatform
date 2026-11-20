@@ -21,7 +21,8 @@ void applyRoleBySuffix(QWidget* root, const QSet<QString>& suffixes)
         if (!suffixes.contains(suffix))
             continue;
 
-        widget->setProperty("role", suffix.toLower());
+        if (!widget->property("role").isValid())
+            widget->setProperty("role", suffix.toLower());
         widget->style()->unpolish(widget);
         widget->style()->polish(widget);
     }

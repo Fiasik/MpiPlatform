@@ -1445,13 +1445,15 @@ void ChartView::updateAnnotationPositions()
         const ChartAnnotation& a = m_annotationData.at(i);
         AnnotationItem& item = m_annotationItems[i];
 
-        const QPointF pFrom = chart()->mapToPosition(a.from, anySeries);
+        Series* coordinateSeries = a.seriesIndex >= 0 && a.seriesIndex < m_mySeries.size()
+            ? m_mySeries.at(a.seriesIndex) : anySeries;
+        const QPointF pFrom = chart()->mapToPosition(a.from, coordinateSeries);
         item.dotFrom->setPos(pFrom);
 
         QPointF labelAnchor = pFrom;
 
         if (item.dotTo) {
-            const QPointF pTo = chart()->mapToPosition(a.to, anySeries);
+            const QPointF pTo = chart()->mapToPosition(a.to, coordinateSeries);
             item.dotTo->setPos(pTo);
 
             // Скобка-"размерная линия": от каждой точки вертикальный "ус"
@@ -1470,8 +1472,10 @@ void ChartView::updateAnnotationPositions()
                 // Полоса во всю высоту области построения, обрезанная по
                 // ней же (при зуме край интервала может уйти за ось).
                 const QRectF plot = chart()->plotArea();
-                const QRectF band = QRectF(QPointF(pFrom.x(), plot.top()),
-                                           QPointF(pTo.x(), plot.bottom())).normalized() & plot;
+                const QRectF band = (a.bandAxis == Qt::Vertical
+                    ? QRectF(QPointF(plot.left(), pFrom.y()), QPointF(plot.right(), pTo.y()))
+                    : QRectF(QPointF(pFrom.x(), plot.top()), QPointF(pTo.x(), plot.bottom())))
+                    .normalized() & plot;
                 item.band->setRect(band);
                 item.band->setVisible(effectiveResults() != DisplayOptions::Results::Hidden
                                       && !band.isEmpty());

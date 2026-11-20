@@ -49,7 +49,10 @@ ExpandableCard::ExpandableCard(QVBoxLayout* section, Card target, QVector<QWidge
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(details);
     m_container->hide();
-    section->insertWidget(section->indexOf(m_target.frame) + 1, m_container);
+    if (section->parentWidget() == m_target.frame)
+        section->addWidget(m_container);
+    else
+        section->insertWidget(section->indexOf(m_target.frame) + 1, m_container);
 
     m_animation = new QParallelAnimationGroup(this);
     connect(m_animation, &QParallelAnimationGroup::finished, this, [this] {
