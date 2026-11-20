@@ -105,6 +105,7 @@ void ThemeManager::applyWidgetPalette()
     pal.setColor(QPalette::Base, QColor(p.bgSurface));
     pal.setColor(QPalette::AlternateBase, QColor(p.bgRecessed));
     pal.setColor(QPalette::Text, QColor(p.textStrong));
+    pal.setColor(QPalette::Link, QColor(p.accentHover));
     pal.setColor(QPalette::Button, QColor(p.bgSurface));
     pal.setColor(QPalette::ButtonText, QColor(p.textStrong));
     pal.setColor(QPalette::Highlight, QColor(p.accentPrimary));

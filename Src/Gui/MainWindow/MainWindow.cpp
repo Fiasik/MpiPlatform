@@ -692,6 +692,21 @@ void MainWindow::applyBuildVariantUi()
 
 void MainWindow::setupUiConnections()
 {
+    const auto bindHelp = [this](QLabel* label, const QString& article, const QString& tooltip) {
+        HelpDialog::bindArticleLink(label, article, tooltip,
+                                    [this](const QString& id) { openHelpSection(id); });
+    };
+    bindHelp(ui->label_position, QStringLiteral("sensor"), tr("Выбор и установка датчика перемещения"));
+    bindHelp(ui->label_deviceInit, QStringLiteral("initialization"), tr("Инициализация устройства"));
+    bindHelp(ui->label_friction_Title, QStringLiteral("friction"), tr("Расчёт силы и коэффициента трения"));
+    bindHelp(ui->label_breakaway_Title, QStringLiteral("breakaway"), tr("Расчёт тока страгивания"));
+    bindHelp(ui->label_dynamicError_Title, QStringLiteral("dynamic-error"), tr("Расчёт динамической ошибки"));
+    bindHelp(ui->label_strokeTest_respondingReactionForwardTime_Title, QStringLiteral("reaction-time"),
+             tr("Расчёт времени реакции и полного хода"));
+    bindHelp(ui->label_historyCompare_step_Title, QStringLiteral("overshoot"), tr("Порог T и перерегулирование"));
+    bindHelp(ui->label_historyCompare_response_Title, QStringLiteral("response"), tr("Тест ТРС"));
+    bindHelp(ui->label_historyCompare_resolution_Title, QStringLiteral("resolution"), tr("Тест ТЧР"));
+    bindHelp(ui->label_cyclicTest_sequence_Title, QStringLiteral("cyclic"), tr("Циклические испытания"));
     connect(ui->pushButton_signal_4mA,
             &QPushButton::clicked,
             this, [this] { ui->doubleSpinBox_task->setValue(4.0); });
@@ -798,6 +813,11 @@ static QString formatHMS(quint64 ms)
 
 void MainWindow::openHelp()
 {
+    openHelpSection(QStringLiteral("home"));
+}
+
+void MainWindow::openHelpSection(const QString& article)
+{
     // Вкладки — как их видит оператор: видимые по порядку (цифра N — N-я из
     // них, см. TabBinder). Вложенные вкладки и кнопки Enter — из тех же
     // привязок, что реально работают, чтобы справка не разошлась с клавишами.
@@ -837,7 +857,32 @@ void MainWindow::setupShortcuts()
 {
     auto* help = new QShortcut(QKeySequence(Qt::Key_F1), this);
     help->setContext(Qt::ApplicationShortcut);
-    connect(help, &QShortcut::activated, this, &MainWindow::openHelp);
+    connect(help, &QShortcut::activated, this, [this] {
+        QWidget* page = ui->tabWidget_main->currentWidget();
+        if (page == ui->tab_manual)
+            openHelpSection(QStringLiteral("sensor"));
+        else if (page == ui->tab_mainTests)
+            openHelpSection(QStringLiteral("main-test"));
+        else if (page == ui->tab_strokeTest)
+            openHelpSection(QStringLiteral("stroke"));
+        else if (page == ui->tab_cyclicTests)
+            openHelpSection(QStringLiteral("cyclic"));
+        else if (page == ui->tab_optionalTests) {
+            QWidget* test = ui->tabWidget_optionalTests->currentWidget();
+            if (test == ui->tab_optionalTests_stepResults)
+                test = ui->tabWidget_optionalTestsResults->currentWidget();
+            if (test == ui->tab_optionalTests_response || test == ui->tab_responseResults)
+                openHelpSection(QStringLiteral("response"));
+            else if (test == ui->tab_optionalTests_resolution || test == ui->tab_resolutionResults)
+                openHelpSection(QStringLiteral("resolution"));
+            else if (test == ui->tab_optionalTests_step || test == ui->tab_stepResults)
+                openHelpSection(QStringLiteral("step"));
+            else
+                openHelpSection(QStringLiteral("tests"));
+        } else {
+            openHelp();
+        }
+    });
 
     auto* enter = new QShortcut(QKeySequence(Qt::Key_Return), this);
     enter->setContext(Qt::ApplicationShortcut);

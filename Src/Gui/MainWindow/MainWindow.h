@@ -238,6 +238,7 @@ private:
     void flushConclusionSave();
     // Справка (F1 / «?» в строке состояния): О программе и клавиатура.
     void openHelp();
+    void openHelpSection(const QString& article);
     void setupPrimaryActions();
     // Видимость вкладок/кнопок, которые существуют только в конкретной
     // сборке (Domain::k...Variant) — см. её собственный комментарий.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QList>
 #include <QString>
 #include <QStringList>
 
@@ -26,6 +27,13 @@ QStringList manufacturers();
 // dynamicError — текст пункта comboBox_dinamicError ("1.5"/"2.5"/...),
 // учитывается только у позиционеров.
 QStringList models(Kind kind, const QString& manufacturer, const QString& dynamicError);
+
+struct Entry {
+    QString manufacturer;
+    QString name;
+};
+
+QList<Entry> entries(Kind kind);
 
 // Пополнение справочника вручную введёнными значениями. Уже существующая
 // запись (без учёта регистра латиницы) не дублируется — это не ошибка,

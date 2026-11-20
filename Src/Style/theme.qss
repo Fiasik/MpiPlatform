@@ -535,6 +535,24 @@ QLineEdit:read-only {
     padding: 4px 0px;
 }
 
+QTreeWidget#helpNavigation,
+QTextBrowser#helpArticle {
+    color: @{textStrong};
+    background: @{bgSurface};
+    border: 1px solid @{borderDefault};
+    border-radius: 6px;
+    selection-background-color: @{accentPrimary};
+    selection-color: @{bgSurface};
+}
+
+QTreeWidget#helpNavigation::item {
+    padding: 4px 2px;
+}
+
+QTreeWidget#helpNavigation::item:hover:!selected {
+    background: @{bgHover};
+}
+
 /* QCheckBox */
 QCheckBox {
     color: @{textStrong};

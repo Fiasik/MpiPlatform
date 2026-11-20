@@ -1,22 +1,21 @@
 #pragma once
 
 #include <QDialog>
+#include <QHash>
 #include <QList>
 #include <QString>
 #include <QStringList>
 
 #include <memory>
+#include <functional>
 
 namespace Ui { class HelpDialog; }
 
-// Справка (F1 / «?» в статус-баре): «О программе» — версия, сборка, разработчик,
-// контакты поддержки (заглушки в Utils/AppInfo.h), сведения о системе и кнопка
-// «Скопировать для поддержки»; «Управление» — клавиатура.
-//
-// Раздел про клавиатуру строится из ФАКТИЧЕСКИХ вкладок окна (их передаёт
-// MainWindow: видимые вкладки по порядку, вложенные вкладки, кнопки Enter), а
-// не пишется вручную — цифры и действия Enter зависят от сборки (в Ilim нет
-// циклического теста) и не должны разойтись со справкой.
+class QTreeWidget;
+class QTreeWidgetItem;
+class QTextBrowser;
+class QLabel;
+
 class HelpDialog : public QDialog
 {
     Q_OBJECT
@@ -36,12 +35,31 @@ public:
     // Те же сведения, что на вкладке «О программе», одним текстом (без
     // контактов — они у получателя уже есть).
     QString supportText() const;
+    void showArticle(const QString& id);
+    static void bindArticleLink(QLabel* label, const QString& article, const QString& tooltip,
+                                const std::function<void(const QString&)>& openArticle);
+
+protected:
+    void changeEvent(QEvent* event) override;
 
 private:
     QString controlsHtml(const QList<TabHelp>& tabs) const;
-    QString testsHtml() const;
+    struct Article {
+        QString id;
+        QString title;
+        QString html;
+    };
+
+    void setupArticles(const QList<TabHelp>& tabs);
+    void updateArticleStyle();
+    QList<Article> testArticles() const;
+    QString sensorHtml() const;
 
     std::unique_ptr<Ui::HelpDialog> ui;
+    QTreeWidget* m_tree = nullptr;
+    QTextBrowser* m_browser = nullptr;
+    QString m_articleHtml;
+    QHash<QString, QTreeWidgetItem*> m_articles;
     QString m_databasePath;
     int m_schemaVersion = 0;
     int m_latestSchemaVersion = 0;

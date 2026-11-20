@@ -473,6 +473,7 @@ target_link_libraries(Report
 )
 
 add_library(Gui STATIC
+    Gui/Help/help_articles.qrc
     ${GUI_CPP}
     ${GUI_HEADERS}
     ${GUI_UI}

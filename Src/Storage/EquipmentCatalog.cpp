@@ -69,6 +69,26 @@ QStringList models(Kind kind, const QString& manufacturer, const QString& dynami
     return result;
 }
 
+QList<Entry> entries(Kind kind)
+{
+    QList<Entry> result;
+    HistoryDb::withConnection(QStringLiteral("mpiplatform_catalog_entries"), [&](QSqlDatabase& db) {
+        QSqlQuery q(db);
+        q.prepare(QStringLiteral(
+            "SELECT manufacturer, name FROM catalog_models "
+            "WHERE kind = ? AND manufacturer <> '' "
+            "GROUP BY manufacturer, name ORDER BY manufacturer, name"));
+        q.addBindValue(kindKey(kind));
+        if (q.exec()) {
+            while (q.next())
+                result.append(Entry{q.value(0).toString(), q.value(1).toString()});
+        } else {
+            qWarning() << "[EquipmentCatalog] entries():" << q.lastError().text();
+        }
+    });
+    return result;
+}
+
 bool addManufacturer(const QString& name)
 {
     const QString value = name.trimmed();

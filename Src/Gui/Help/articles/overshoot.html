@@ -1,0 +1,12 @@
+<p>В ступенчатом тесте сравнивают измеренное положение <i>y</i> с заданием до и после переключения, <i>u</i><sub>до</sub> и <i>u</i><sub>после</sub>. Все положения и задания выражены в процентах хода.</p>
+<h2>Время достижения порога T</h2>
+<p align='center'><big><i>y</i><sub>T</sub> = <i>u</i><sub>до</sub> + (<i>u</i><sub>после</sub> − <i>u</i><sub>до</sub>) · <i>T</i> / 100</big></p>
+<p>Время отсчитывается от смены задания до первого замера за порогом в направлении ступени. Если пересечение отсутствует, в результате отображается 0:00.000.</p>
+<h2>Перерегулирование</h2>
+<table align='center' cellspacing='0' cellpadding='5'>
+<tr><td rowspan='2' valign='middle'><big><i>M</i> = max</big></td><td align='center' style='border-bottom: 1px solid'><big><i>y</i> − <i>u</i><sub>после</sub></big></td><td rowspan='2' valign='middle'><big>· 100 %</big></td></tr>
+<tr><td align='center'><big><i>u</i><sub>после</sub> − <i>u</i><sub>до</sub></big></td></tr>
+</table>
+<p>Максимум берётся по всем замерам ступени. Положительное значение означает выход за целевой уровень. Отрицательное означает, что даже ближайший замер остался до цели.</p>
+<p><b>Пример.</b> При ступени с <span class='number'>20</span> до <span class='number'>30</span> % хода и <i>T</i> = <span class='number'>90</span> % порог равен <span class='number'>29</span> %. Если положение дошло до <span class='number'>31</span> %, перерегулирование составит <span class='number'>10</span> % от размера ступени.</p>
+<p><a href='step'>Ступенчатый тест</a></p>

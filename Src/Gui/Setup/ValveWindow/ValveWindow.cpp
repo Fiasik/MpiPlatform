@@ -3,6 +3,7 @@
 #include "Logic.h"
 
 #include "ui_ValveWindow.h"
+#include "Gui/Help/HelpDialog.h"
 #include "Gui/Style/RoleStyler.h"
 #include "Gui/Style/Palette.h"
 #include "Gui/WindowGeometry.h"
@@ -294,6 +295,23 @@ void ValveWindow::saveManualEntriesToCatalog()
 
 void ValveWindow::setupConnections()
 {
+    const auto bindHelp = [this](QLabel* label, const QString& article, const QString& tooltip) {
+        HelpDialog::bindArticleLink(label, article, tooltip, [this](const QString& id) {
+            HelpDialog dialog({}, this);
+            dialog.showArticle(id);
+            dialog.exec();
+        });
+    };
+    const QString sensorHelp = tr("Выбор и установка датчика перемещения");
+    bindHelp(ui->label_linearRange, QStringLiteral("sensor"), sensorHelp);
+    bindHelp(ui->label_positionSensorModel, QStringLiteral("sensor"), sensorHelp);
+    bindHelp(ui->label_manufacturer, QStringLiteral("manufacturers"), tr("Производители арматуры"));
+    bindHelp(ui->label_valveModel, QStringLiteral("valve-models"), tr("Как указать модель клапана"));
+    bindHelp(ui->label_positionerModel, QStringLiteral("positioners"), tr("Каталог позиционеров"));
+    bindHelp(ui->label_driveModel, QStringLiteral("drives"), tr("Каталог приводов"));
+    bindHelp(ui->label_crossingLimits_coefficientFriction_info, QStringLiteral("friction"),
+             tr("Расчёт коэффициента трения"));
+
     // comboBox_manufacturer — Widgets::Combo::SearchableComboBox (см. .ui),
     // поиск уже встроен в сам виджет.
     connect(ui->comboBox_manufacturer, &QComboBox::currentTextChanged,

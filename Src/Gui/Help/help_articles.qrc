@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/help">
+        <file alias="friction.html">articles/friction.html</file>
+        <file alias="dynamic-error.html">articles/dynamic-error.html</file>
+        <file alias="breakaway.html">articles/breakaway.html</file>
+        <file alias="reaction-time.html">articles/reaction-time.html</file>
+        <file alias="overshoot.html">articles/overshoot.html</file>
+        <file alias="step-error.html">articles/step-error.html</file>
+    </qresource>
+</RCC>
