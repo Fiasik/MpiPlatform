@@ -211,12 +211,6 @@ endif()
 
 add_subdirectory(Researcher)
 
-option(MPIPLATFORM_BUILD_CHART_PREVIEW "Build real ChartView/Manager preview on synthetic data (experiments/chart-preview)" OFF)
-
-if(MPIPLATFORM_BUILD_CHART_PREVIEW)
-    add_subdirectory(experiments/chart-preview)
-endif()
-
 option(MPIPLATFORM_BUILD_XLSX_CHART_SPIKE "Build native Excel chart experiment on a copy of the report template (experiments/xlsx-chart)" OFF)
 
 if(MPIPLATFORM_BUILD_XLSX_CHART_SPIKE)

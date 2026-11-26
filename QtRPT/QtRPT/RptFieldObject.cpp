@@ -591,7 +591,7 @@ void RptFieldObject::setProperty(QtRPT *qtrpt, QDomElement e)
 
             // MPISDK FIX: единицы измерения на осях — движок их нигде не
             // показывал (ни атрибута, ни кода под это не было). Формат как в
-            // продовом Widgets::Chart (см. experiments/chart-preview) —
+            // Widgets::Chart —
             // единица приклеена прямо к каждой подписи деления ("24.00 mm"),
             // отдельного заголовка оси у них нет, поэтому и здесь так же,
             // через QValueAxis::setLabelFormat(), а не axis->setTitleText().
