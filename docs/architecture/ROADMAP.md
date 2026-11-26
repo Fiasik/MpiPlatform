@@ -75,7 +75,7 @@ SaverDataTests линкует Report без Gui и проверяет сохра
   DataViewer и VerifyReport.
 - Сборка Ski с MPIPLATFORM_EXPERIMENTAL_LINEARITY=ON и
   MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE=ON: MpiPlatform, DataViewer,
-  VerifyReport, ReportGeneratorSpike, VerifyTheme.
+  VerifyReport и ReportGeneratorSpike.
 - CTest: 3/3 успешно в обеих конфигурациях (ArchitectureLayerIncludes,
   AnalyzerTests, SaverDataTests). Domain и AnalyzerTests собираются без
   QtWidgets/QtCharts; SaverDataTests и VerifyReport линкуются без Gui.

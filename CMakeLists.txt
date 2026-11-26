@@ -229,12 +229,6 @@ if(MPIPLATFORM_BUILD_REPORT_GENERATOR_SPIKE)
     add_subdirectory(experiments/report-generator)
 endif()
 
-option(MPIPLATFORM_BUILD_VERIFY_THEME "Build throwaway MainWindow styling diagnostic (experiments/verify-theme)" OFF)
-
-if(MPIPLATFORM_BUILD_VERIFY_THEME)
-    add_subdirectory(experiments/verify-theme)
-endif()
-
 # Папки тестовых сессий базы: графики (настоящие или подобранные под числа
 # базы) и отчёты, чтобы «История» и сравнение отчётов было на чём смотреть.
 option(MPIPLATFORM_BUILD_SEED_SESSIONS "Build MpiSeedSessions: chart folders and reports for test sessions of the DB (experiments/seed-sessions)" OFF)
