@@ -15,9 +15,7 @@ namespace Report::Pdf {
 
 // Источник данных для act.xml (ТО, "Акт о проведении диагностики
 // клапана") — коннектится к QtRPT::setValue/setDSInfo, читает Report::
-// Context. Плейсхолдер-имена 1:1 с experiments/qtrpt-spike/act_report/
-// gen_act_xml.py (тот же шаблон, уже проверенный рендером на синтетике,
-// теперь на реальных данных).
+// Context. Имена полей соответствуют шаблону :/pdf/Reports/Act.xml.
 class TechnicalInspectionSource : public QObject
 {
     Q_OBJECT

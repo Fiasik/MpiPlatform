@@ -35,9 +35,8 @@ enum class Act {
 // без расширения.
 QString actTitle(Act act);
 
-// Полный PDF-отчёт на движке QtRPT (:/pdf/Reports/Act.xml, Tshr.xml —
-// экспортированы experiments/qtrpt-spike/act_report/gen_act_xml.py/
-// gen_tshr_xml.py, уже проверены рендером на синтетике). В отличие от
+// Полный PDF-отчёт на движке QtRPT с шаблонами из :/pdf/Reports/.
+// В отличие от
 // Report::Excel::Builder (собирает ReportData в памяти, сохраняет отдельно
 // Saver'ом) — QtRPT::printPDF() сам пишет готовый файл по пути, поэтому
 // тут сразу принимаем целевой путь, а не возвращаем буфер.

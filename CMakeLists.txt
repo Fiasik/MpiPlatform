@@ -223,12 +223,6 @@ if(MPIPLATFORM_BUILD_XLSX_CHART_SPIKE)
     add_subdirectory(experiments/xlsx-chart)
 endif()
 
-option(MPIPLATFORM_BUILD_QTRPT_SPIKE "Build QtRPT report-engine experiment (experiments/qtrpt-spike)" OFF)
-
-if(MPIPLATFORM_BUILD_QTRPT_SPIKE)
-    add_subdirectory(experiments/qtrpt-spike)
-endif()
-
 option(MPIPLATFORM_BUILD_VERIFY_REPORT "Build throwaway Report::Excel/Pdf/Csv regression harness (experiments/verify-report)" OFF)
 
 if(MPIPLATFORM_BUILD_VERIFY_REPORT)
