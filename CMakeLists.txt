@@ -235,21 +235,6 @@ if(MPIPLATFORM_BUILD_VERIFY_THEME)
     add_subdirectory(experiments/verify-theme)
 endif()
 
-# Превьюер на настоящем MainWindow без устройства: новые и экспериментальные
-# функции (карточка линейности, предпросмотр отчёта, ...) на синтетике,
-# архивной папке испытания или сессии из рабочей базы.
-option(MPIPLATFORM_BUILD_PREVIEW "Build MpiPreview: real MainWindow on synthetic/archive/session data (experiments/preview)" OFF)
-
-# MpiPreview целиком про способы линейности (--open linearity, таблица
-# способов) — собирается только с экспериментальным флагом линейности.
-if(MPIPLATFORM_BUILD_PREVIEW)
-    if(MPIPLATFORM_EXPERIMENTAL_LINEARITY)
-        add_subdirectory(experiments/preview)
-    else()
-        message(WARNING "MpiPreview пропущен: нужен -DMPIPLATFORM_EXPERIMENTAL_LINEARITY=ON")
-    endif()
-endif()
-
 # Папки тестовых сессий базы: графики (настоящие или подобранные под числа
 # базы) и отчёты, чтобы «История» и сравнение отчётов было на чём смотреть.
 option(MPIPLATFORM_BUILD_SEED_SESSIONS "Build MpiSeedSessions: chart folders and reports for test sessions of the DB (experiments/seed-sessions)" OFF)

@@ -509,7 +509,6 @@ target_compile_definitions(Gui
         MPIPLATFORM_VERSION="${PROJECT_VERSION}"
 )
 
-# PUBLIC — MainWindow и превью experiments/preview видят тот же флаг.
 if(MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
     target_compile_definitions(Gui PUBLIC MPIPLATFORM_EXPERIMENTAL_REPORT_COMPARE)
 endif()
